@@ -25,6 +25,7 @@ import type * as photoQueries from "../photoQueries.js";
 import type * as planExamples from "../planExamples.js";
 import type * as planSchema from "../planSchema.js";
 import type * as planValidator from "../planValidator.js";
+import type * as promptBuilder from "../promptBuilder.js";
 import type * as queries from "../queries.js";
 import type * as rateLimiter from "../rateLimiter.js";
 import type * as sportBucketMutations from "../sportBucketMutations.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   planExamples: typeof planExamples;
   planSchema: typeof planSchema;
   planValidator: typeof planValidator;
+  promptBuilder: typeof promptBuilder;
   queries: typeof queries;
   rateLimiter: typeof rateLimiter;
   sportBucketMutations: typeof sportBucketMutations;

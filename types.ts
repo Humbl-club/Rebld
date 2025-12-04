@@ -233,6 +233,7 @@ export interface TrainingPreferences {
     additional_notes?: string | null; // Free-form notes
     last_updated: string; // ISO date string
     // Profile fields
+    age?: number; // User's age for recovery/programming adjustments
     sex?: 'male' | 'female' | 'other';
     equipment?: 'minimal' | 'home_gym' | 'commercial_gym';
     preferred_session_length?: '30' | '45' | '60' | '75';
@@ -240,6 +241,8 @@ export interface TrainingPreferences {
     training_age_years?: number;
     body_type?: 'lean' | 'average' | 'muscular';
     comfort_flags?: string[];
+    // Current strength levels for starting weight calculations
+    current_strength?: CurrentStrength;
     // NEW: Training split for 1x/2x daily
     training_split?: TrainingSplit;
     // NEW: Specific goal with target date
@@ -278,6 +281,15 @@ export interface BodyMetrics {
         thighs?: number;
     };
     lastUpdated?: string; // ISO date string
+}
+
+// Current Strength Levels (for starting weight calculations)
+export interface CurrentStrength {
+    squat_kg?: number;      // Back squat 8-10RM
+    bench_kg?: number;      // Bench press 8-10RM
+    deadlift_kg?: number;   // Deadlift 8-10RM
+    row_kg?: number;        // Barbell row 8-10RM
+    pullup_count?: number;  // Max strict pullups
 }
 
 // User Goals

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WorkoutPlan, TrainingPreferences, TrainingSplit, SpecificGoal, BodyMetrics } from '../types';
+import { WorkoutPlan, TrainingPreferences, TrainingSplit, SpecificGoal, BodyMetrics, CurrentStrength } from '../types';
 import { LogoIcon, UploadIcon, SparklesIcon, XCircleIcon, DocumentIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from './icons';
 import { useUser } from '@clerk/clerk-react';
 import useUserProfile from '../hooks/useUserProfile';
@@ -73,6 +73,8 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
   const [specificGoal, setSpecificGoal] = useState<SpecificGoal | null>(null);
   const [bodyMetrics, setBodyMetrics] = useState<BodyMetrics | null>(null);
   const [userSex, setUserSex] = useState<'male' | 'female' | 'other' | undefined>(undefined);
+  const [userAge, setUserAge] = useState<number | undefined>(undefined);
+  const [currentStrength, setCurrentStrength] = useState<CurrentStrength>({});
 
   // Custom plan import
   const [rawText, setRawText] = useState('');
@@ -163,6 +165,8 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
             equipment: equipment || undefined,
             preferred_session_length: sessionLength || undefined,
             sex: userSex || undefined,
+            age: userAge || undefined,
+            current_strength: Object.keys(currentStrength).length > 0 ? currentStrength : undefined,
             training_split: trainingSplit || undefined,
             // Pass specific goal for competition prep/event training
             specific_goal: specificGoal || undefined,
@@ -195,9 +199,11 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
                 sport_specific: null,
                 additional_notes: null,
                 last_updated: new Date().toISOString(),
+                age: userAge,
                 equipment: equipment || undefined,
                 preferred_session_length: sessionLength || undefined,
                 sex: userSex,
+                current_strength: Object.keys(currentStrength).length > 0 ? currentStrength : undefined,
                 training_split: trainingSplit || undefined,
                 specific_goal: specificGoal || undefined,
             };
@@ -272,6 +278,8 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
           equipment: equipment || undefined,
           preferred_session_length: sessionLength || undefined,
           sex: userSex || undefined,
+          age: userAge || undefined,
+          current_strength: Object.keys(currentStrength).length > 0 ? currentStrength : undefined,
           training_split: trainingSplit || undefined,
         },
       });
@@ -292,7 +300,7 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
       setError('Failed to regenerate plan. Please try again.');
       setIsRegenerating(false);
     }
-  }, [goal, experience, frequency, painPoints, sport, equipment, sessionLength, userSex, trainingSplit, generatePlanAction, user?.id, t]);
+  }, [goal, experience, frequency, painPoints, sport, equipment, sessionLength, userSex, userAge, currentStrength, trainingSplit, generatePlanAction, user?.id, t]);
 
   // Confirm the plan and navigate to home
   const handleConfirmPlan = useCallback(() => {
@@ -421,6 +429,10 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
           setEquipment={setEquipment}
           sessionLength={sessionLength}
           setSessionLength={setSessionLength}
+          userAge={userAge}
+          setUserAge={setUserAge}
+          currentStrength={currentStrength}
+          setCurrentStrength={setCurrentStrength}
           onNext={goToNextStep}
           onBack={() => setStep('welcome')}
         />;
@@ -571,13 +583,15 @@ const WelcomeStep = ({ onNext, onCustom }: { onNext: () => void, onCustom: () =>
     );
 };
 
-// Essentials Step: Goal + Experience + Frequency + Equipment + Session Length (merged from CoreStep + SetupStep)
+// Essentials Step: Goal + Experience + Frequency + Equipment + Session Length + Age + Strength
 const EssentialsStep = ({
     goal, setGoal,
     experience, setExperience,
     frequency, setFrequency,
     equipment, setEquipment,
     sessionLength, setSessionLength,
+    userAge, setUserAge,
+    currentStrength, setCurrentStrength,
     onNext, onBack
 }: {
     goal: Goal | null, setGoal: (g: Goal) => void,
@@ -585,11 +599,14 @@ const EssentialsStep = ({
     frequency: Frequency | null, setFrequency: (f: Frequency) => void,
     equipment: string, setEquipment: (e: any) => void,
     sessionLength: string, setSessionLength: (s: any) => void,
+    userAge: number | undefined, setUserAge: (a: number | undefined) => void,
+    currentStrength: CurrentStrength, setCurrentStrength: (s: CurrentStrength) => void,
     onNext: () => void, onBack: () => void
 }) => {
     const { t } = useTranslation();
     const goalOptions = getGoalOptions(t);
     const [showValidation, setShowValidation] = useState(false);
+    const [showStrengthInputs, setShowStrengthInputs] = useState(false);
     const canContinue = goal && experience && frequency;
 
     const equipmentOptions = [
@@ -753,6 +770,91 @@ const EssentialsStep = ({
                         </button>
                     ))}
                 </div>
+            </div>
+
+            {/* Age Input */}
+            <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
+                    Age (optional)
+                </h3>
+                <input
+                    type="number"
+                    inputMode="numeric"
+                    value={userAge || ''}
+                    onChange={(e) => setUserAge(e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="25"
+                    min={14}
+                    max={100}
+                    className="w-24 h-10 px-3 bg-[var(--surface-secondary)] rounded-lg text-[14px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none transition-all text-center"
+                />
+                <p className="text-[10px] text-[var(--text-tertiary)] mt-1">For recovery optimization</p>
+            </div>
+
+            {/* Current Strength - Collapsible */}
+            <div>
+                <button
+                    onClick={() => setShowStrengthInputs(!showStrengthInputs)}
+                    className="flex items-center justify-between w-full py-2"
+                >
+                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                        Current Strength (optional)
+                    </h3>
+                    <span className="text-[11px] text-[var(--brand-primary)] font-semibold">
+                        {showStrengthInputs ? 'Hide' : 'Add'}
+                    </span>
+                </button>
+
+                {showStrengthInputs && (
+                    <div className="space-y-2 pt-1">
+                        <p className="text-[10px] text-[var(--text-tertiary)] mb-2">Enter your 8-10 rep max (kg)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Squat</span>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={currentStrength.squat_kg || ''}
+                                    onChange={(e) => setCurrentStrength({ ...currentStrength, squat_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                    placeholder="kg"
+                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Bench</span>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={currentStrength.bench_kg || ''}
+                                    onChange={(e) => setCurrentStrength({ ...currentStrength, bench_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                    placeholder="kg"
+                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Deadlift</span>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={currentStrength.deadlift_kg || ''}
+                                    onChange={(e) => setCurrentStrength({ ...currentStrength, deadlift_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                    placeholder="kg"
+                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Pullups</span>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={currentStrength.pullup_count || ''}
+                                    onChange={(e) => setCurrentStrength({ ...currentStrength, pullup_count: e.target.value ? parseInt(e.target.value) : undefined })}
+                                    placeholder="#"
+                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Validation hint */}

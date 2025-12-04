@@ -21,6 +21,7 @@ import {
   getHeartRateGuidance,
   getDurationConstraintPrompt
 } from "./utils/aiHelpers";
+import { buildBriefMasterPrompt, type PromptInputs, type CurrentStrength } from "./promptBuilder";
 import {
   getCompleteSchemaPrompt,
   getSessionLengthGuidance,
@@ -604,6 +605,15 @@ export const generateWorkoutPlan = action({
       equipment: v.optional(v.string()),
       preferred_session_length: v.optional(v.string()),
       sex: v.optional(v.string()),
+      age: v.optional(v.number()),
+      // Current strength levels for starting weight calculations
+      current_strength: v.optional(v.object({
+        squat_kg: v.optional(v.number()),
+        bench_kg: v.optional(v.number()),
+        deadlift_kg: v.optional(v.number()),
+        row_kg: v.optional(v.number()),
+        pullup_count: v.optional(v.number()),
+      })),
       // NEW: Training split for 2x daily training
       training_split: v.optional(v.object({
         sessions_per_day: v.union(v.literal('1'), v.literal('2')),
@@ -669,6 +679,8 @@ export const generateWorkoutPlan = action({
       equipment,
       preferred_session_length,
       sex,
+      age,
+      current_strength,
       training_split,
       specific_goal,
       _useCompressedPrompt,
@@ -783,6 +795,52 @@ Example: If user benched 80kg last week, suggest 82.5kg this week with same reps
     const hasTwoADay = training_split?.sessions_per_day === '2';
     const hasTargetDate = specific_goal?.target_date != null;
 
+    // ═══════════════════════════════════════════════════════════
+    // EVIDENCE-BASED MASTER PROMPT (from promptBuilder)
+    // Uses scientific data from NSCA, ACSM, Renaissance Periodization
+    // ═══════════════════════════════════════════════════════════
+    let masterPromptSection = '';
+    try {
+      // Parse training frequency to a number
+      const freqMap: Record<string, number> = { '2-3': 3, '3-4': 4, '4-5': 5, '5+': 6 };
+      const trainingFreqNum = freqMap[training_frequency] || 4;
+
+      const promptInputs: PromptInputs = {
+        profile: {
+          age: age,
+          sex: sex as 'male' | 'female' | 'other' | undefined,
+          experience_level: experience_level.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
+          training_frequency: trainingFreqNum,
+          session_length: parseInt(preferred_session_length || '60'),
+        },
+        strength: current_strength || {},
+        goal: {
+          primary_goal,
+          sport: sport,
+          target_date: specific_goal?.target_date || undefined,
+          event_name: specific_goal?.event_name || undefined,
+          additional_notes: additional_notes,
+        },
+        constraints: {
+          pain_points: pain_points,
+          equipment: equipment,
+          cardio_types: training_split?.cardio_preferences?.preferred_types,
+          cardio_duration_minutes: training_split?.cardio_preferences?.cardio_duration_minutes,
+        },
+        split: {
+          sessions_per_day: training_split?.sessions_per_day === '2' ? 2 : 1,
+          training_type: training_split?.training_type,
+        },
+      };
+
+      masterPromptSection = buildBriefMasterPrompt(promptInputs);
+      // Log the first 500 chars of the master prompt for debugging
+      loggers.ai.info('📚 Evidence-based master prompt generated successfully');
+      loggers.ai.debug('Master prompt preview:', masterPromptSection.substring(0, 500));
+    } catch (e) {
+      loggers.ai.warn('Failed to generate master prompt, using legacy prompt:', e);
+    }
+
     // Get comprehensive metrics template reference (CRITICAL for correct formatting)
     const metricsTemplatePrompt = getMetricsTemplatePrompt();
     const terminologyPrompt = getTerminologyPrompt();
@@ -844,6 +902,8 @@ ${periodizationPrompt}
 ${exerciseHierarchyPrompt}
 ${workoutHistoryPrompt}
 ${CARDIO_PARSING_RULES}
+
+${masterPromptSection}
 
 ${metricsTemplatePrompt}
 
