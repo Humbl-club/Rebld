@@ -881,7 +881,7 @@ const CustomizeStep = ({
 
                         {/* Cardio Type */}
                         <div className="flex flex-wrap gap-1.5">
-                            {['Running', 'Cycling', 'Rowing', 'Swimming', 'Elliptical', 'Stairs'].map(type => {
+                            {['Running', 'Incline Walk', 'Cycling', 'Rowing', 'Swimming', 'Elliptical', 'Stairs'].map(type => {
                                 const isSelected = currentSplit.cardio_preferences?.preferred_types?.includes(type.toLowerCase()) || false;
                                 return (
                                     <button

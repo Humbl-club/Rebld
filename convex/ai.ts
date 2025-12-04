@@ -140,6 +140,8 @@ function formatTrainingSplitPrompt(split?: TrainingSplit, primaryGoal?: string):
   const cardioExerciseMap: Record<string, string> = {
     'running': 'Treadmill Run',
     'incline_walk': 'Incline Treadmill Walk',
+    'incline walk': 'Incline Treadmill Walk',
+    'stairs': 'StairMaster',
     'cycling': 'Stationary Bike',
     'rowing': 'Rowing Machine',
     'swimming': 'Swimming',
@@ -165,14 +167,26 @@ function formatTrainingSplitPrompt(split?: TrainingSplit, primaryGoal?: string):
 
   const cardioGuidance = needsCardioGuidance ? `
 
-**CARDIO SESSION PREFERENCES (PERSONALIZED)**
-User's preferred cardio exercises: ${userCardioExercises}
-${favoriteExercise ? `User's FAVORITE cardio: ${favoriteExercise} (use this most often)` : ''}
+**═══════════════════════════════════════════════════════════════**
+**CARDIO CONSTRAINTS (ABSOLUTE - NO EXCEPTIONS)**
+**═══════════════════════════════════════════════════════════════**
 
-**CARDIO DURATION: ${cardioDuration} MINUTES** (${cardioDurationRationale})
-NOTE: Cardio duration is SEPARATE from strength session length.
+${preferredTypes.length > 0 ? `
+**ALLOWED CARDIO EXERCISES (USE ONLY THESE):**
+${preferredTypes.map(t => `✓ ${cardioExerciseMap[t] || t}`).join('\n')}
 
-MANDATORY: Use the user's preferred cardio types. Duration must be ${cardioDuration} minutes minimum.
+**FORBIDDEN CARDIO (DO NOT USE):**
+${Object.entries(cardioExerciseMap).filter(([key]) => !preferredTypes.includes(key)).map(([, name]) => `✗ ${name}`).join('\n')}
+
+If user selected "Elliptical" and "Rowing" - ONLY use Elliptical and Rowing. Do NOT add Treadmill, Bike, etc.
+` : ''}
+
+**CARDIO DURATION: EXACTLY ${cardioDuration} MINUTES**
+- Every single cardio session = ${cardioDuration} minutes
+- target_duration_minutes: ${cardioDuration} (not ${cardioDuration - 10}, not ${cardioDuration + 10})
+- This is user's explicit requirement, not a suggestion
+
+**═══════════════════════════════════════════════════════════════**
 
 CARDIO METRICS - USE "duration_only" for cardio:
 {
@@ -784,12 +798,41 @@ Example: If user benched 80kg last week, suggest 82.5kg this week with same reps
 - Pain Points: ${pain_points.join(', ') || 'None reported'}
 - Sport: ${sport || 'General Fitness'}
 - Equipment: ${equipment || 'Full gym access'}
-- STRENGTH Session Length: ${preferred_session_length || '60'} minutes (LIFTING ONLY - cardio duration is separate)
 - Sex: ${sex || 'Not specified'}
 - Additional Notes: ${additional_notes || 'None'}
 ${training_split?.sessions_per_day === '2' ? `- Training Split: 2x DAILY (${training_split.training_type})` : ''}
 ${specific_goal?.target_date ? `- Target Event Date: ${specific_goal.target_date}` : ''}
 ${specific_goal?.event_type ? `- Event Type: ${specific_goal.event_type}` : ''}
+
+**═══════════════════════════════════════════════════════════════**
+**ABSOLUTE CONSTRAINTS (NON-NEGOTIABLE - MUST BE FOLLOWED EXACTLY)**
+**═══════════════════════════════════════════════════════════════**
+
+1. **SESSION LENGTH: EXACTLY ${preferred_session_length || '60'} MINUTES (±5 min)**
+   - This is the user's requested workout duration
+   - EVERY strength session MUST be ${preferred_session_length || '60'} minutes (not 40, not 50, EXACTLY ${preferred_session_length || '60'})
+   - Calculate: warmup (8-10 min) + main work (${parseInt(preferred_session_length || '60') - 18}-${parseInt(preferred_session_length || '60') - 12} min) + cooldown (5-8 min) = ${preferred_session_length || '60'} min
+   - If user says 75 minutes, the session MUST be 70-80 minutes, NOT 45 minutes
+   - VIOLATION OF THIS RULE = REJECTED PLAN
+
+${training_split?.cardio_preferences?.preferred_types && training_split.cardio_preferences.preferred_types.length > 0 ? `
+2. **CARDIO EXERCISES: ONLY USE THESE**
+   - User's selected cardio: ${training_split.cardio_preferences.preferred_types.join(', ').toUpperCase()}
+   - DO NOT add running if user didn't select running
+   - DO NOT add cycling if user didn't select cycling
+   - ONLY USE: ${training_split.cardio_preferences.preferred_types.join(', ')}
+   - This is NOT a suggestion - these are the ONLY cardio exercises allowed
+` : ''}
+
+${training_split?.cardio_preferences?.cardio_duration_minutes ? `
+3. **CARDIO DURATION: EXACTLY ${training_split.cardio_preferences.cardio_duration_minutes} MINUTES**
+   - Every cardio session = ${training_split.cardio_preferences.cardio_duration_minutes} minutes
+   - NOT ${training_split.cardio_preferences.cardio_duration_minutes - 10}, NOT ${training_split.cardio_preferences.cardio_duration_minutes + 10}
+   - EXACTLY ${training_split.cardio_preferences.cardio_duration_minutes} minutes
+` : ''}
+
+**END OF ABSOLUTE CONSTRAINTS**
+**═══════════════════════════════════════════════════════════════**
 
 ${sportContext}
 ${supplementContext}
