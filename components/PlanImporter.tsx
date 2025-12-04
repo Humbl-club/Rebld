@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WorkoutPlan, TrainingPreferences, TrainingSplit, SpecificGoal, Supplement, BodyMetrics } from '../types';
+import { WorkoutPlan, TrainingPreferences, TrainingSplit, SpecificGoal, BodyMetrics } from '../types';
 import { LogoIcon, UploadIcon, SparklesIcon, XCircleIcon, DocumentIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from './icons';
 import { useUser } from '@clerk/clerk-react';
 import useUserProfile from '../hooks/useUserProfile';
@@ -14,7 +14,6 @@ import { analytics, EventTypes } from '../services/analyticsService';
 // New onboarding step components
 import TrainingSplitStep from './onboarding/TrainingSplitStep';
 import SpecificGoalStep from './onboarding/SpecificGoalStep';
-import SupplementsStep from './onboarding/SupplementsStep';
 import PlanPreviewStep from './onboarding/PlanPreviewStep';
 
 interface OnboardingProps {
@@ -72,7 +71,6 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
   // NEW: Advanced onboarding data
   const [trainingSplit, setTrainingSplit] = useState<TrainingSplit | null>(null);
   const [specificGoal, setSpecificGoal] = useState<SpecificGoal | null>(null);
-  const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [bodyMetrics, setBodyMetrics] = useState<BodyMetrics | null>(null);
   const [userSex, setUserSex] = useState<'male' | 'female' | 'other' | undefined>(undefined);
 
@@ -169,12 +167,6 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
             // Pass specific goal for competition prep/event training
             specific_goal: specificGoal || undefined,
           },
-          // Pass supplements for AI consideration
-          supplements: supplements.filter(s => s.active).map(s => ({
-            name: s.name,
-            timing: s.timing,
-            dosage: s.dosage || undefined,
-          })),
         });
 
         if (!planData || !planData.weeklyPlan || planData.weeklyPlan.length === 0) {
@@ -454,9 +446,6 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
           setSport={setSport}
           trainingSplit={trainingSplit}
           setTrainingSplit={setTrainingSplit}
-          supplements={supplements}
-          setSupplements={setSupplements}
-          goal={goal}
           onNext={() => setStep('generate')}
           onBack={goToPrevStep}
         />;
@@ -792,25 +781,20 @@ const EssentialsStep = ({
     );
 };
 
-// Customize Step: Training Split + Pain Points + Sport + Advanced Options (collapsible)
+// Customize Step: Training Split + Pain Points + Sport
 const CustomizeStep = ({
     painPoints, setPainPoints,
     sport, setSport,
     trainingSplit, setTrainingSplit,
-    supplements, setSupplements,
-    goal,
     onNext, onBack
 }: {
     painPoints: PainPoint[], setPainPoints: (p: PainPoint[]) => void,
     sport: string, setSport: (s: string) => void,
     trainingSplit: TrainingSplit | null, setTrainingSplit: (s: TrainingSplit | null) => void,
-    supplements: Supplement[], setSupplements: (s: Supplement[]) => void,
-    goal: Goal | null,
     onNext: () => void, onBack: () => void
 }) => {
     const { t } = useTranslation();
     const painOptions = getPainPointsOptions(t);
-    const [showAdvanced, setShowAdvanced] = useState(false);
 
     const togglePain = (point: PainPoint) => {
         if (painPoints.includes(point)) {
@@ -870,7 +854,11 @@ const CustomizeStep = ({
                         ].map(opt => (
                             <button
                                 key={opt.id}
-                                onClick={() => setTrainingSplit({ sessions_per_day: '2', training_type: opt.id })}
+                                onClick={() => setTrainingSplit({
+                                    sessions_per_day: '2',
+                                    training_type: opt.id,
+                                    cardio_preferences: currentSplit.cardio_preferences
+                                })}
                                 className={cn(
                                     "min-h-[32px] px-2 py-1.5 rounded-md text-[11px] font-semibold transition-all",
                                     currentSplit.training_type === opt.id
@@ -881,6 +869,76 @@ const CustomizeStep = ({
                                 {opt.label}
                             </button>
                         ))}
+                    </div>
+                )}
+
+                {/* Cardio preferences - show when cardio is part of training */}
+                {(currentSplit.training_type === 'strength_plus_cardio' || currentSplit.training_type === 'cardio_focused') && (
+                    <div className="mt-3 p-3 bg-[var(--surface-tertiary)] rounded-lg space-y-3">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                            Cardio Preferences
+                        </h4>
+
+                        {/* Cardio Type */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {['Running', 'Cycling', 'Rowing', 'Swimming', 'Elliptical', 'Stairs'].map(type => {
+                                const isSelected = currentSplit.cardio_preferences?.preferred_types?.includes(type.toLowerCase()) || false;
+                                return (
+                                    <button
+                                        key={type}
+                                        onClick={() => {
+                                            const currentTypes = currentSplit.cardio_preferences?.preferred_types || [];
+                                            const newTypes = isSelected
+                                                ? currentTypes.filter(t => t !== type.toLowerCase())
+                                                : [...currentTypes, type.toLowerCase()];
+                                            setTrainingSplit({
+                                                ...currentSplit,
+                                                cardio_preferences: {
+                                                    ...currentSplit.cardio_preferences,
+                                                    preferred_types: newTypes,
+                                                }
+                                            });
+                                        }}
+                                        className={cn(
+                                            "px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all",
+                                            isSelected
+                                                ? "bg-[var(--brand-primary)] text-white"
+                                                : "bg-[var(--surface-secondary)] text-[var(--text-tertiary)] active:bg-[var(--surface-hover)]"
+                                        )}
+                                    >
+                                        {type}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Cardio Duration */}
+                        <div>
+                            <p className="text-[10px] text-[var(--text-tertiary)] mb-1.5">Duration (minutes)</p>
+                            <div className="flex gap-1.5">
+                                {[20, 30, 45, 60].map(mins => (
+                                    <button
+                                        key={mins}
+                                        onClick={() => setTrainingSplit({
+                                            ...currentSplit,
+                                            cardio_preferences: {
+                                                ...currentSplit.cardio_preferences,
+                                                preferred_types: currentSplit.cardio_preferences?.preferred_types || [],
+                                                cardio_duration_minutes: mins,
+                                            }
+                                        })}
+                                        className={cn(
+                                            "flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                                            currentSplit.cardio_preferences?.cardio_duration_minutes === mins
+                                                ? "bg-[var(--brand-primary)] text-white"
+                                                : "bg-[var(--surface-secondary)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+                                        )}
+                                    >
+                                        {mins}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -921,36 +979,6 @@ const CustomizeStep = ({
                     className="w-full h-11 px-3 bg-[var(--surface-secondary)] rounded-lg text-[14px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none transition-all"
                 />
             </div>
-
-            {/* Advanced Options Toggle */}
-            <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between py-2 text-[12px] font-semibold text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-            >
-                <span className="flex items-center gap-2">
-                    <span className={cn(
-                        "transform transition-transform",
-                        showAdvanced ? "rotate-90" : ""
-                    )}>▶</span>
-                    Advanced Options
-                </span>
-                <span className="text-[10px] text-[var(--text-tertiary)]">
-                    {supplements.length > 0 ? '✓ Set' : 'Optional'}
-                </span>
-            </button>
-
-            {/* Collapsible Advanced Section */}
-            {showAdvanced && (
-                <div className="space-y-4 pt-2 border-t border-[var(--border-default)]">
-                    {/* Supplements - Inline */}
-                    <div>
-                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
-                            Supplements
-                        </h3>
-                        <SupplementsStep value={supplements} onChange={setSupplements} primaryGoal={goal} />
-                    </div>
-                </div>
-            )}
 
             {/* Navigation */}
             <div className="flex gap-3 pt-2">
@@ -1010,7 +1038,7 @@ const GenerateStep = ({ onGenerate, onBack, isLoading, error, showSuccess }: {
     }, [isLoading, showSuccess, onGenerate]);
 
     // Progress-driven animation - syncs with AI generation timing
-    // AI typically takes 10-20 seconds, so we pace accordingly
+    // AI typically takes 45-50 seconds, so we pace accordingly
     useEffect(() => {
         if (isLoading) {
             setFilledDays([]);
@@ -1019,10 +1047,14 @@ const GenerateStep = ({ onGenerate, onBack, isLoading, error, showSuccess }: {
 
             const progressInterval = setInterval(() => {
                 setProgress(prev => {
-                    // Curve: fast start, slow middle, hold at 85% until done
-                    // 0-60% in ~8 seconds, 60-85% in ~8 seconds, hold at 85%
-                    if (prev < 60) return prev + 7.5; // ~8s to 60%
-                    if (prev < 85) return prev + 3; // ~8s more to 85%
+                    // Curve: slow start, steady middle, hold at 85% until done
+                    // Total time to 85%: ~45 seconds to match AI generation
+                    // 0-30% in ~12 seconds (2.5% per second)
+                    // 30-60% in ~15 seconds (2% per second)
+                    // 60-85% in ~18 seconds (1.4% per second)
+                    if (prev < 30) return prev + 2.5;
+                    if (prev < 60) return prev + 2;
+                    if (prev < 85) return prev + 1.4;
                     return 85; // Hold at 85% until generation completes
                 });
             }, 1000);
