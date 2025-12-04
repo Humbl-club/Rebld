@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Rebld</string>
-    <string name="title_activity_main">Rebld</string>
-    <string name="package_name">com.yourcompany.rebld</string>
-    <string name="custom_url_scheme">com.yourcompany.rebld</string>
-</resources>

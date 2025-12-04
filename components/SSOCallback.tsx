@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSignIn, useSignUp } from '@clerk/clerk-react';
+import { useClerk } from '@clerk/clerk-react';
 
 /* ═══════════════════════════════════════════════════════════════
    SSO CALLBACK - OAuth Redirect Handler
@@ -9,31 +9,19 @@ import { useSignIn, useSignUp } from '@clerk/clerk-react';
    ═══════════════════════════════════════════════════════════════ */
 
 export default function SSOCallback() {
-  const { signIn, setActive } = useSignIn();
-  const { signUp, setActive: setSignUpActive } = useSignUp();
+  const { handleRedirectCallback } = useClerk();
 
   useEffect(() => {
-    // Handle the OAuth callback
-    const handleCallback = async () => {
-      try {
-        // First try to complete sign-in
-        if (signIn?.status === 'complete') {
-          await setActive({ session: signIn.createdSessionId });
-          return;
-        }
-
-        // If sign-in didn't work, try sign-up (for new users via OAuth)
-        if (signUp?.status === 'complete') {
-          await setSignUpActive({ session: signUp.createdSessionId });
-          return;
-        }
-      } catch (error) {
-        console.error('SSO callback error:', error);
-      }
-    };
-
-    handleCallback();
-  }, [signIn, signUp, setActive, setSignUpActive]);
+    // Let Clerk handle the OAuth callback automatically
+    handleRedirectCallback({
+      afterSignInUrl: '/',
+      afterSignUpUrl: '/',
+    }).catch((error) => {
+      console.error('SSO callback error:', error);
+      // Redirect to home on error
+      window.location.href = '/';
+    });
+  }, [handleRedirectCallback]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">

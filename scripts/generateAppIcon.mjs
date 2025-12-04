@@ -102,14 +102,58 @@ const createFullLogoSVG = (size) => {
 </svg>`;
 };
 
+// Splash screen SVG (full screen with centered logo)
+const createSplashSVG = (size) => {
+  const fontSize = size * 0.08;
+  const centerY = size * 0.52;
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="${size}" height="${size}" fill="${BRAND.background}"/>
+
+  <!-- Subtle radial glow -->
+  <defs>
+    <radialGradient id="splashGlow" cx="50%" cy="50%" r="40%">
+      <stop offset="0%" stop-color="${BRAND.coral}" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="${BRAND.coral}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="${size / 2}" cy="${size / 2}" r="${size * 0.35}" fill="url(#splashGlow)"/>
+
+  <!-- RE in white -->
+  <text
+    x="${size * 0.35}"
+    y="${centerY}"
+    font-family="SF Pro Display, -apple-system, system-ui, sans-serif"
+    font-size="${fontSize}"
+    font-weight="800"
+    letter-spacing="-${size * 0.003}"
+    fill="${BRAND.white}">RE</text>
+
+  <!-- BLD in coral -->
+  <text
+    x="${size * 0.48}"
+    y="${centerY}"
+    font-family="SF Pro Display, -apple-system, system-ui, sans-serif"
+    font-size="${fontSize}"
+    font-weight="800"
+    letter-spacing="-${size * 0.003}"
+    fill="${BRAND.coral}">BLD</text>
+</svg>`;
+};
+
 async function generateIcons() {
-  console.log('🎨 Generating REBLD app icons...\n');
+  console.log('🎨 Generating REBLD app icons and splash screens...\n');
 
-  const outputDir = join(projectRoot, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
+  const iconOutputDir = join(projectRoot, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
+  const splashOutputDir = join(projectRoot, 'ios/App/App/Assets.xcassets/Splash.imageset');
 
-  // Ensure output directory exists
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
+  // Ensure output directories exist
+  if (!existsSync(iconOutputDir)) {
+    mkdirSync(iconOutputDir, { recursive: true });
+  }
+  if (!existsSync(splashOutputDir)) {
+    mkdirSync(splashOutputDir, { recursive: true });
   }
 
   // Generate 1024x1024 icon (iOS requirement)
@@ -119,9 +163,30 @@ async function generateIcons() {
     await sharp(Buffer.from(iconSVG))
       .resize(1024, 1024)
       .png({ quality: 100 })
-      .toFile(join(outputDir, 'AppIcon-512@2x.png'));
+      .toFile(join(iconOutputDir, 'AppIcon-512@2x.png'));
 
     console.log('✅ Generated: AppIcon-512@2x.png (1024x1024)');
+
+    // Generate splash screens (2732x2732 for iPad Pro, scales down for iPhone)
+    const splashSVG = createSplashSVG(2732);
+
+    await sharp(Buffer.from(splashSVG))
+      .resize(2732, 2732)
+      .png({ quality: 100 })
+      .toFile(join(splashOutputDir, 'splash-2732x2732.png'));
+    console.log('✅ Generated: splash-2732x2732.png (3x)');
+
+    await sharp(Buffer.from(splashSVG))
+      .resize(2732, 2732)
+      .png({ quality: 100 })
+      .toFile(join(splashOutputDir, 'splash-2732x2732-1.png'));
+    console.log('✅ Generated: splash-2732x2732-1.png (2x)');
+
+    await sharp(Buffer.from(splashSVG))
+      .resize(2732, 2732)
+      .png({ quality: 100 })
+      .toFile(join(splashOutputDir, 'splash-2732x2732-2.png'));
+    console.log('✅ Generated: splash-2732x2732-2.png (1x)');
 
     // Also create web favicon
     const faviconPath = join(projectRoot, 'public', 'favicon.png');
@@ -150,11 +215,11 @@ async function generateIcons() {
 
     console.log('✅ Generated: public/icon-192.png (192x192)');
 
-    console.log('\n🎉 All icons generated successfully!');
+    console.log('\n🎉 All icons and splash screens generated successfully!');
     console.log('\nNext steps:');
     console.log('1. Run: npx cap sync');
-    console.log('2. Open Xcode and verify the icon appears correctly');
-    console.log('3. Build for TestFlight');
+    console.log('2. Open Xcode and verify the icon/splash appears correctly');
+    console.log('3. Archive for App Store');
 
   } catch (error) {
     console.error('❌ Error generating icons:', error);

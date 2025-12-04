@@ -1,10 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// Set to true for development (live reload), false for production builds
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
+// For iOS builds: NEVER use localhost server
+// The app loads from bundled files in dist/
 const config: CapacitorConfig = {
-  appId: 'com.rebld.app',
+  appId: 'de.rebld.app',
   appName: 'REBLD',
   webDir: 'dist',
   ios: {
@@ -30,14 +29,7 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true,
     },
   },
-  // Development server - ONLY used when running `npm run dev`
-  // For production: run `npm run build && npx cap sync` (no server block needed)
-  ...(isDevelopment && {
-    server: {
-      url: 'http://localhost:3000',
-      cleartext: true,
-    },
-  }),
+  // NO server block - app loads from bundled dist/ files
 };
 
 export default config;
