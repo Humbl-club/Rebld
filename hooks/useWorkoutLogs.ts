@@ -6,6 +6,12 @@ import { WorkoutLog } from '../types';
 // Omit 'id' and 'date' because Convex will generate them
 type NewLog = Omit<WorkoutLog, 'id' | 'date'>;
 
+// Return type for addLog - includes success status
+interface AddLogResult {
+    success: boolean;
+    error?: string;
+}
+
 export default function useWorkoutLogs() {
     const { user } = useUser();
     const userId = user?.id || null;
@@ -16,18 +22,38 @@ export default function useWorkoutLogs() {
     );
     const addLogMutation = useMutation(api.mutations.addWorkoutLog);
 
-    const addLog = async (newLog: NewLog) => {
-        if (!userId) return;
+    const addLog = async (newLog: NewLog): Promise<AddLogResult> => {
+        if (!userId) {
+            return { success: false, error: 'User not authenticated' };
+        }
+
+        // Guard: Ensure focus is a valid non-empty string
+        const focus = newLog.focus;
+        if (!focus || typeof focus !== 'string' || !focus.trim()) {
+            const error = "Failed to save workout: missing workout name";
+            console.error(error, { focus, newLog });
+            return { success: false, error };
+        }
+
+        // Guard: Ensure exercises array exists
+        if (!newLog.exercises || !Array.isArray(newLog.exercises)) {
+            const error = "Failed to save workout: no exercises recorded";
+            console.error(error, { exercises: newLog.exercises });
+            return { success: false, error };
+        }
 
         try {
             await addLogMutation({
                 userId,
-                focus: newLog.focus,
+                focus: focus.trim(),
                 exercises: newLog.exercises,
                 durationMinutes: newLog.durationMinutes || undefined,
             });
+            return { success: true };
         } catch (e) {
-            console.error("Failed to save log to Convex", e);
+            const error = "Failed to save workout to database";
+            console.error(error, e);
+            return { success: false, error };
         }
     };
 

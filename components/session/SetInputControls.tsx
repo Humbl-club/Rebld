@@ -19,42 +19,55 @@ interface SetInputControlsProps {
   currentInputData: Partial<LoggedSetSRW & { duration?: number; distance?: number }>;
   onInputChange: (field: 'weight' | 'reps' | 'duration' | 'distance', value: string) => void;
   metricsTemplate?: MetricTemplate;
-  onComplete?: () => void; // For cardio - auto complete when timer ends
+  onComplete?: (actualDuration?: number) => void; // For cardio - auto complete when timer ends, passes actual duration
+  suggestedWeight?: number | null; // AI-suggested weight based on strength profile
 }
+
+// Cardio exercise keywords for fallback detection (cardio machines and activities)
+const CARDIO_KEYWORDS = [
+  'cardio', 'elliptical', 'treadmill', 'bike', 'cycling', 'rowing', 'rower',
+  'stairmaster', 'stepper', 'stair climber', 'stairclimber', 'stairs',
+  'ski erg', 'skierg', 'assault bike', 'airbike', 'air bike', 'airdyne', 'echo bike',
+  'cross trainer', 'arc trainer', 'versaclimber',
+  'run', 'running', 'jog', 'jogging', 'walk', 'walking', 'sprint', 'sprinting',
+  'swim', 'swimming', 'lap swim', 'pool',
+  'jump rope', 'skipping', 'rope work',
+  'moderate intensity', 'low intensity', 'high intensity',
+  'zone 2', 'zone2', 'liss', 'conditioning', 'steady state', 'interval'
+];
+
+// Timed/hold exercises that show duration timer but are NOT cardio
+const TIMED_HOLD_KEYWORDS = ['plank', 'hold', 'stretch', 'dead hang', 'wall sit'];
 
 // Helper to determine exercise input type
 function getExerciseInputType(template?: MetricTemplate, exerciseName?: string): 'strength' | 'duration' | 'distance' {
-  if (!template) {
-    // Fallback: detect from exercise name
-    const lowerName = exerciseName?.toLowerCase() || '';
-    if (
-      lowerName.includes('interval') ||
-      lowerName.includes('cardio') ||
-      lowerName.includes('treadmill') ||
-      lowerName.includes('bike') ||
-      lowerName.includes('row') ||
-      lowerName.includes('stair') ||
-      lowerName.includes('elliptical') ||
-      lowerName.includes('jump rope') ||
-      lowerName.includes('plank') ||
-      lowerName.includes('hold') ||
-      lowerName.includes('stretch')
-    ) {
-      return 'duration';
+  // First check template type
+  if (template?.type) {
+    switch (template.type) {
+      case 'duration_only':
+      case 'sets_duration':
+      case 'sets_duration_rest': // Cardio intervals
+        return 'duration';
+      case 'distance_time':
+      case 'sets_distance_rest':
+        return 'distance';
     }
-    return 'strength';
   }
 
-  switch (template.type) {
-    case 'duration_only':
-    case 'sets_duration':
-      return 'duration';
-    case 'distance_time':
-    case 'sets_distance_rest':
-      return 'distance';
-    default:
-      return 'strength';
+  // Fallback: detect from exercise name (even if template says sets_reps_weight)
+  const lowerName = exerciseName?.toLowerCase() || '';
+
+  // Check for cardio exercises (long duration timer)
+  if (CARDIO_KEYWORDS.some(keyword => lowerName.includes(keyword))) {
+    return 'duration';
   }
+
+  // Check for timed holds (short duration timer)
+  if (TIMED_HOLD_KEYWORDS.some(keyword => lowerName.includes(keyword))) {
+    return 'duration';
+  }
+
+  return 'strength';
 }
 
 // Timer component for duration-based exercises
@@ -63,7 +76,7 @@ function DurationTimer({
   onComplete,
 }: {
   targetDuration: number;
-  onComplete: () => void;
+  onComplete: (actualDuration: number) => void;
 }) {
   const { t } = useTranslation();
   const haptic = useHaptic();
@@ -127,7 +140,8 @@ function DurationTimer({
 
   const handleComplete = () => {
     haptic.success();
-    onComplete();
+    // Pass the actual elapsed time (or target if completed naturally)
+    onComplete(isComplete ? targetDuration : elapsed);
   };
 
   const progress = Math.min(elapsed / targetDuration, 1);
@@ -274,25 +288,55 @@ export default function SetInputControls({
   onInputChange,
   metricsTemplate,
   onComplete,
+  suggestedWeight,
 }: SetInputControlsProps) {
   const { t } = useTranslation();
   const inputType = getExerciseInputType(metricsTemplate, exerciseName);
 
-  // Get target duration from template
+  // Show suggestion only if no weight entered and suggestion available
+  const showSuggestion = suggestedWeight && suggestedWeight > 0 && !currentInputData.weight;
+
+  // Get target duration from template or exercise name context
   const getTargetDuration = (): number => {
-    if (!metricsTemplate) return 30; // default 30 seconds
+    const lowerName = exerciseName?.toLowerCase() || '';
 
-    if (metricsTemplate.type === 'duration_only') {
-      return (metricsTemplate as any).target_duration_minutes
-        ? (metricsTemplate as any).target_duration_minutes * 60
-        : (metricsTemplate as any).target_duration_s || (metricsTemplate as any).duration_minutes * 60 || 30;
+    // Check template first
+    if (metricsTemplate?.type === 'duration_only') {
+      // Try to get duration from template fields
+      const durationMin = (metricsTemplate as any).duration_minutes ||
+                          (metricsTemplate as any).target_duration_minutes;
+      if (durationMin && durationMin > 0) {
+        return durationMin * 60; // Convert minutes to seconds
+      }
+      // Fallback based on exercise type
+      if (CARDIO_KEYWORDS.some(k => lowerName.includes(k))) {
+        return 30 * 60; // 30 minutes for cardio
+      }
+      return 30; // 30 seconds for holds
     }
 
-    if (metricsTemplate.type === 'sets_duration') {
-      return (metricsTemplate as any).target_duration_s || (metricsTemplate as any).duration_seconds || 30;
+    if (metricsTemplate?.type === 'sets_duration') {
+      const durationSec = (metricsTemplate as any).duration_seconds ||
+                          (metricsTemplate as any).target_duration_s ||
+                          (metricsTemplate as any).hold_seconds;
+      if (durationSec && durationSec > 0) {
+        return durationSec;
+      }
+      return 30; // 30 seconds default for holds
     }
 
-    return 30;
+    // No valid template - detect from exercise name
+    // Check if it's a cardio exercise (long duration)
+    if (CARDIO_KEYWORDS.some(k => lowerName.includes(k))) {
+      return 30 * 60; // 30 minutes for cardio exercises
+    }
+
+    // Check if it's a timed hold (short duration)
+    if (TIMED_HOLD_KEYWORDS.some(k => lowerName.includes(k))) {
+      return 30; // 30 seconds for planks, holds, stretches
+    }
+
+    return 30; // Default 30 seconds
   };
 
   // DURATION-BASED INPUT (Cardio, Intervals, Holds)
@@ -305,7 +349,7 @@ export default function SetInputControls({
         </label>
         <DurationTimer
           targetDuration={getTargetDuration()}
-          onComplete={onComplete || (() => {})}
+          onComplete={(actualDuration) => onComplete?.(actualDuration)}
         />
       </div>
     );
@@ -387,6 +431,23 @@ export default function SetInputControls({
   // DEFAULT: STRENGTH INPUT (Weight + Reps)
   return (
     <div className="space-y-[var(--space-3)] mb-[var(--space-3)]">
+      {/* AI Weight Suggestion */}
+      {showSuggestion && (
+        <button
+          onClick={() => onInputChange('weight', suggestedWeight.toString())}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-3 px-4",
+            "bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary,var(--brand-primary))]/10",
+            "border border-[var(--brand-primary)]/30 rounded-[var(--radius-xl)]",
+            "text-[var(--text-sm)] text-[var(--brand-primary)]",
+            "active:scale-[0.98] transition-transform"
+          )}
+        >
+          <span className="text-lg">✨</span>
+          <span>Suggested: <strong>{suggestedWeight}kg</strong> based on your profile</span>
+        </button>
+      )}
+
       <div>
         <label className="text-[var(--text-xs)] font-[var(--weight-semibold)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] mb-[var(--space-2)] flex items-center gap-[var(--space-2)]">
           <DumbbellIcon className="w-3.5 h-3.5" />
@@ -414,7 +475,7 @@ export default function SetInputControls({
               "transition-all duration-[var(--duration-fast)]",
               "placeholder:text-[var(--text-tertiary)]"
             )}
-            placeholder="0"
+            placeholder={suggestedWeight ? suggestedWeight.toString() : "0"}
           />
           <span className="absolute right-[var(--space-4)] top-1/2 -translate-y-1/2 text-[18px] font-[var(--weight-bold)] text-[var(--text-primary)]">
             kg

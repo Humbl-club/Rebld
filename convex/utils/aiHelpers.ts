@@ -4,12 +4,85 @@
  * Robust helpers for AI generation with retry logic, JSON extraction, and validation
  */
 
-import { validateWorkoutPlan, type ValidationResult } from "../planValidator";
+import { validateWorkoutPlan, fixCardioTemplates, type ValidationResult } from "../planValidator";
+
+// ═══════════════════════════════════════════════════════════
+// Type definitions for plan structures (aligned with planValidator.ts)
+// ═══════════════════════════════════════════════════════════
+
+interface MetricsTemplate {
+  type: string;
+  target_sets?: number;
+  sets?: number;
+  target_reps?: string | number;
+  duration_minutes?: number;
+  target_duration_minutes?: number;
+  duration_seconds?: number;
+  target_duration_s?: number;
+  rest_seconds?: number;
+  rest_period_s?: number;
+  distance_km?: number;
+  distance_m?: number;
+  [key: string]: unknown;
+}
+
+interface Exercise {
+  exercise_name: string;
+  category: string;
+  metrics_template: MetricsTemplate;
+  rest_seconds?: number;
+  rpe?: string;
+  notes?: string;
+}
+
+interface Block {
+  type: string;
+  exercises: Exercise[];
+  duration_minutes?: number;
+  rounds?: number;
+}
+
+interface Session {
+  session_name: string;
+  time_of_day: string;
+  blocks: Block[];
+  estimated_duration?: number;
+}
+
+interface Day {
+  day_of_week: number;
+  focus: string;
+  blocks?: Block[];
+  sessions?: Session[];
+  estimated_duration?: number;
+}
+
+interface Plan {
+  name: string;
+  weeklyPlan: Day[];
+  periodization?: Record<string, unknown>;
+}
+
+// Generic AI model interface
+interface AIModel {
+  generateContent: (config: GenerationConfig) => Promise<GenerationResult>;
+}
+
+interface GenerationConfig {
+  model?: string;
+  contents: Array<{ parts: Array<{ text: string }> }>;
+  config?: Record<string, unknown>;
+}
+
+interface GenerationResult {
+  text?: string;
+  response?: { text: () => string };
+}
 
 /**
  * Extract and parse JSON from AI response (handles markdown, extra text, etc.)
  */
-export function extractAndParseJSON(text: string): any {
+export function extractAndParseJSON(text: string): unknown {
   // Remove markdown code blocks
   let cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
 
@@ -41,11 +114,12 @@ export function extractAndParseJSON(text: string): any {
  * Generate content with retry logic and validation
  */
 export async function generateWithRetry(
-  model: any,
-  config: any,
-  validateFn?: (parsed: any) => ValidationResult,
-  maxAttempts: number = 3
-): Promise<any> {
+  model: AIModel,
+  config: GenerationConfig,
+  validateFn?: (parsed: Plan) => ValidationResult,
+  maxAttempts: number = 3,
+  sessionDurationMinutes: number = 60 // For cardio template fixing
+): Promise<Plan> {
   let lastError: Error | null = null;
   let validationErrors: string[] = [];
 
@@ -69,18 +143,26 @@ export async function generateWithRetry(
       const text = result.text || result.response?.text() || '';
 
       // Extract and parse JSON
-      const parsed = extractAndParseJSON(text);
+      const parsed = extractAndParseJSON(text) as Plan;
 
-      // Validate if validator provided
+      // [SPEED OPTIMIZATION] Auto-fix common issues BEFORE validation
+      // This prevents unnecessary retries for fixable problems
+      let fixedPlan = parsed;
+      if (parsed.weeklyPlan) {
+        fixedPlan = fixCardioTemplates(parsed, sessionDurationMinutes) as Plan;
+        console.log(`[Attempt ${attempt}] Auto-fixed cardio templates`);
+      }
+
+      // Validate the FIXED plan (not the original)
       if (validateFn) {
-        const validation = validateFn(parsed);
+        const validation = validateFn(fixedPlan);
 
         if (validation.valid) {
           console.log(`[Attempt ${attempt}] SUCCESS - Valid plan generated`);
           if (validation.warnings.length > 0) {
             console.warn(`[Warnings] ${validation.warnings.join(', ')}`);
           }
-          return parsed;
+          return fixedPlan; // Return the auto-fixed plan
         }
 
         // Invalid - prepare for retry
@@ -95,8 +177,8 @@ export async function generateWithRetry(
         continue;
       }
 
-      // No validation - return parsed result
-      return parsed;
+      // No validation - return the auto-fixed result
+      return fixedPlan;
 
     } catch (error: any) {
       lastError = error;
@@ -119,18 +201,18 @@ export async function generateWithRetry(
 /**
  * Estimate workout duration based on plan structure
  */
-export function estimateWorkoutDuration(day: any): number {
+export function estimateWorkoutDuration(day: Day | { blocks?: Block[] }): number {
   let totalMinutes = 0;
 
   // Handle both single-session (blocks) and 2x-daily (sessions)
-  const blocksToProcess: any[] = [];
+  const blocksToProcess: Block[] = [];
 
   if (day.blocks && Array.isArray(day.blocks)) {
     blocksToProcess.push(...day.blocks);
   }
 
-  if (day.sessions && Array.isArray(day.sessions)) {
-    day.sessions.forEach((session: any) => {
+  if ('sessions' in day && day.sessions && Array.isArray(day.sessions)) {
+    day.sessions.forEach((session: Session) => {
       if (session.blocks && Array.isArray(session.blocks)) {
         blocksToProcess.push(...session.blocks);
       }
@@ -141,9 +223,9 @@ export function estimateWorkoutDuration(day: any): number {
   blocksToProcess.forEach(block => {
     if (!block.exercises || !Array.isArray(block.exercises)) return;
 
-    block.exercises.forEach((ex: any) => {
+    block.exercises.forEach((ex: Exercise) => {
       const category = ex.category || 'main';
-      const metricsTemplate = ex.metrics_template || {};
+      const metricsTemplate = ex.metrics_template || {} as MetricsTemplate;
 
       // Warmup/cooldown: ~1 min per exercise
       if (category === 'warmup' || category === 'cooldown') {
@@ -182,12 +264,12 @@ export function estimateWorkoutDuration(day: any): number {
 /**
  * Add duration estimates to plan
  */
-export function addDurationEstimates(plan: any): any {
+export function addDurationEstimates(plan: Plan): Plan {
   if (!plan.weeklyPlan || !Array.isArray(plan.weeklyPlan)) {
     return plan;
   }
 
-  plan.weeklyPlan.forEach((day: any) => {
+  plan.weeklyPlan.forEach((day: Day) => {
     // Single session - add to day level
     if (day.blocks) {
       day.estimated_duration = estimateWorkoutDuration(day);
@@ -195,7 +277,7 @@ export function addDurationEstimates(plan: any): any {
 
     // 2x daily - add to each session
     if (day.sessions && Array.isArray(day.sessions)) {
-      day.sessions.forEach((session: any) => {
+      day.sessions.forEach((session: Session) => {
         session.estimated_duration = estimateWorkoutDuration({ blocks: session.blocks });
       });
     }

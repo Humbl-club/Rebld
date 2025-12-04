@@ -274,17 +274,19 @@ export default function App() {
         ],
       };
     }
-    // Case 2: WorkoutSession (2x daily) - has session_name and time_of_day, no day_of_week
-    else if ('session_name' in session && 'time_of_day' in session && !('day_of_week' in session)) {
-      const workoutSession = session as WorkoutSession;
+    // Case 2: WorkoutSession (2x daily) - has session_name and time_of_day
+    // Note: HomePage may add day_of_week to the spread, so we check for session_name/time_of_day
+    // AND verify there's no 'focus' field (WorkoutSession uses session_name instead)
+    else if ('session_name' in session && 'time_of_day' in session && !('focus' in session)) {
+      const workoutSession = session as WorkoutSession & { day_of_week?: number };
       normalizedSession = {
-        day_of_week: dow,
+        day_of_week: workoutSession.day_of_week || dow,
         focus: workoutSession.session_name || (workoutSession.time_of_day === 'morning' ? 'AM Session' : 'PM Session'),
         notes: `${workoutSession.time_of_day === 'morning' ? '☀️ Morning' : '🌙 Evening'} session`,
         blocks: workoutSession.blocks || [],
       };
     }
-    // Case 3: Already a valid PlanDay
+    // Case 3: Already a valid PlanDay (has focus field)
     else {
       normalizedSession = session as PlanDay;
     }
@@ -332,67 +334,31 @@ export default function App() {
     setPendingSession(null);
   }, []);
 
-  // Quick start - bypass PreWorkoutScreen and go straight to workout
-  const handleQuickStartSession = useCallback((session: SessionType) => {
-    let normalizedSession: PlanDay;
-    const today = new Date();
-    const dow = today.getDay() === 0 ? 7 : today.getDay();
-
-    // Case 1: DailyRoutine with routine_name
-    if ('routine_name' in session) {
-      normalizedSession = {
-        day_of_week: dow,
-        focus: (session as any).routine_name,
-        blocks: (session as any).blocks || [],
-        notes: 'Daily Routine',
-      };
-    }
-    // Case 2: DailyRoutine - has exercises, no blocks
-    else if ('exercises' in session && !('blocks' in session)) {
-      normalizedSession = {
-        day_of_week: dow,
-        focus: session.focus || 'Daily Routine',
-        notes: session.notes,
-        blocks: [{ type: 'single', title: 'Daily Routine', exercises: session.exercises }],
-      };
-    }
-    // Case 3: WorkoutSession (2x daily) - has session_name and time_of_day
-    else if ('session_name' in session && 'time_of_day' in session && !('day_of_week' in session)) {
-      const workoutSession = session as WorkoutSession;
-      normalizedSession = {
-        day_of_week: dow,
-        focus: workoutSession.session_name || (workoutSession.time_of_day === 'morning' ? 'AM Session' : 'PM Session'),
-        notes: `${workoutSession.time_of_day === 'morning' ? '☀️ Morning' : '🌙 Evening'} session`,
-        blocks: workoutSession.blocks || [],
-      };
-    }
-    // Case 4: Already a valid PlanDay
-    else {
-      normalizedSession = session as PlanDay;
-    }
-
-    // Skip PreWorkoutScreen, go directly to active session
-    setActiveSession(normalizedSession);
-
-    // Track workout started
-    if (user?.id) {
-      analytics.track(EventTypes.WORKOUT_STARTED, {
-        planId: activePlan?.id,
-        dayOfWeek: normalizedSession.day_of_week,
-        focus: normalizedSession.focus,
-        blockCount: normalizedSession.blocks?.length || 0,
-        quickStart: true, // Flag to indicate this was a quick start
-      });
-    }
-  }, [user?.id, activePlan?.id]);
-
   const updateStreakMutation = useMutation(api.achievementMutations.updateStreak);
 
-  const handleFinishSession = useCallback((sessionLog: { focus: string, exercises: LoggedExercise[], durationMinutes: number }) => {
-    addLog({
+  const handleFinishSession = useCallback(async (sessionLog: { focus: string, exercises: LoggedExercise[], durationMinutes: number }) => {
+    // Save workout log and handle result
+    const result = await addLog({
       focus: sessionLog.focus,
       exercises: sessionLog.exercises,
       durationMinutes: sessionLog.durationMinutes,
+    });
+
+    if (!result.success) {
+      // Show error notification to user - workout NOT saved
+      notify({
+        type: 'error',
+        message: result.error || 'Failed to save workout'
+      });
+      // Don't proceed to summary if save failed
+      setActiveSession(null);
+      return;
+    }
+
+    // Workout saved successfully - show success notification
+    notify({
+      type: 'success',
+      message: 'Workout saved!'
     });
 
     // Track workout completed
@@ -412,10 +378,10 @@ export default function App() {
       updateStreakMutation({
         userId: user.id,
         workoutDate: new Date().toISOString()
-      }).then((result) => {
-        if (result.achievementsUnlocked.length > 0) {
+      }).then((streakResult) => {
+        if (streakResult.achievementsUnlocked.length > 0) {
           // Track achievement unlocked
-          result.achievementsUnlocked.forEach((achievement: any) => {
+          streakResult.achievementsUnlocked.forEach((achievement: any) => {
             analytics.track(EventTypes.ACHIEVEMENT_UNLOCKED, {
               achievementType: achievement.type,
               achievementTier: achievement.tier,
@@ -554,6 +520,7 @@ export default function App() {
             onCancel={handleCancelSession}
             allLogs={logs || []}
             onOpenChatWithMessage={handleOpenChatWithMessage}
+            strengthProfile={userProfile?.strengthProfile}
           />
         </ErrorBoundary>
       );
@@ -582,7 +549,6 @@ export default function App() {
             <HomePage
               plan={activePlan}
               onStartSession={handleStartSession}
-              onQuickStartSession={handleQuickStartSession}
               onOpenChat={() => setIsChatOpen(true)}
               userProfile={userProfile}
               onRefreshPlan={handleRefreshPlan}
@@ -629,7 +595,6 @@ export default function App() {
             <HomePage
               plan={activePlan}
               onStartSession={handleStartSession}
-              onQuickStartSession={handleQuickStartSession}
               onOpenChat={() => setIsChatOpen(true)}
             />
           </ErrorBoundary>

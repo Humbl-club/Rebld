@@ -29,8 +29,6 @@ interface WarmupScreenProps {
   warmupExercises: PlanExercise[];
   completedWarmupExercises: Set<string>;
   setCompletedWarmupExercises: React.Dispatch<React.SetStateAction<Set<string>>>;
-  showWarmupDetails: boolean;
-  setShowWarmupDetails: (show: boolean) => void;
   selectedExercise: PlanExercise | null;
   setSelectedExercise: (exercise: PlanExercise | null) => void;
   allWarmupsComplete: boolean;
@@ -49,8 +47,6 @@ export default function WarmupScreen({
   warmupExercises,
   completedWarmupExercises,
   setCompletedWarmupExercises,
-  showWarmupDetails,
-  setShowWarmupDetails,
   selectedExercise,
   setSelectedExercise,
   allWarmupsComplete,
@@ -137,7 +133,7 @@ export default function WarmupScreen({
 
         {/* Bulk Actions */}
         {warmupExercises.length > 0 && (
-          <div className="flex gap-[var(--space-2)] mb-[var(--space-4)]">
+          <div className="mb-[var(--space-4)]">
             <button
               onClick={() => {
                 warmupExercises.forEach(ex => {
@@ -146,7 +142,7 @@ export default function WarmupScreen({
                 haptic.medium();
               }}
               className={cn(
-                "flex-1 h-12",
+                "w-full h-12",
                 "bg-gradient-to-r from-[var(--status-success-bg)] to-[var(--brand-primary)]",
                 "text-white rounded-[var(--radius-xl)]",
                 "font-[var(--weight-bold)] text-[var(--text-sm)]",
@@ -158,23 +154,6 @@ export default function WarmupScreen({
             >
               <CheckCircleIcon className="w-5 h-5" />
               Mark All Done
-            </button>
-
-            <button
-              onClick={() => setShowWarmupDetails(!showWarmupDetails)}
-              className={cn(
-                "px-[var(--space-4)] h-12",
-                "bg-[var(--surface-secondary)]",
-                "border border-[var(--border-default)]",
-                "text-[var(--text-primary)]",
-                "rounded-[var(--radius-xl)]",
-                "font-[var(--weight-semibold)] text-[var(--text-sm)]",
-                "hover:border-[var(--brand-primary)]",
-                "hover:bg-[var(--brand-primary-subtle)]",
-                "transition-all duration-[var(--duration-fast)]"
-              )}
-            >
-              {showWarmupDetails ? 'Grid' : 'Details'}
             </button>
           </div>
         )}

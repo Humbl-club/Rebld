@@ -25,9 +25,9 @@ export default function useUserProfile() {
         }
     }, [userId, userProfile, ensureUserExistsMutation]);
 
-    const updateUserProfile = async (profileData: Partial<UserProfile> & { activePlanId?: string | null }) => {
+    const updateUserProfile = async (profileData: Partial<UserProfile> & { activePlanId?: string | null; strengthProfile?: any }) => {
         if (!userId) return;
-        
+
         try {
             await updateProfileMutation({
                 userId,
@@ -36,6 +36,7 @@ export default function useUserProfile() {
                 bodyMetrics: profileData.bodyMetrics || undefined,
                 goals: profileData.goals || undefined,
                 trainingPreferences: profileData.trainingPreferences || undefined,
+                strengthProfile: profileData.strengthProfile || undefined,
             });
         } catch (e) {
             console.error("Failed to update user profile in Convex", e);
@@ -49,6 +50,7 @@ export default function useUserProfile() {
         bodyMetrics: userProfile.bodyMetrics || undefined,
         goals: userProfile.goals || undefined,
         trainingPreferences: userProfile.trainingPreferences || undefined,
+        strengthProfile: userProfile.strengthProfile || undefined,
         apiUsage: userProfile.apiUsage || undefined,
     } : null;
 

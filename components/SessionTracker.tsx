@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlanDay, LoggedSetSRW, WorkoutLog, LoggedExercise, PlanExercise, SupersetBlock, AmrapBlock } from '../types';
+import { PlanDay, LoggedSetSRW, LoggedSetDuration, WorkoutLog, LoggedExercise, PlanExercise, SupersetBlock, AmrapBlock, StrengthProfile } from '../types';
 import { useHaptic } from '../hooks/useAnimations';
 import { notify } from './layout/Toast';
 import { detectPR, shouldTrackPR } from '../services/prService';
@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { ariaAnnouncer } from '../services/ariaAnnouncer';
 import { validateWeight, validateReps } from '../lib/validationConstants';
 import {  CheckCircleIcon, FlameIcon, TrophyIcon, ZapIcon } from './icons';
+import { suggestWeight } from '../lib/workoutUtils';
 
 // Component imports
 import SessionHeader from './session/SessionHeader';
@@ -41,9 +42,10 @@ interface SessionTrackerProps {
   onCancel: () => void;
   allLogs: WorkoutLog[];
   onOpenChatWithMessage?: (message: string) => void;
+  strengthProfile?: StrengthProfile | null; // For AI weight suggestions
 }
 
-export default function SessionTracker({ session, onFinish, onCancel, allLogs, onOpenChatWithMessage }: SessionTrackerProps) {
+export default function SessionTracker({ session, onFinish, onCancel, allLogs, onOpenChatWithMessage, strengthProfile }: SessionTrackerProps) {
   const { t } = useTranslation();
   const saveExerciseHistory = useSaveExerciseHistory();
   const haptic = useHaptic();
@@ -268,7 +270,7 @@ export default function SessionTracker({ session, onFinish, onCancel, allLogs, o
     return 70 + (setCompletion * 0.3);
   };
 
-  const handleCompleteSet = useCallback(() => {
+  const handleCompleteSet = useCallback((actualDuration?: number) => {
     if (!currentExercise) return;
 
     const input = currentInputData[currentExercise.exercise_name] || {};
@@ -279,12 +281,16 @@ export default function SessionTracker({ session, onFinish, onCancel, allLogs, o
       setJustCompletedSet(true);
       setTimeout(() => setJustCompletedSet(false), 600);
 
-      // Log as completed with duration (weight=0, reps=1 as placeholder)
-      const newSet: LoggedSetSRW = {
+      // Log as duration-based set with actual duration
+      const durationSeconds = actualDuration ||
+        (currentExercise.metrics_template as any)?.duration_minutes * 60 ||
+        (currentExercise.metrics_template as any)?.target_duration_minutes * 60 ||
+        (currentExercise.metrics_template as any)?.target_duration_s ||
+        0;
+
+      const newSet: LoggedSetDuration = {
         set: currentRound,
-        weight: 0,
-        reps: 1, // 1 means "completed"
-        rpe: input.rpe ?? null,
+        duration_s: durationSeconds,
       };
 
       setLoggedData(prev => ({
@@ -454,8 +460,11 @@ export default function SessionTracker({ session, onFinish, onCancel, allLogs, o
 
     ariaAnnouncer.announceWorkoutComplete(duration, exercises.length);
 
+    // Ensure focus is never undefined - fallback to "Workout" if missing
+    const focus = session?.focus?.trim() || 'Workout';
+
     onFinish({
-      focus: session.focus,
+      focus,
       exercises,
       durationMinutes: duration
     });
@@ -516,8 +525,6 @@ export default function SessionTracker({ session, onFinish, onCancel, allLogs, o
         warmupExercises={warmupExercises}
         completedWarmupExercises={completedWarmupExercises}
         setCompletedWarmupExercises={setCompletedWarmupExercises}
-        showWarmupDetails={showWarmupDetails}
-        setShowWarmupDetails={setShowWarmupDetails}
         selectedExercise={selectedExercise}
         setSelectedExercise={setSelectedExercise}
         allWarmupsComplete={allWarmupsComplete}
@@ -662,6 +669,12 @@ export default function SessionTracker({ session, onFinish, onCancel, allLogs, o
           onInputChange={handleInputChange}
           metricsTemplate={currentExercise.metrics_template}
           onComplete={handleCompleteSet}
+          suggestedWeight={strengthProfile ? suggestWeight(
+            currentExercise.exercise_name,
+            strengthProfile,
+            // Parse target reps for better suggestion
+            parseInt(currentExercise.metrics_template?.target_reps?.toString() || '10')
+          ) : null}
         />
 
         {/* Next Exercise Preview (for supersets) */}

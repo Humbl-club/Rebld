@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { PlanDay, LoggedSetSRW, LoggedExercise, WorkoutLog, PlanExercise, WorkoutBlock } from '../../types';
+import { PlanDay, LoggedSetSRW, LoggedSetDuration, LoggedExercise, WorkoutLog, PlanExercise, WorkoutBlock } from '../../types';
 import { useUser } from '@clerk/clerk-react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -10,7 +10,7 @@ export function useSessionState(
   allLogs: WorkoutLog[],
   onFinish: (log: { focus: string; exercises: LoggedExercise[]; durationMinutes: number }) => void
 ) {
-  const [loggedData, setLoggedData] = useState<Record<string, LoggedSetSRW[]>>({});
+  const [loggedData, setLoggedData] = useState<Record<string, (LoggedSetSRW | LoggedSetDuration)[]>>({});
   const [currentInputData, setCurrentInputData] = useState<Record<string, Partial<LoggedSetSRW>>>({});
   const [isResting, setIsResting] = useState(false);
   const [restDuration, setRestDuration] = useState(90);
@@ -40,15 +40,18 @@ export function useSessionState(
 
   // Notify buddies on mount
   useEffect(() => {
-    if (userId) {
+    // Guard: Ensure both userId and session.focus are valid non-empty strings
+    const workoutName = session?.focus;
+    if (userId && workoutName && typeof workoutName === 'string' && workoutName.trim()) {
       notifyBuddyMutation({
         userId,
-        workoutName: session.focus
+        workoutName: workoutName.trim()
       }).catch((error) => {
-        console.error('Failed to notify workout buddies:', error);
+        // Silent fail - buddy notifications are not critical
+        console.debug('Failed to notify workout buddies:', error);
       });
     }
-  }, []);
+  }, [userId, session?.focus, notifyBuddyMutation]);
 
   // Fix keyboard overlap on iOS
   useEffect(() => {
@@ -147,13 +150,17 @@ export function useSessionState(
     [currentBlock, currentExerciseInBlock]
   );
 
+  // Get only exercises with category 'warmup' from current block
   const warmupExercises = useMemo(() => {
     if (!currentBlock || !Array.isArray(currentBlock.exercises)) return [];
-    return currentBlock.exercises.filter(ex => ex && ex.exercise_name);
+    return currentBlock.exercises.filter(ex => ex && ex.exercise_name && ex.category === 'warmup');
   }, [currentBlock]);
 
+  // If there are no warmup exercises, consider warmups complete (don't block progress)
+  // If there are warmup exercises, all must be completed
   const allWarmupsComplete = useMemo(() => {
-    return warmupExercises.length > 0 && warmupExercises.every(ex => completedWarmupExercises.has(ex.exercise_name));
+    if (warmupExercises.length === 0) return true; // No warmups = always complete
+    return warmupExercises.every(ex => completedWarmupExercises.has(ex.exercise_name));
   }, [warmupExercises, completedWarmupExercises]);
 
   const getExerciseHistory = useCallback((exerciseName: string) => {
@@ -185,8 +192,11 @@ export function useSessionState(
       if (exercise && exercise.sets.length > 0) {
         const lastSet = exercise.sets[exercise.sets.length - 1];
         if ('weight' in lastSet && 'reps' in lastSet) {
-          const weight = typeof lastSet.weight === 'string' ? parseFloat(lastSet.weight) || 0 : lastSet.weight;
-          const reps = typeof lastSet.reps === 'string' ? parseFloat(lastSet.reps) || 0 : lastSet.reps;
+          // Parse values safely, handling NaN correctly (parseFloat('abc') returns NaN, not 0)
+          const parsedWeight = typeof lastSet.weight === 'string' ? parseFloat(lastSet.weight) : lastSet.weight;
+          const parsedReps = typeof lastSet.reps === 'string' ? parseFloat(lastSet.reps) : lastSet.reps;
+          const weight = Number.isNaN(parsedWeight) ? 0 : parsedWeight;
+          const reps = Number.isNaN(parsedReps) ? 0 : parsedReps;
           history.push({
             date: log.date,
             weight: weight,

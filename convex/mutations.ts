@@ -213,6 +213,7 @@ export const updateUserProfile = mutation({
     goals: v.optional(v.array(v.any())),
     trainingPreferences: v.optional(v.any()),
     injuryProfile: v.optional(v.any()),
+    strengthProfile: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     // SECURITY: Verify userId matches authenticated user
@@ -246,6 +247,9 @@ export const updateUserProfile = mutation({
     }
     if (args.injuryProfile !== undefined) {
       updates.injuryProfile = args.injuryProfile;
+    }
+    if (args.strengthProfile !== undefined) {
+      updates.strengthProfile = args.strengthProfile;
     }
 
     await ctx.db.patch(user._id, updates);

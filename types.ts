@@ -17,6 +17,11 @@ export interface SetsRepsWeightTemplate extends BaseMetricTemplate {
   type: 'sets_reps_weight';
 }
 
+// Bodyweight exercises (no added weight)
+export interface SetsRepsTemplate extends BaseMetricTemplate {
+  type: 'sets_reps';
+}
+
 export interface SetsRepsWeightTempoTemplate extends BaseMetricTemplate {
   type: 'sets_reps_weight_tempo';
   target_tempo: string;
@@ -34,6 +39,16 @@ export interface SetsDistanceRestTemplate extends BaseMetricTemplate {
   target_rest_s?: number;
 }
 
+export interface SetsDurationRestTemplate extends BaseMetricTemplate {
+  type: 'sets_duration_rest';
+  sets?: number;
+  target_sets?: number;
+  duration_seconds?: number;
+  work_duration_s?: number;
+  rest_seconds?: number;
+  rest_duration_s?: number;
+}
+
 export interface DistanceTimeTemplate extends BaseMetricTemplate {
   type: 'distance_time';
   target_distance_km?: number;
@@ -49,13 +64,34 @@ export interface DurationOnlyTemplate extends BaseMetricTemplate {
   target_duration_s?: number; // Alternative: seconds
 }
 
-export type MetricTemplate = 
+// Weighted carries (farmer walks, suitcase carry, etc.)
+export interface SetsDurationWeightTemplate extends BaseMetricTemplate {
+  type: 'sets_duration_weight';
+  duration_seconds?: number;
+  target_weight?: number;
+  weight_unit?: 'kg' | 'lbs';
+}
+
+// Tempo training (controlled eccentric/concentric)
+export interface TempoTemplate extends BaseMetricTemplate {
+  type: 'tempo';
+  tempo_eccentric?: number; // Seconds down
+  tempo_pause?: number; // Seconds pause at bottom
+  tempo_concentric?: number; // Seconds up
+  tempo_top?: number; // Seconds pause at top
+}
+
+export type MetricTemplate =
   | SetsRepsWeightTemplate
+  | SetsRepsTemplate
   | SetsRepsWeightTempoTemplate
   | SetsDurationTemplate
   | SetsDistanceRestTemplate
+  | SetsDurationRestTemplate
+  | SetsDurationWeightTemplate
   | DistanceTimeTemplate
-  | DurationOnlyTemplate;
+  | DurationOnlyTemplate
+  | TempoTemplate;
 
 export interface PlanExercise {
   exercise_name: string;
@@ -249,6 +285,17 @@ export interface TrainingPreferences {
     specific_goal?: SpecificGoal;
 }
 
+// Strength profile for weight suggestions
+export interface StrengthProfile {
+    squat_kg?: number;
+    bench_kg?: number;
+    deadlift_kg?: number;
+    row_kg?: number;
+    overhead_press_kg?: number;
+    pullup_count?: number;
+    last_updated: string; // ISO date string
+}
+
 // User Profile types
 export interface UserProfile {
     userCode?: string; // Unique permanent code for buddy connections (REBLD-ABC123)
@@ -256,6 +303,7 @@ export interface UserProfile {
     bodyMetrics?: BodyMetrics;
     goals?: UserGoal[];
     trainingPreferences?: TrainingPreferences;
+    strengthProfile?: StrengthProfile; // For AI weight suggestions
     apiUsage?: {
         tier: 'free' | 'premium';
         plansGenerated: number;
@@ -285,11 +333,12 @@ export interface BodyMetrics {
 
 // Current Strength Levels (for starting weight calculations)
 export interface CurrentStrength {
-    squat_kg?: number;      // Back squat 8-10RM
-    bench_kg?: number;      // Bench press 8-10RM
-    deadlift_kg?: number;   // Deadlift 8-10RM
-    row_kg?: number;        // Barbell row 8-10RM
-    pullup_count?: number;  // Max strict pullups
+    squat_kg?: number;          // Back squat 8-10RM
+    bench_kg?: number;          // Bench press 8-10RM
+    deadlift_kg?: number;       // Deadlift 8-10RM
+    row_kg?: number;            // Barbell row 8-10RM
+    overhead_press_kg?: number; // Overhead press 8-10RM
+    pullup_count?: number;      // Max strict pullups
 }
 
 // User Goals

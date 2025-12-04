@@ -94,6 +94,15 @@ export default defineSchema({
           current_readiness: v.union(v.number(), v.null()), // 1-10 scale
           description: v.union(v.string(), v.null()), // Free-form goal description
         })),
+        // NEW: Current strength levels for AI plan generation context
+        current_strength: v.optional(v.object({
+          squat_kg: v.optional(v.number()),
+          bench_kg: v.optional(v.number()),
+          deadlift_kg: v.optional(v.number()),
+          row_kg: v.optional(v.number()),
+          overhead_press_kg: v.optional(v.number()),
+          pullup_count: v.optional(v.number()),
+        })),
       }),
       v.null()
     )),
@@ -111,6 +120,17 @@ export default defineSchema({
       dosage: v.union(v.string(), v.null()),
       active: v.boolean(),
     }))),
+
+    // NEW: Strength profile for weight suggestions
+    strengthProfile: v.optional(v.object({
+      squat_kg: v.optional(v.number()), // Current squat 1RM or working weight
+      bench_kg: v.optional(v.number()), // Current bench 1RM or working weight
+      deadlift_kg: v.optional(v.number()), // Current deadlift 1RM or working weight
+      row_kg: v.optional(v.number()), // Current row weight
+      overhead_press_kg: v.optional(v.number()), // Current OHP weight
+      pullup_count: v.optional(v.number()), // Max pullups
+      last_updated: v.string(), // ISO date string
+    })),
 
     // NEW: Injury profile for personalized exercise selection
     injuryProfile: v.optional(v.object({

@@ -12,20 +12,28 @@ interface ExerciseEditModalProps {
 
 const METRIC_TYPES: MetricTemplate['type'][] = [
   'sets_reps_weight',
+  'sets_reps',
   'sets_reps_weight_tempo',
   'sets_duration',
+  'sets_duration_rest',
+  'sets_duration_weight',
   'sets_distance_rest',
   'distance_time',
   'duration_only',
+  'tempo',
 ];
 
 const DEFAULT_METRICS: Record<MetricTemplate['type'], MetricTemplate> = {
   sets_reps_weight: { type: 'sets_reps_weight', target_sets: 3, target_reps: '8-12', rest_period_s: 90 },
+  sets_reps: { type: 'sets_reps', target_sets: 3, target_reps: '15', rest_period_s: 60 },
   sets_reps_weight_tempo: { type: 'sets_reps_weight_tempo', target_sets: 3, target_reps: '5', target_tempo: '2:1:2', rest_period_s: 120 },
   sets_duration: { type: 'sets_duration', target_sets: 3, target_duration_s: 30, rest_period_s: 60 },
+  sets_duration_rest: { type: 'sets_duration_rest', sets: 8, duration_seconds: 30, rest_seconds: 90 },
+  sets_duration_weight: { type: 'sets_duration_weight', target_sets: 3, duration_seconds: 45, target_weight: 24, rest_period_s: 90 },
   sets_distance_rest: { type: 'sets_distance_rest', target_sets: 5, target_distance_m: 100, target_rest_s: 60, rest_period_s: 60 },
   distance_time: { type: 'distance_time', target_distance_km: 5 },
   duration_only: { type: 'duration_only', target_duration_minutes: 20 },
+  tempo: { type: 'tempo', target_sets: 4, target_reps: '6', target_tempo: '3-1-1-0', rest_period_s: 120 },
 };
 
 const getDefaultExercise = (category: 'warmup' | 'main' | 'cooldown' = 'main'): Partial<PlanExercise> => ({

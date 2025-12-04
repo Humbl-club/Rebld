@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { LoggedSetSRW } from '../../types';
-import { InformationCircleIcon } from '../icons';
+import { InformationCircleIcon, SparklesIcon } from '../icons';
 
 interface SetsRepsWeightTrackerProps {
   controlled: true;
@@ -15,6 +15,7 @@ interface SetsRepsWeightTrackerProps {
   targetRPE?: string | null;
   lastSessionSetData?: LoggedSetSRW; // Note: for displaying previous data, not for pre-filling
   showLogButton: boolean;
+  suggestedWeight?: number | null; // AI-suggested weight based on strength profile
 }
 
 const getRpeDescription = (rpe: string | null | undefined): string => {
@@ -30,7 +31,16 @@ const getRpeDescription = (rpe: string | null | undefined): string => {
 
 
 const SetsRepsWeightTracker: React.FC<SetsRepsWeightTrackerProps> = (props) => {
-  const { setNumber, targetReps, targetRPE, lastSessionSetData, weight, reps, rpe, onWeightChange, onRepsChange, onRpeChange, showLogButton } = props;
+  const { setNumber, targetReps, targetRPE, lastSessionSetData, weight, reps, rpe, onWeightChange, onRepsChange, onRpeChange, showLogButton, suggestedWeight } = props;
+
+  // Show suggestion only if no weight entered and no last session data and suggestion available
+  const showSuggestion = suggestedWeight && suggestedWeight > 0 && !weight && !lastSessionSetData?.weight;
+
+  const handleUseSuggestedWeight = () => {
+    if (suggestedWeight) {
+      onWeightChange(suggestedWeight.toString());
+    }
+  };
 
   return (
     <div className="pt-2">
@@ -43,6 +53,18 @@ const SetsRepsWeightTracker: React.FC<SetsRepsWeightTrackerProps> = (props) => {
                     </div>
                 )}
             </div>
+
+            {/* AI Weight Suggestion */}
+            {showSuggestion && (
+                <button
+                    onClick={handleUseSuggestedWeight}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border border-purple-500/30 rounded-lg text-sm text-purple-300 hover:bg-purple-600/30 transition-colors"
+                >
+                    <SparklesIcon className="w-4 h-4" />
+                    <span>AI suggests <strong>{suggestedWeight}kg</strong> based on your profile</span>
+                </button>
+            )}
+
             <div className={`grid ${targetRPE ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
                 <div>
                     <label className="text-xs font-semibold text-stone-400">WEIGHT (KG)</label>
@@ -51,7 +73,7 @@ const SetsRepsWeightTracker: React.FC<SetsRepsWeightTrackerProps> = (props) => {
                         step="0.5"
                         value={weight}
                         onChange={(e) => onWeightChange(e.target.value)}
-                        placeholder="0"
+                        placeholder={suggestedWeight ? suggestedWeight.toString() : "0"}
                         className="w-full p-2 mt-1 text-center text-lg font-bold text-white bg-stone-900/50 border border-stone-700 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                     />
                 </div>

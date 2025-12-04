@@ -21,7 +21,14 @@ import {
   getHeartRateGuidance,
   getDurationConstraintPrompt
 } from "./utils/aiHelpers";
-import { buildBriefMasterPrompt, type PromptInputs, type CurrentStrength } from "./promptBuilder";
+import {
+  buildBriefMasterPrompt,
+  getSportSpecificContext,
+  getReadinessContext,
+  getGoalEmphasis,
+  type PromptInputs,
+  type CurrentStrength
+} from "./promptBuilder";
 import {
   getCompleteSchemaPrompt,
   getSessionLengthGuidance,
@@ -38,7 +45,7 @@ import {
   METRICS_TEMPLATES,
 } from "./metricsTemplateReference";
 import { getExamplePlansPrompt } from "./planExamples";
-import { validateWorkoutPlan, validateAndExplain } from "./planValidator";
+import { validateWorkoutPlan, validateAndExplain, fixCardioTemplates } from "./planValidator";
 
 // Type for cardio preferences
 interface CardioPreferences {
@@ -369,8 +376,10 @@ Use this hierarchy when selecting exercises for each session:
    Use appropriate metrics (duration_only, distance_time, or sets_distance_rest).
 
 6. **MOBILITY exercises (warmup/cooldown)** - Movement prep and recovery
-   Examples: Cat-Cow, Hip 90/90, Shoulder CARs, World's Greatest Stretch
-   Include 5-7 in warmup and 2-4 in cooldown.
+   For PUBLIC GYM settings, prioritize STANDING exercises that aren't awkward:
+   Good: Arm Circles, Leg Swings, Band Pull-Aparts, Walking Lunges, High Knees, Bodyweight Squats
+   AVOID floor-based: Cat-Cow, Hip Circles, Dead Bug, Bird Dog (awkward in busy gyms)
+   Include 3-5 in warmup and 2-3 in cooldown.
 
 **SELECTION RULES:**
 - Start with CORE exercises for the day's focus
@@ -538,7 +547,7 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
       const parsedPlan = await generateWithRetry(
         ai.models,
         {
-          model: 'gemini-2.5-pro',
+          model: 'gemini-3-pro-preview', // Upgraded to Gemini 3 Pro
           contents: `${fullPrompt}\n\n---\nUSER'S PLAN TO PARSE:\n---\n${args.planText}`,
           config: {
             responseMimeType: "application/json",
@@ -578,7 +587,10 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
         }
       }
 
-      return parsedPlan;
+      // Fix cardio exercises that incorrectly use sets_reps_weight
+      const fixedParsedPlan = fixCardioTemplates(parsedPlan);
+
+      return fixedParsedPlan;
     } catch (error: any) {
       loggers.ai.error("Gemini API error:", error);
       throw new Error(`Failed to parse workout plan: ${error.message}`);
@@ -679,10 +691,10 @@ export const generateWorkoutPlan = action({
       equipment,
       preferred_session_length,
       sex,
-      age,
-      current_strength,
+      age: rawAge,
+      current_strength: rawStrength,
       training_split,
-      specific_goal,
+      specific_goal: rawSpecificGoal,
       _useCompressedPrompt,
       _generateDayOneOnly,
       _day1Context,
@@ -691,33 +703,79 @@ export const generateWorkoutPlan = action({
     } = args.preferences;
 
     // ═══════════════════════════════════════════════════════════
-    // PERFORMANCE OPTIMIZATION: Smart Model Selection
+    // INPUT VALIDATION: Sanitize extreme values to prevent AI issues
     // ═══════════════════════════════════════════════════════════
-    let selectedModel = 'gemini-2.5-pro'; // Default to Pro
+
+    // Age: Validate between 13-100 (reasonable training age range)
+    const age = rawAge !== undefined ? Math.max(13, Math.min(100, rawAge)) : undefined;
+    if (rawAge !== undefined && rawAge !== age) {
+      loggers.ai.warn(`[Input Validation] Age ${rawAge} clamped to ${age}`);
+    }
+
+    // Session length: Validate between 15-180 minutes
+    const sessionLengthNum = preferred_session_length ? parseInt(preferred_session_length) : 60;
+    const validatedSessionLength = Math.max(15, Math.min(180, isNaN(sessionLengthNum) ? 60 : sessionLengthNum));
+    if (sessionLengthNum !== validatedSessionLength) {
+      loggers.ai.warn(`[Input Validation] Session length ${sessionLengthNum} clamped to ${validatedSessionLength}`);
+    }
+
+    // Cardio duration: Validate between 5-180 minutes (if present)
+    const cardioPrefs = training_split?.cardio_preferences;
+    const rawCardioDuration = cardioPrefs?.cardio_duration_minutes;
+    const validatedCardioDuration = rawCardioDuration !== undefined
+      ? Math.max(5, Math.min(180, rawCardioDuration))
+      : undefined;
+    if (rawCardioDuration !== undefined && rawCardioDuration !== validatedCardioDuration) {
+      loggers.ai.warn(`[Input Validation] Cardio duration ${rawCardioDuration} clamped to ${validatedCardioDuration}`);
+    }
+
+    // Readiness: Validate between 1-10
+    const rawReadiness = rawSpecificGoal?.current_readiness;
+    const validatedReadiness = rawReadiness !== undefined && rawReadiness !== null
+      ? Math.max(1, Math.min(10, rawReadiness))
+      : rawReadiness;
+
+    // Strength values: Validate between 0-500kg (reasonable max for elite lifters)
+    const current_strength = rawStrength ? {
+      squat_kg: rawStrength.squat_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.squat_kg)) : undefined,
+      bench_kg: rawStrength.bench_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.bench_kg)) : undefined,
+      deadlift_kg: rawStrength.deadlift_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.deadlift_kg)) : undefined,
+      row_kg: rawStrength.row_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.row_kg)) : undefined,
+      pullup_count: rawStrength.pullup_count !== undefined ? Math.max(0, Math.min(100, rawStrength.pullup_count)) : undefined,
+    } : undefined;
+
+    // Rebuild specific_goal with validated readiness
+    const specific_goal = rawSpecificGoal ? {
+      ...rawSpecificGoal,
+      current_readiness: validatedReadiness,
+    } : undefined;
+
+    // Rebuild training_split with validated cardio duration
+    const validatedTrainingSplit = training_split && cardioPrefs ? {
+      ...training_split,
+      cardio_preferences: {
+        ...cardioPrefs,
+        cardio_duration_minutes: validatedCardioDuration,
+      },
+    } : training_split;
+
+    // ═══════════════════════════════════════════════════════════
+    // PERFORMANCE OPTIMIZATION: Smart Model Selection
+    // Upgraded to Gemini 3 Pro Preview for faster generation (Dec 2025)
+    // ═══════════════════════════════════════════════════════════
+    let selectedModel = 'gemini-3-pro-preview'; // Default to Gemini 3 Pro
 
     // Force model if specified
     if (_forceProModel) {
-      selectedModel = 'gemini-2.5-pro';
-      loggers.ai.info("🎯 Model: Pro (forced - quality mode)");
+      selectedModel = 'gemini-3-pro-preview';
+      loggers.ai.info("🎯 Model: Gemini 3 Pro (forced - quality mode)");
     } else if (_useFlashModel) {
       selectedModel = 'gemini-2.5-flash';
-      loggers.ai.info("⚡ Model: Flash (forced - fast mode)");
+      loggers.ai.info("⚡ Model: 2.5 Flash (forced - fast mode)");
     } else {
-      // Smart auto-selection (60% Flash, 40% Pro)
-      const isSimpleCase =
-        experience_level === 'beginner' &&
-        (primary_goal === 'strength' || primary_goal === 'aesthetic') &&
-        (!pain_points || pain_points.length === 0) &&
-        !sport &&
-        !training_split?.sessions_per_day &&
-        !specific_goal?.target_date;
-
-      if (isSimpleCase) {
-        selectedModel = 'gemini-2.5-flash'; // 2-3x faster, 90% cheaper
-        loggers.ai.info("⚡ Model: Flash (auto-selected - simple case, 2-3x faster)");
-      } else {
-        loggers.ai.info("🎯 Model: Pro (auto-selected - complex case, higher quality)");
-      }
+      // Default to Gemini 3 Pro Preview - latest model with best quality
+      selectedModel = 'gemini-3-pro-preview';
+      loggers.ai.info("🎯 Model: Gemini 3 Pro (default - latest model)");
     }
 
     // Get sport-specific training context
@@ -727,10 +785,18 @@ export const generateWorkoutPlan = action({
     const supplementContext = formatSupplementPrompt(args.supplements);
 
     // Build training split prompt for 2x daily training (pass primary_goal for cardio duration calculation)
-    const trainingSplitPrompt = formatTrainingSplitPrompt(training_split, primary_goal);
+    // Use validatedTrainingSplit which has sanitized cardio duration
+    const trainingSplitPrompt = formatTrainingSplitPrompt(validatedTrainingSplit, primary_goal);
 
     // Build periodization prompt if user has a target date
     const periodizationPrompt = formatPeriodizationPrompt(specific_goal);
+
+    // ═══════════════════════════════════════════════════════════
+    // INTELLIGENT CONTEXT: Deep sport and readiness understanding
+    // ═══════════════════════════════════════════════════════════
+    const eventTypeContext = getSportSpecificContext(specific_goal?.event_type || sport);
+    const readinessContext = getReadinessContext(specific_goal?.current_readiness);
+    const goalContext = getGoalEmphasis(primary_goal);
 
     // ═══════════════════════════════════════════════════════════
     // INTELLIGENT PROGRESSION: Fetch workout history for context
@@ -862,6 +928,26 @@ ${training_split?.sessions_per_day === '2' ? `- Training Split: 2x DAILY (${trai
 ${specific_goal?.target_date ? `- Target Event Date: ${specific_goal.target_date}` : ''}
 ${specific_goal?.event_type ? `- Event Type: ${specific_goal.event_type}` : ''}
 
+${eventTypeContext ? `
+**═══════════════════════════════════════════════════════════════**
+**SPORT/EVENT-SPECIFIC INTELLIGENCE**
+**═══════════════════════════════════════════════════════════════**
+
+${eventTypeContext}
+` : ''}
+
+${readinessContext ? `
+**═══════════════════════════════════════════════════════════════**
+**READINESS-BASED ADJUSTMENTS**
+**═══════════════════════════════════════════════════════════════**
+
+${readinessContext}
+` : ''}
+
+${goalContext ? `
+${goalContext}
+` : ''}
+
 **═══════════════════════════════════════════════════════════════**
 **ABSOLUTE CONSTRAINTS (NON-NEGOTIABLE - MUST BE FOLLOWED EXACTLY)**
 **═══════════════════════════════════════════════════════════════**
@@ -869,8 +955,19 @@ ${specific_goal?.event_type ? `- Event Type: ${specific_goal.event_type}` : ''}
 1. **SESSION LENGTH: EXACTLY ${preferred_session_length || '60'} MINUTES (±5 min)**
    - This is the user's requested workout duration
    - EVERY strength session MUST be ${preferred_session_length || '60'} minutes (not 40, not 50, EXACTLY ${preferred_session_length || '60'})
-   - Calculate: warmup (8-10 min) + main work (${parseInt(preferred_session_length || '60') - 18}-${parseInt(preferred_session_length || '60') - 12} min) + cooldown (5-8 min) = ${preferred_session_length || '60'} min
-   - If user says 75 minutes, the session MUST be 70-80 minutes, NOT 45 minutes
+
+   **HOW TO CALCULATE ${preferred_session_length || '60'}-MINUTE SESSION:**
+   - Warmup: 5-7 exercises × 1.5 min = 8-10 min
+   - Main strength: ${Math.floor((parseInt(preferred_session_length || '60') - 18) / 7)} exercises × 7 min each = ${Math.floor((parseInt(preferred_session_length || '60') - 18) / 7) * 7} min
+     (Each strength exercise: 3-4 sets × [30s work + 90s rest] = ~7 min)
+   - Cooldown: 3-4 stretches × 1.5 min = 5-6 min
+   - TOTAL: ~${preferred_session_length || '60'} minutes
+
+   **REQUIRED EXERCISE COUNTS FOR ${preferred_session_length || '60'} MIN:**
+   - Warmup: ${preferred_session_length === '90' || parseInt(preferred_session_length || '60') >= 90 ? '7-8' : '5-7'} exercises
+   - Main: ${Math.max(4, Math.floor((parseInt(preferred_session_length || '60') - 18) / 7))}-${Math.max(5, Math.ceil((parseInt(preferred_session_length || '60') - 12) / 6))} exercises
+   - Cooldown: ${preferred_session_length === '90' || parseInt(preferred_session_length || '60') >= 90 ? '4-5' : '3-4'} stretches
+
    - VIOLATION OF THIS RULE = REJECTED PLAN
 
 ${training_split?.cardio_preferences?.preferred_types && training_split.cardio_preferences.preferred_types.length > 0 ? `
@@ -1078,16 +1175,14 @@ Return JSON:
           contents: finalPrompt,
           config: {
             responseMimeType: "application/json",
-            // Reduced from 16384 to 4096 - still quality reasoning but 2-3x faster
-            thinkingConfig: selectedModel === 'gemini-2.5-pro' ? { thinkingBudget: 4096 } : undefined
+            // Gemini 3 Pro benefits from a healthy thinking budget for complex planning
+            thinkingConfig: selectedModel === 'gemini-3-pro-preview' ? { thinkingBudget: 8192 } : undefined
           }
         },
         validateWorkoutPlan,
-        2 // Reduced from 3 to 2 - 3rd attempt rarely succeeds, saves 4-8s
+        2, // Reduced from 3 to 2 - 3rd attempt rarely succeeds
+        parseInt(preferred_session_length || '60') // Pass session duration for cardio fixing
       );
-
-      // Post-process: Add duration estimates to all days/sessions
-      addDurationEstimates(generatedPlan);
 
       const elapsedMs = Date.now() - startTime;
       loggers.ai.info(`⏱️  Generation completed in ${(elapsedMs / 1000).toFixed(2)}s`);
@@ -1131,8 +1226,34 @@ Return JSON:
         }
       }
 
-      loggers.ai.info('Plan generated successfully with', generatedPlan.weeklyPlan.length, 'days');
-      return generatedPlan;
+      // Post-process: Fix cardio exercises that incorrectly use sets_reps_weight
+      // AI sometimes generates "3 sets of 10" for cardio instead of duration_only
+      const requestedDuration = parseInt(preferred_session_length || '60');
+      const cardioDuration = training_split?.cardio_preferences?.cardio_duration_minutes;
+      const fixedPlan = fixCardioTemplates(generatedPlan, cardioDuration || requestedDuration);
+
+      // Post-process: Add duration estimates to all days/sessions AFTER fixing cardio
+      addDurationEstimates(fixedPlan);
+
+      // Log duration mismatch warnings
+      for (const day of fixedPlan.weeklyPlan) {
+        const isRestDay = day.focus?.toLowerCase().includes('rest') ||
+                          day.focus?.toLowerCase().includes('recovery');
+        if (isRestDay) continue;
+
+        const estimatedDuration = day.estimated_duration || 0;
+        const tolerance = requestedDuration * 0.25; // 25% tolerance
+
+        if (estimatedDuration > 0 && Math.abs(estimatedDuration - requestedDuration) > tolerance) {
+          loggers.ai.warn(
+            `⚠️ Duration mismatch: ${day.focus} estimated at ${estimatedDuration} min ` +
+            `(requested: ${requestedDuration} min, diff: ${estimatedDuration - requestedDuration} min)`
+          );
+        }
+      }
+
+      loggers.ai.info('Plan generated successfully with', fixedPlan.weeklyPlan.length, 'days');
+      return fixedPlan;
     } catch (error: any) {
       loggers.ai.error("Gemini API error:", error);
 
@@ -1466,16 +1587,16 @@ export const analyzeBodyPhoto = action({
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey });
 
-      const systemInstruction = `You are a professional fitness coach and body composition analyst.
-Analyze the provided body photo and provide:
+      const systemInstruction = `You are a fitness coach providing fun, simple body composition estimates.
+Analyze the photo and provide:
 
-1. **Body Fat Percentage Estimate**: Rough visual estimate (e.g., "15-18%")
-2. **Muscle Definition**: Assessment of visible muscle groups and definition
-3. **Posture & Alignment**: Any notable posture issues or asymmetries
-4. **Progress Assessment**: If a previous photo is provided, compare and note improvements/changes
-5. **Recommendations**: 2-3 actionable suggestions based on their goal
+1. **Body Fat Percentage Estimate**: A rough visual estimate range (e.g., "15-18%")
+2. **Body Composition**: Brief assessment of overall build (lean, athletic, muscular, etc.)
+3. **Progress Notes**: If a previous photo is provided, note any visible changes
+4. **Encouragement**: A brief motivational note
 
-Be encouraging but honest. Focus on health and sustainable progress.
+Keep it fun and simple - this is a gimmick feature, not a medical assessment.
+Be encouraging and positive. Avoid medical language.
 Respond in ${args.language || "English"}.`;
 
       // Build prompt parts with images
@@ -1507,11 +1628,11 @@ Respond in ${args.language || "English"}.`;
       });
 
       const result = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.5-flash", // Fast model for simple body composition
         contents: [{ parts: promptParts }],
         config: {
           temperature: 0.7,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 500,
         },
       });
 
@@ -1558,26 +1679,26 @@ export const analyzePairedBodyPhotos = action({
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey });
 
-      const systemPrompt = `You are an expert fitness coach and body composition analyst for the REBLD fitness app.
+      const systemPrompt = `You are a fitness coach providing fun, simple body composition estimates for the REBLD app.
 
-Your task: Analyze progress photos (FRONT + BACK views of the SAME person) and provide constructive, motivational feedback.
+Analyze these progress photos (FRONT + BACK views) and provide encouraging feedback.
 
-ANALYSIS GUIDELINES:
-1. Body Fat Estimate: Provide a reasonable estimate (5-35% range) based on visible muscle definition, vascularity, and body composition markers from BOTH angles
-2. Muscle Changes: Describe visible changes in muscle development, symmetry, and overall physique using BOTH front and back views
-3. Improvements: List 2-4 specific positive changes visible across both angles
-4. Suggestions: Provide 2-4 actionable training suggestions based on complete physique assessment
-5. Confidence: Rate your analysis confidence 0-100 based on photo quality, lighting, and pose
+KEEP IT SIMPLE:
+1. Body Fat Estimate: A rough visual estimate (5-35% range)
+2. Body Composition: Brief note on overall build
+3. Improvements: 2-3 positive observations
+4. Suggestions: 2-3 simple tips
+5. Confidence: How confident you are (0-100) based on photo quality
 
-TONE: Professional, motivating, evidence-based. Focus on progress and actionable advice.
-AVOID: Body shaming, unrealistic expectations, medical diagnoses
+TONE: Fun, encouraging, simple. This is a gimmick feature, not medical advice.
+AVOID: Over-analysis, medical language, body shaming
 
-Return ONLY valid JSON matching this structure:
+Return ONLY valid JSON:
 {
   "bodyFatEstimate": <number 5-35>,
-  "muscleChanges": "<detailed string>",
-  "improvements": ["<string>", "<string>", ...],
-  "suggestions": ["<string>", "<string>", ...],
+  "muscleChanges": "<brief string>",
+  "improvements": ["<string>", "<string>"],
+  "suggestions": ["<string>", "<string>"],
   "confidence": <number 0-100>
 }`;
 
@@ -1631,11 +1752,11 @@ Respond in ${args.language || "English"} with valid JSON only.`,
       });
 
       const result = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.5-flash", // Fast model for simple body composition
         contents: [{ parts: promptParts }],
         config: {
           temperature: 0.7,
-          maxOutputTokens: 1500,
+          maxOutputTokens: 500,
           responseMimeType: "application/json",
         },
       });

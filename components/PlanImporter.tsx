@@ -4,6 +4,7 @@ import { WorkoutPlan, TrainingPreferences, TrainingSplit, SpecificGoal, BodyMetr
 import { LogoIcon, UploadIcon, SparklesIcon, XCircleIcon, DocumentIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from './icons';
 import { useUser } from '@clerk/clerk-react';
 import useUserProfile from '../hooks/useUserProfile';
+import useOnboardingPersistence from '../hooks/useOnboardingPersistence';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { useMutation, useAction } from 'convex/react';
@@ -53,40 +54,109 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
   const incrementParseUsageMutation = useMutation(api.mutations.incrementParseUsage);
   const generatePlanAction = useAction(api.ai.generateWorkoutPlan);
   const parseWorkoutPlanAction = useAction(api.ai.parseWorkoutPlan);
-  const [step, setStep] = useState<OnboardingStep>('welcome');
 
-  // Core essentials (Step 2)
+  // ═══════════════════════════════════════════════════════════
+  // PERSISTENCE: Restore onboarding state from localStorage
+  // Prevents data loss if user navigates away or refreshes
+  // ═══════════════════════════════════════════════════════════
+  const {
+    state: persistedState,
+    isRestored,
+    hasExistingSession,
+    updateState: updatePersistedState,
+    clearState: clearPersistedState,
+    startFresh,
+  } = useOnboardingPersistence(user?.id);
+
+  // Initialize state from persisted values (after restoration)
+  const [step, setStep] = useState<OnboardingStep>('welcome');
   const [goal, setGoal] = useState<Goal | null>(null);
   const [experience, setExperience] = useState<Experience | null>(null);
   const [frequency, setFrequency] = useState<Frequency | null>(null);
-
-  // Setup (Step 3)
   const [equipment, setEquipment] = useState<'minimal' | 'home_gym' | 'commercial_gym' | ''>('');
-  const [sessionLength, setSessionLength] = useState<'30' | '45' | '60' | '75' | ''>('60'); // Default 60 min
-
-  // Customize (Step 4 - optional)
+  const [sessionLength, setSessionLength] = useState<'30' | '45' | '60' | '75' | ''>('60');
   const [painPoints, setPainPoints] = useState<PainPoint[]>([]);
   const [sport, setSport] = useState('');
-
-  // NEW: Advanced onboarding data
-  const [trainingSplit, setTrainingSplit] = useState<TrainingSplit | null>(null);
+  const [trainingSplit, setTrainingSplit] = useState<TrainingSplit>({
+    sessions_per_day: '1',
+    training_type: 'combined'
+  });
   const [specificGoal, setSpecificGoal] = useState<SpecificGoal | null>(null);
   const [bodyMetrics, setBodyMetrics] = useState<BodyMetrics | null>(null);
   const [userSex, setUserSex] = useState<'male' | 'female' | 'other' | undefined>(undefined);
   const [userAge, setUserAge] = useState<number | undefined>(undefined);
   const [currentStrength, setCurrentStrength] = useState<CurrentStrength>({});
-
-  // Custom plan import
   const [rawText, setRawText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // Generated plan for preview
   const [generatedPlan, setGeneratedPlan] = useState<Omit<WorkoutPlan, 'id'> | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [onboardingStartTime, setOnboardingStartTime] = useState<number | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    if (isRestored && hasExistingSession) {
+      // Show resume prompt to user
+      setShowResumePrompt(true);
+    }
+  }, [isRestored, hasExistingSession]);
+
+  // Apply persisted state when user chooses to resume
+  const handleResume = useCallback(() => {
+    setStep(persistedState.currentStep as OnboardingStep);
+    setGoal(persistedState.goal as Goal | null);
+    setExperience(persistedState.experience as Experience | null);
+    setFrequency(persistedState.frequency as Frequency | null);
+    setEquipment(persistedState.equipment as 'minimal' | 'home_gym' | 'commercial_gym' | '');
+    setSessionLength(persistedState.sessionLength as '30' | '45' | '60' | '75' | '');
+    setPainPoints(persistedState.painPoints as PainPoint[]);
+    setSport(persistedState.sport);
+    setTrainingSplit(persistedState.trainingSplit);
+    setSpecificGoal(persistedState.specificGoal);
+    setBodyMetrics(persistedState.bodyMetrics);
+    setUserSex(persistedState.userSex);
+    setUserAge(persistedState.userAge);
+    setCurrentStrength(persistedState.currentStrength);
+    setRawText(persistedState.rawText);
+    setOnboardingStartTime(persistedState.startedAt);
+    setShowResumePrompt(false);
+  }, [persistedState]);
+
+  // Start fresh - clear persisted state
+  const handleStartFresh = useCallback(() => {
+    startFresh();
+    setShowResumePrompt(false);
+  }, [startFresh]);
+
+  // Persist state whenever it changes
+  useEffect(() => {
+    if (!isRestored) return;
+
+    updatePersistedState({
+      currentStep: step,
+      goal,
+      experience,
+      frequency,
+      equipment,
+      sessionLength,
+      painPoints,
+      sport,
+      trainingSplit,
+      specificGoal,
+      bodyMetrics,
+      userSex,
+      userAge,
+      currentStrength,
+      rawText,
+    });
+  }, [
+    isRestored, step, goal, experience, frequency, equipment, sessionLength,
+    painPoints, sport, trainingSplit, specificGoal, bodyMetrics, userSex,
+    userAge, currentStrength, rawText, updatePersistedState
+  ]);
 
   // Track onboarding start
   useEffect(() => {
@@ -209,9 +279,16 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
             };
 
             try {
+                // Save strength profile separately for weight suggestions
+                const strengthProfileData = Object.keys(currentStrength).length > 0 ? {
+                    ...currentStrength,
+                    last_updated: new Date().toISOString(),
+                } : undefined;
+
                 await updateUserProfile({
                     trainingPreferences: preferences,
                     bodyMetrics: bodyMetrics || undefined,
+                    strengthProfile: strengthProfileData,
                 });
             } catch (e) {
                 // Don't block plan generation if preferences save fails
@@ -241,15 +318,35 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
             setStep('preview');
         }, 1500);
         return; // Don't reset isLoading since we're showing success
-    } catch (e) {
+    } catch (e: any) {
         console.error('Error generating plan:', e);
-        setError('We hit a temporary issue reaching the AI planner. Please try again.');
+
+        // Show specific error message instead of generic one
+        const errorMessage = e?.message || '';
+        let userFacingError = 'We hit a temporary issue reaching the AI planner. Please try again.';
+
+        if (errorMessage.includes('Rate limit') || errorMessage.includes('limit reached')) {
+          userFacingError = errorMessage; // Rate limit messages are already user-friendly
+        } else if (errorMessage.includes('API key not configured') || errorMessage.includes('configuration error')) {
+          userFacingError = 'AI service configuration error. Please contact support.';
+        } else if (errorMessage.includes('timeout') || errorMessage.includes('deadline') || errorMessage.includes('busy')) {
+          userFacingError = 'AI service is busy. Please try again in a moment.';
+        } else if (errorMessage.includes('validation failed')) {
+          userFacingError = 'Failed to generate a valid plan. Please try again.';
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          userFacingError = 'Network error. Please check your connection and try again.';
+        }
+
+        setError(userFacingError);
 
         // Track plan generation failure
         analytics.trackError(EventTypes.PLAN_GENERATION_FAILED, e as Error, {
           goal,
           experience,
           frequency,
+          errorType: errorMessage.includes('Rate limit') ? 'rate_limit' :
+                     errorMessage.includes('timeout') ? 'timeout' :
+                     errorMessage.includes('API key') ? 'config' : 'unknown',
         });
 
         setIsLoading(false);
@@ -266,6 +363,7 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
 
     try {
       // Combine original preferences with user feedback
+      // IMPORTANT: Include specific_goal to preserve periodization for competition prep
       const planData = await generatePlanAction({
         userId: user?.id,
         preferences: {
@@ -281,6 +379,7 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
           age: userAge || undefined,
           current_strength: Object.keys(currentStrength).length > 0 ? currentStrength : undefined,
           training_split: trainingSplit || undefined,
+          specific_goal: specificGoal || undefined,
         },
       });
 
@@ -300,7 +399,7 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
       setError('Failed to regenerate plan. Please try again.');
       setIsRegenerating(false);
     }
-  }, [goal, experience, frequency, painPoints, sport, equipment, sessionLength, userSex, userAge, currentStrength, trainingSplit, generatePlanAction, user?.id, t]);
+  }, [goal, experience, frequency, painPoints, sport, equipment, sessionLength, userSex, userAge, currentStrength, trainingSplit, specificGoal, generatePlanAction, user?.id, t]);
 
   // Confirm the plan and navigate to home
   const handleConfirmPlan = useCallback(() => {
@@ -318,9 +417,12 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
         });
       }
 
+      // Clear persisted onboarding state on completion
+      clearPersistedState();
+
       onPlanGenerated(generatedPlan);
     }
-  }, [generatedPlan, onPlanGenerated, user?.id, onboardingStartTime, goal, experience, frequency, painPoints.length, sport]);
+  }, [generatedPlan, onPlanGenerated, user?.id, onboardingStartTime, goal, experience, frequency, painPoints.length, sport, clearPersistedState]);
 
   const handleCustomPlanSubmit = useCallback(async () => {
     const inputToProcess = selectedFile || rawText;
@@ -499,6 +601,34 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
+      {/* Resume Prompt Modal - shown when user has incomplete onboarding session */}
+      {showResumePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-[var(--surface-primary)] border border-[var(--border-default)] rounded-2xl p-6 shadow-2xl">
+            <h3 className="text-[20px] font-bold text-[var(--text-primary)] mb-2">
+              Resume Your Setup?
+            </h3>
+            <p className="text-[14px] text-[var(--text-secondary)] mb-6">
+              You have an incomplete onboarding session. Would you like to continue where you left off?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleStartFresh}
+                className="flex-1 h-12 rounded-xl font-semibold text-[14px] text-[var(--text-secondary)] bg-[var(--surface-secondary)] active:bg-[var(--surface-hover)] transition-colors"
+              >
+                Start Over
+              </button>
+              <button
+                onClick={handleResume}
+                className="flex-1 h-12 rounded-xl font-bold text-[14px] text-white bg-[var(--brand-primary)] active:scale-[0.98] transition-transform"
+              >
+                Resume
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Freeletics-style minimal progress bar */}
       {step !== 'welcome' && step !== 'custom' && step !== 'generate' && step !== undefined && (
         <div className="px-5 pt-[max(1rem,env(safe-area-inset-top))]">
@@ -1378,6 +1508,13 @@ const GenerateStep = ({ onGenerate, onBack, isLoading, error, showSuccess }: {
                     <p className="text-[10px] text-[var(--text-tertiary)] mt-2 tabular-nums">
                         {Math.round(progress)}% complete
                     </p>
+
+                    {/* Expected time notice */}
+                    <div className="mt-4 px-4 py-2 bg-[var(--surface-secondary)] rounded-lg">
+                        <p className="text-[11px] text-[var(--text-tertiary)] text-center">
+                            Plan generation typically takes 1-2 minutes
+                        </p>
+                    </div>
                 </div>
             )}
 

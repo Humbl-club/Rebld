@@ -952,3 +952,169 @@ ${startingWeightsInfo}
 **═══════════════════════════════════════════════════════════════**
 `;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPORT-SPECIFIC CONTEXT HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get deep sport-specific context for intelligent plan generation
+ * This tells the AI exactly what the sport demands
+ */
+export function getSportSpecificContext(eventType: string | null | undefined): string {
+  if (!eventType) return '';
+
+  const eventLower = eventType.toLowerCase();
+
+  const contexts: Record<string, string> = {
+    'hyrox': `**EVENT: HYROX**
+- Demands: High-threshold aerobic power + functional strength
+- Race Format: 8km run (1km segments) + 8 functional stations
+- Programming Focus: Compromised running (run after heavy legs)
+- Key Lifts: Sled Push, Sled Pull, Weighted Lunges, Wall Balls, SkiErg, Rowing
+- Conditioning: 80% Zone 2 base, 20% race-pace intervals
+- Critical: Practice running with fatigued legs (brick workouts)`,
+
+    'marathon': `**EVENT: MARATHON**
+- Demands: Aerobic capacity, tissue tolerance, mental endurance
+- Programming: Polarized training (80% easy Zone 2, 20% hard threshold/intervals)
+- Strength Focus: Single-leg stability, glute strength, core endurance
+- Key Exercises: Single Leg Romanian Deadlift, Step-ups, Calf Raises, Hip Stability
+- Running: Long slow runs (60-90min), Tempo runs, Interval 400s/800s
+- Avoid: Heavy bilateral squats (interferes with running recovery)`,
+
+    'triathlon': `**EVENT: TRIATHLON**
+- Demands: Multi-sport aerobic capacity, transitions, brick training
+- Programming: Structured periodization across swim/bike/run
+- Strength Focus: Swim pulling strength, cycling power, run stability
+- Key Exercises: Pull-ups/Lat Pulldown, Single Leg Press, Shoulder Rotation
+- Critical: Brick workouts (bike-to-run transitions), practice transitions
+- Avoid: Heavy upper body (swim shoulder health)`,
+
+    'powerlifting': `**EVENT: POWERLIFTING**
+- Demands: Maximal strength in squat/bench/deadlift
+- Programming: Periodized blocks (accumulation → intensification → peaking)
+- Key Exercises: Competition Squat/Bench/Deadlift, Pause variations, Accessories
+- Peaking: Reduce volume, increase intensity toward competition
+- Critical: Technique work, bracing, competition form practice
+- GPP: Sled work, carries, light conditioning only`,
+
+    'crossfit': `**EVENT: CROSSFIT**
+- Demands: Work capacity, varied movement skills, gymnastics, Olympic lifts
+- Programming: Mixed modal training, skill work, engine building
+- Key Exercises: Olympic lifts, Gymnastics movements, Monostructural cardio
+- Conditioning: High-intensity intervals, AMRAP, EMOM, For Time workouts
+- Skill Focus: Double-unders, muscle-ups, handstands, Olympic lift technique
+- Critical: GPP base, movement efficiency, pacing strategy`,
+
+    'bodybuilding': `**EVENT: BODYBUILDING**
+- Demands: Muscle hypertrophy, symmetry, definition
+- Programming: High volume, progressive overload, mind-muscle connection
+- Key Principles: Time under tension, metabolic stress, mechanical tension
+- Split: Body part focused (PPL or Bro split for frequency)
+- Critical: Eat to support growth, progressive overload, adequate volume
+- Avoid: Excessive cardio that interferes with recovery`,
+  };
+
+  // Return exact match or partial match
+  for (const [key, value] of Object.entries(contexts)) {
+    if (eventLower.includes(key) || key.includes(eventLower)) {
+      return value;
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Get readiness-based training context
+ * Adjusts programming based on user's current readiness level
+ */
+export function getReadinessContext(level: number | null | undefined): string {
+  if (level === null || level === undefined) return '';
+
+  if (level <= 3) {
+    return `**READINESS: LOW (${level}/10) - RECOVERY FOCUS**
+- Reduce volume by 30-40% from normal
+- Cap RPE at 6-7 (no grinding reps)
+- Avoid failure on all sets
+- Prioritize movement quality over load
+- Consider: Light cardio, mobility work, active recovery
+- This is NOT a deload - user may be fatigued/stressed`;
+  }
+
+  if (level <= 5) {
+    return `**READINESS: MODERATE-LOW (${level}/10)**
+- Reduce volume by 15-20%
+- Cap RPE at 7-8
+- Focus on technique refinement
+- Normal warmup, but be patient with heavy weights
+- Monitor fatigue throughout session`;
+  }
+
+  if (level <= 7) {
+    return `**READINESS: MODERATE (${level}/10) - STANDARD TRAINING**
+- Normal volume and intensity
+- Standard progressive overload
+- RPE targets as planned
+- Good day for consistent training`;
+  }
+
+  if (level <= 9) {
+    return `**READINESS: HIGH (${level}/10) - PUSH DAY**
+- Can push intensity higher (add 2-5% to planned weights)
+- RPE 8-9 acceptable on compounds
+- Good day for PR attempts if planned
+- Take advantage of feeling strong`;
+  }
+
+  return `**READINESS: PEAK (${level}/10) - TEST DAY**
+- Optimal day for heavy singles/doubles
+- Test new maxes if in appropriate phase
+- Full intensity work
+- Capitalize on peak readiness`;
+}
+
+/**
+ * Get goal-specific training emphasis
+ */
+export function getGoalEmphasis(goal: string | null | undefined): string {
+  if (!goal) return '';
+
+  const goalLower = goal.toLowerCase();
+
+  if (goalLower.includes('strength') || goalLower.includes('strong')) {
+    return `**GOAL EMPHASIS: STRENGTH**
+- Rep ranges: 3-6 for compounds, 6-10 for accessories
+- Rest periods: 3-5 minutes between heavy sets
+- Focus: Progressive overload on main lifts
+- Volume: MEV-MAV range, quality over quantity`;
+  }
+
+  if (goalLower.includes('muscle') || goalLower.includes('hypertrophy') || goalLower.includes('size')) {
+    return `**GOAL EMPHASIS: HYPERTROPHY**
+- Rep ranges: 8-15 for most exercises
+- Rest periods: 60-90 seconds
+- Focus: Time under tension, mind-muscle connection
+- Volume: MAV-MRV range, accumulate volume`;
+  }
+
+  if (goalLower.includes('fat loss') || goalLower.includes('weight loss') || goalLower.includes('lean')) {
+    return `**GOAL EMPHASIS: FAT LOSS / BODY RECOMPOSITION**
+- Maintain strength training (don't just do cardio)
+- Rep ranges: 8-12 to preserve muscle
+- Add Zone 2 cardio: 2-4 sessions x 30-45 minutes
+- Focus: Preserve muscle mass while in deficit
+- Critical: Protein intake, sleep, stress management`;
+  }
+
+  if (goalLower.includes('endurance') || goalLower.includes('cardio')) {
+    return `**GOAL EMPHASIS: ENDURANCE**
+- 80/20 polarized training (80% easy, 20% hard)
+- Strength: 2x/week maintenance only
+- Focus: Building aerobic base (Zone 2)
+- Avoid: Heavy lifting that interferes with conditioning`;
+  }
+
+  return '';
+}

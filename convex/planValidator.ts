@@ -15,24 +15,79 @@ export interface ValidationResult {
   warnings: string[];
 }
 
+// ═══════════════════════════════════════════════════════════
+// Type-safe interfaces for validation (matching types.ts but looser for AI output)
+// ═══════════════════════════════════════════════════════════
+
+// All possible fields that can appear in a metrics template from AI
+interface MetricsTemplateFields {
+  type: string;
+  // Sets/Reps fields
+  target_sets?: number | null;
+  sets?: number | null;
+  target_reps?: string | number | null;
+  reps_per_set?: (string | number)[];
+  // Duration fields (AI sometimes returns strings like "30 each side")
+  duration_seconds?: number | string | null;
+  target_duration_s?: number | string | null;
+  target_duration_seconds?: number | string | null;
+  hold_seconds?: number | string | null;
+  duration_minutes?: number | string | null;
+  target_duration_minutes?: number | string | null;
+  // Distance fields
+  distance_km?: number | null;
+  distance_m?: number | null;
+  target_distance_km?: number | null;
+  target_distance_m?: number | null;
+  // Rest fields
+  rest_period_s?: number | null;
+  rest_seconds?: number | null;
+  rest_duration_s?: number | null;
+  target_rest_s?: number | null;
+  work_duration_s?: number | null;
+  // Weight fields
+  target_weight?: number | null;
+  weight_unit?: string | null;
+  one_rep_max_percentage?: string | null;
+  // Tempo fields
+  target_tempo?: string | null;
+  tempo_eccentric?: number | null;
+  tempo_pause?: number | null;
+  tempo_concentric?: number | null;
+  tempo_top?: number | null;
+  // Other fields
+  incline?: string | null;
+  speed?: string | null;
+  resistance?: string | null;
+  pulse_target?: string | null;
+  has_drop_set?: boolean;
+  rpe?: number | string | null;
+  notes?: string | null;
+}
+
 interface Exercise {
   exercise_name: string;
   category: string;
-  metrics_template: any;
-  [key: string]: any;
+  metrics_template: MetricsTemplateFields;
+  notes?: string | null;
+  rpe?: string | null;
+  original_exercise_name?: string;
 }
 
 interface Block {
   type: string;
   exercises: Exercise[];
-  [key: string]: any;
+  title?: string;
+  notes?: string;
+  rounds?: number;
+  duration_minutes?: number;
 }
 
 interface Session {
   session_name: string;
   time_of_day: string;
   blocks: Block[];
-  [key: string]: any;
+  estimated_duration?: number;
 }
 
 interface Day {
@@ -40,13 +95,24 @@ interface Day {
   focus: string;
   blocks?: Block[];
   sessions?: Session[];
-  [key: string]: any;
+  notes?: string;
+  estimated_duration?: number;
 }
 
 interface Plan {
   name: string;
   weeklyPlan: Day[];
-  [key: string]: any;
+  periodization?: {
+    total_weeks?: number;
+    current_week?: number;
+    phase?: string;
+    phase_description?: string;
+  };
+  dailyRoutine?: {
+    focus: string;
+    notes?: string;
+    exercises: Exercise[];
+  };
 }
 
 /**
@@ -209,6 +275,34 @@ function validateBlock(block: Block, blockIndex: number, parentLabel: string, er
   }
 }
 
+// Cardio exercises that should NEVER use sets_reps_weight
+const CARDIO_EXERCISE_KEYWORDS = [
+  // Cardio machines
+  'elliptical', 'treadmill', 'bike', 'cycling', 'rowing', 'rower',
+  'stairmaster', 'stepper', 'stair climber', 'stairclimber', 'stairs',
+  'stationary bike', 'recumbent bike', 'spin', 'spinning', 'peloton',
+  'ski erg', 'skierg', 'assault bike', 'airbike', 'air bike', 'airdyne', 'echo bike',
+  'cross trainer', 'arc trainer', 'jacob\'s ladder', 'versaclimber',
+  // Running/walking
+  'cardio', 'run', 'running', 'jog', 'jogging', 'walk', 'walking', 'sprint', 'sprinting',
+  'incline walk', 'power walk', 'steady state',
+  // Swimming
+  'swim', 'swimming', 'lap swim', 'laps', 'pool',
+  // Jump rope
+  'jump rope', 'skipping', 'rope work',
+  // Descriptors that indicate cardio
+  'moderate intensity', 'low intensity', 'high intensity',
+  'zone 2', 'zone2', 'liss', 'hiit session', 'conditioning'
+];
+
+/**
+ * Check if an exercise is a cardio exercise based on its name
+ */
+function isCardioExercise(exerciseName: string): boolean {
+  const lowerName = exerciseName.toLowerCase();
+  return CARDIO_EXERCISE_KEYWORDS.some(keyword => lowerName.includes(keyword));
+}
+
 /**
  * Validate a single exercise - MOST CRITICAL VALIDATION
  */
@@ -255,6 +349,22 @@ function validateExercise(exercise: Exercise, exerciseIndex: number, blockLabel:
   if (!validTemplateTypes.includes(template.type)) {
     errors.push(`${exerciseLabel}: Invalid metrics template type '${template.type}'. Must be one of: ${validTemplateTypes.join(', ')}`);
     return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Cardio exercises should use duration_only or distance_time
+  // BUT: fixCardioTemplates() auto-fixes this before validation,
+  // so we only WARN here (don't fail the entire plan for this)
+  // ═══════════════════════════════════════════════════════════
+  if (exercise.exercise_name && isCardioExercise(exercise.exercise_name)) {
+    const validCardioTemplates = ['duration_only', 'distance_time', 'sets_duration_rest'];
+    if (!validCardioTemplates.includes(template.type)) {
+      // Downgraded from ERROR to WARNING since fixCardioTemplates handles this
+      warnings.push(
+        `${exerciseLabel}: Cardio exercise "${exercise.exercise_name}" using '${template.type}' ` +
+        `(prefer 'duration_only' or 'distance_time' for cardio)`
+      );
+    }
   }
 
   // Get template definition
@@ -339,6 +449,61 @@ function validateExercise(exercise: Exercise, exerciseIndex: number, blockLabel:
       warnings.push(`${exerciseLabel}: distance_time has BOTH distance_km and distance_m - use only one`);
     }
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // NEW: Validation for sets_duration_weight (weighted carries)
+  // ═══════════════════════════════════════════════════════════
+  if (template.type === 'sets_duration_weight') {
+    const sets = template.target_sets ?? template.sets;
+    if (typeof sets !== 'number' || sets <= 0) {
+      errors.push(`${exerciseLabel}: sets_duration_weight requires target_sets to be a positive number`);
+    }
+    const durationSec = template.duration_seconds ?? template.target_duration_s;
+    if (typeof durationSec !== 'number' || durationSec <= 0) {
+      errors.push(`${exerciseLabel}: sets_duration_weight requires duration_seconds to be a positive number`);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NEW: Validation for tempo (controlled tempo exercises)
+  // ═══════════════════════════════════════════════════════════
+  if (template.type === 'tempo') {
+    if (typeof template.target_sets !== 'number' || template.target_sets <= 0) {
+      errors.push(`${exerciseLabel}: tempo requires target_sets to be a positive number`);
+    }
+    if (template.target_reps === undefined || template.target_reps === null) {
+      errors.push(`${exerciseLabel}: tempo requires target_reps`);
+    }
+    // Tempo fields are optional but warn if none are provided
+    const hasTempo = template.tempo_eccentric !== undefined ||
+                     template.tempo_pause !== undefined ||
+                     template.tempo_concentric !== undefined ||
+                     template.tempo_top !== undefined ||
+                     template.target_tempo !== undefined;
+    if (!hasTempo) {
+      warnings.push(`${exerciseLabel}: tempo exercise should have tempo fields (tempo_eccentric, tempo_pause, tempo_concentric, tempo_top) or target_tempo`);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NEW: Validation for sets_distance_rest (distance intervals)
+  // ═══════════════════════════════════════════════════════════
+  if (template.type === 'sets_distance_rest') {
+    const sets = template.sets ?? template.target_sets;
+    if (typeof sets !== 'number' || sets <= 0) {
+      errors.push(`${exerciseLabel}: sets_distance_rest requires sets to be a positive number`);
+    }
+    const restSec = template.rest_seconds ?? template.target_rest_s ?? template.rest_period_s;
+    if (typeof restSec !== 'number' || restSec < 0) {
+      errors.push(`${exerciseLabel}: sets_distance_rest requires rest_seconds to be a non-negative number`);
+    }
+    const hasDistance = (template.distance_km !== undefined && template.distance_km !== null) ||
+                        (template.distance_m !== undefined && template.distance_m !== null) ||
+                        (template.target_distance_m !== undefined && template.target_distance_m !== null);
+    if (!hasDistance) {
+      warnings.push(`${exerciseLabel}: sets_distance_rest should have distance_km, distance_m, or target_distance_m`);
+    }
+  }
 }
 
 /**
@@ -372,4 +537,76 @@ export function validateAndExplain(plan: Plan): { valid: boolean; message: strin
     valid: false,
     message,
   };
+}
+
+/**
+ * Auto-fix cardio exercises that incorrectly use sets_reps_weight
+ * Changes them to duration_only with a sensible duration based on context
+ */
+export function fixCardioTemplates(plan: Plan, sessionDurationMinutes?: number): Plan {
+  const fixedPlan = JSON.parse(JSON.stringify(plan)); // Deep clone
+
+  const processExercises = (exercises: Exercise[]) => {
+    exercises.forEach(exercise => {
+      if (!exercise.exercise_name || !exercise.metrics_template) return;
+
+      // Only fix cardio exercises with wrong template
+      if (isCardioExercise(exercise.exercise_name)) {
+        const template = exercise.metrics_template;
+
+        // If using sets_reps_weight or sets_reps for cardio, fix it
+        if (template.type === 'sets_reps_weight' || template.type === 'sets_reps') {
+          // Calculate a sensible duration
+          // If there's a session duration, use proportional time
+          // Otherwise default to 20 minutes
+          let durationMinutes = 20;
+
+          if (sessionDurationMinutes) {
+            // For cardio-focused sessions, cardio should be the bulk (e.g., 45 min of 60)
+            // For hybrid sessions, cardio is typically 15-30 min
+            if (sessionDurationMinutes >= 45) {
+              durationMinutes = Math.min(45, sessionDurationMinutes - 15);
+            } else {
+              durationMinutes = Math.min(20, sessionDurationMinutes - 10);
+            }
+          }
+
+          // Replace the template
+          exercise.metrics_template = {
+            type: 'duration_only',
+            duration_minutes: durationMinutes,
+          };
+
+          console.log(`[planValidator] Fixed cardio template for "${exercise.exercise_name}": sets_reps_weight → duration_only (${durationMinutes} min)`);
+        }
+      }
+    });
+  };
+
+  const processBlocks = (blocks: Block[]) => {
+    blocks.forEach(block => {
+      if (block.exercises && Array.isArray(block.exercises)) {
+        processExercises(block.exercises);
+      }
+    });
+  };
+
+  // Process all days
+  fixedPlan.weeklyPlan.forEach((day: Day) => {
+    // Handle blocks directly on day
+    if (day.blocks && Array.isArray(day.blocks)) {
+      processBlocks(day.blocks);
+    }
+
+    // Handle sessions (2x daily)
+    if (day.sessions && Array.isArray(day.sessions)) {
+      day.sessions.forEach((session: Session) => {
+        if (session.blocks && Array.isArray(session.blocks)) {
+          processBlocks(session.blocks);
+        }
+      });
+    }
+  });
+
+  return fixedPlan;
 }

@@ -10,7 +10,7 @@ import i18n from '../i18n/config';
  * AI MODEL SELECTION POLICY
  * =========================
  *
- * GEMINI PRO (gemini-2.5-pro):
+ * GEMINI 3 PRO (gemini-3-pro-preview):
  * - Plan generation (generateNewWorkoutPlan with useThinkingMode=true)
  * - Complex plan parsing (parseWorkoutPlan with useThinkingMode=true)
  * - Body composition analysis from photos
@@ -24,12 +24,12 @@ import i18n from '../i18n/config';
  *
  * This split optimizes for:
  * - Cost: Flash is ~10x cheaper than Pro
- * - Quality: Pro provides better reasoning for complex tasks
+ * - Quality: Gemini 3 Pro provides best reasoning for complex tasks
  * - Speed: Flash is faster for real-time interactions
  */
 type ModelContext = 'onboarding' | 'chat' | 'explanation' | 'analysis';
 
-const MODEL_PRO = 'gemini-2.5-pro';
+const MODEL_PRO = 'gemini-3-pro-preview'; // Upgraded to Gemini 3 Pro (Dec 2025)
 const MODEL_FLASH = 'gemini-2.5-flash';
 
 /**
@@ -728,12 +728,13 @@ Generate a complete 7-day plan prioritizing SAFE and EFFECTIVE exercises for thi
 4.  **Language Interpretation**: The user might use colloquial language. You must interpret this and translate it into a scientifically valid training goal.
 5.  **Pain & Limitation Protocol**: If the user reports pain points, you MUST intelligently select exercises that avoid stressing those areas and include prehab/rehab exercises based on current rehabilitation science.
 6.  **Sport-Specificity (SAID Principle)**: If a sport is specified, the plan MUST incorporate relevant exercises from sport science and athletic performance research.
-7.  **Warmup & Cooldown Mandate**: 
-    - For warm-ups: Create a SEPARATE block with category='warmup' containing 5-7 SPECIFIC exercises (e.g., "Cat-Cow Stretch", "Leg Swings", "Band Pull-Aparts", "Hip Circles", "World's Greatest Stretch", "Arm Circles", "T-Spine Rotations", "Walking Lunges", "Hip Flexor Stretch", "Shoulder Dislocations")
+7.  **Warmup & Cooldown Mandate**:
+    - For warm-ups: Create a SEPARATE block with category='warmup' containing 3-5 SPECIFIC exercises that are appropriate for a PUBLIC GYM setting
+    - PRIORITIZE standing exercises that don't require lying on the floor: "Arm Circles", "Leg Swings", "Walking Lunges", "High Knees", "Jumping Jacks", "Band Pull-Aparts", "Shoulder Dislocations", "Bodyweight Squats", "Glute Bridges (on bench)", "Incline Push-Ups", "Light Rowing Machine", "5-Min Walk/Jog"
+    - AVOID awkward floor-based exercises like "Cat-Cow", "Hip Circles on floor", "Dead Bug", "Bird Dog" - these are inappropriate in busy public gym settings
     - NEVER use generic names like "Main Warmup" or "General Warmup" - always list SPECIFIC exercises
     - Each warmup exercise should have: exercise_name (specific!), category='warmup', and appropriate metrics_template (duration or reps)
-    - Warm-ups MUST be comprehensive and prepare the entire body - include mobility, activation, and dynamic movement exercises
-    - For cool-downs: Create a SEPARATE block with category='cooldown' containing 2-4 SPECIFIC stretching exercises
+    - For cool-downs: Create a SEPARATE block with category='cooldown' containing 2-3 SPECIFIC stretching exercises (standing stretches preferred)
 8.  **Advanced Metrics Mandate**: You MUST include RPE targets, appropriate \`rest_period_s\`, and \`one_rep_max_percentage\` where applicable based on current periodization science.
 
 **Scientific Sources to Consider:**
@@ -764,7 +765,7 @@ Generate a complete 7-day plan prioritizing SAFE and EFFECTIVE exercises for thi
 - Create a 7-day plan in the \`weeklyPlan\` array. The number of training days must match the user's frequency. The remaining days MUST be 'Rest' days with an empty 'blocks' array.
 - Select exercises that are OPTIMAL for the user's goals, not just convenient or common
 - Every exercise will later be explained in detail and saved to a database, so choose exercises that serve the user's best interests
-- **CRITICAL FOR WARMUPS**: Each workout day MUST start with a warmup block containing 5-7 SPECIFIC exercises (not generic names!). Examples: "Cat-Cow Stretch", "Leg Swings", "Band Pull-Aparts", "Hip Circles", "Arm Circles", "T-Spine Rotations", "Walking Lunges", "World's Greatest Stretch", "Hip Flexor Stretch", "Shoulder Dislocations", "Dead Bug", "Bird Dog". Warm-ups should be comprehensive and prepare the entire body for movement.
+- **CRITICAL FOR WARMUPS**: Each workout day MUST start with a warmup block containing 3-5 SPECIFIC exercises appropriate for PUBLIC GYM settings (not generic names!). Use STANDING exercises: "Arm Circles", "Leg Swings", "Band Pull-Aparts", "Shoulder Dislocations", "Walking Lunges", "High Knees", "Jumping Jacks", "Bodyweight Squats", "Light Rowing Machine", "5-Min Walk/Jog", "Incline Push-Ups". AVOID floor-based exercises like Cat-Cow, Hip Circles, Dead Bug, Bird Dog - these are awkward in busy gym settings.
 - **CRITICAL FOR COOLDOWNS**: Each workout day SHOULD end with a cooldown block containing 2-4 SPECIFIC stretching exercises
 - The final output must be ONLY the JSON object.`;
     }
@@ -779,9 +780,9 @@ Generate a complete 7-day plan prioritizing SAFE and EFFECTIVE exercises for thi
                 ? `${systemPromptGenerate}\n\nVALIDATION ERRORS FROM PREVIOUS ATTEMPT: ${validationFeedback}\nFIX THEM BEFORE RESPONDING.`
                 : systemPromptGenerate;
 
-            console.log('Calling Gemini API with model: gemini-2.5-pro');
+            console.log('Calling Gemini API with model:', MODEL_PRO);
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-pro',
+                model: MODEL_PRO,
                 contents: "Please generate the workout plan based on my detailed profile.",
                 config: {
                     systemInstruction,
@@ -865,7 +866,7 @@ export const parseWorkoutPlan = async (rawInput: string | File, useThinkingMode:
   
   const ai = new GoogleGenAI({ apiKey });
 
-  const model = useThinkingMode ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+  const model = useThinkingMode ? MODEL_PRO : MODEL_FLASH;
   
   // Pre-process text input to expand abbreviations
   let processedInput = rawInput;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkoutPlan, PlanDay, PlanExercise, DailyRoutine, UserProfile } from '../types';
-import { CoffeeIcon, TimerIcon, ChevronDownIcon, SparklesIcon, RepeatIcon, ClockIcon, ZapIcon, PercentIcon, TrendingUpIcon, SpeedometerIcon, CogIcon, QuestionMarkCircleIcon, FlameIcon, DumbbellIcon } from '../components/icons';
+import { CoffeeIcon, TimerIcon, ChevronDownIcon, SparklesIcon, RepeatIcon, ClockIcon, ZapIcon, PercentIcon, TrendingUpIcon, SpeedometerIcon, CogIcon, QuestionMarkCircleIcon, DumbbellIcon } from '../components/icons';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { notify } from '../components/layout/Toast';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '../components/ui/card';
@@ -10,7 +10,7 @@ import { Button } from '../components/ui/button';
 import { IntensityBadge } from '../components/ui/intensity-badge';
 // NotificationSkeleton removed - was causing layout shift when notifications query resolved
 import { cn } from '../lib/utils';
-import { calculateWorkoutIntensity, estimateCalories, getWorkoutType } from '../lib/workoutUtils';
+import { calculateWorkoutIntensity, getWorkoutType } from '../lib/workoutUtils';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { XMarkIcon } from '../components/icons';
@@ -28,7 +28,6 @@ type SessionType = PlanDay | DailyRoutine;
 interface HomePageProps {
     plan: WorkoutPlan;
     onStartSession: (session: SessionType) => void;
-    onQuickStartSession?: (session: SessionType) => void; // Bypass pre-workout screen
     onOpenChat: () => void;
     userProfile?: UserProfile | null;
     onRefreshPlan?: () => Promise<void>;
@@ -148,10 +147,8 @@ const WorkoutCard: React.FC<{
     session: SessionType;
     title: string;
     onStartSession: (session: SessionType) => void;
-    onQuickStartSession?: (session: SessionType) => void;
     isPrimary?: boolean;
-    userWeightKg?: number;
-}> = ({ session, title, onStartSession, onQuickStartSession, isPrimary = false, userWeightKg }) => {
+}> = ({ session, title, onStartSession, isPrimary = false }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const exercises = useMemo(() => {
@@ -222,11 +219,6 @@ const WorkoutCard: React.FC<{
         return Math.round(total);
     }, [exercises, session]);
 
-    const estimatedCals = useMemo(() => {
-        const type = 'blocks' in session ? getWorkoutType(session as PlanDay) : 'mixed';
-        return estimateCalories(estimatedDuration, intensity.value, userWeightKg || 70, type);
-    }, [estimatedDuration, intensity, userWeightKg, session]);
-
     return (
         <Card
             variant={isPrimary ? "premium" : "default"}
@@ -280,11 +272,6 @@ const WorkoutCard: React.FC<{
                             <span className="flex items-center gap-[var(--space-1)]">
                                 <DumbbellIcon className="w-3.5 h-3.5" />
                                 {exercises.length} exercises
-                            </span>
-                            <span className="w-1 h-1 rounded-full bg-[var(--border-strong)]" />
-                            <span className="flex items-center gap-[var(--space-1)]">
-                                <FlameIcon className="w-3.5 h-3.5" />
-                                ~{estimatedCals} cal
                             </span>
                         </div>
                     </div>
@@ -383,17 +370,6 @@ const WorkoutCard: React.FC<{
                         >
                             Start Workout
                         </Button>
-                        {onQuickStartSession && (
-                            <Button
-                                onClick={() => onQuickStartSession(session)}
-                                variant="soft"
-                                size="lg"
-                                leftIcon={<ZapIcon className="w-4 h-4" />}
-                                className="shrink-0"
-                            >
-                                Quick
-                            </Button>
-                        )}
                     </div>
                 </CardFooter>
             )}
@@ -523,7 +499,7 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
 // HOMEPAGE MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 
-export default function HomePage({ plan, onStartSession, onQuickStartSession, onOpenChat, userProfile, onRefreshPlan }: HomePageProps) {
+export default function HomePage({ plan, onStartSession, onOpenChat, userProfile, onRefreshPlan }: HomePageProps) {
     const { t } = useTranslation();
     const { user } = useUser();
     const userId = user?.id || null;
@@ -533,12 +509,6 @@ export default function HomePage({ plan, onStartSession, onQuickStartSession, on
     const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
     const daySelectorRef = useRef<HTMLDivElement>(null);
     const dayButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-    const weightKg = useMemo(() => {
-        const w = userProfile?.bodyMetrics?.weight;
-        if (!w || Number.isNaN(w)) return 70;
-        return w;
-    }, [userProfile]);
 
     // Get buddy notifications
     const notifications = useQuery(
@@ -778,9 +748,7 @@ export default function HomePage({ plan, onStartSession, onQuickStartSession, on
                                     session={{ ...amSession, day_of_week: activeDayPlan.day_of_week }}
                                     title={`☀️ ${amSession.session_name || 'Morning Session'}`}
                                     onStartSession={onStartSession}
-                                    onQuickStartSession={onQuickStartSession}
                                     isPrimary={true}
-                                    userWeightKg={weightKg}
                                 />
                             )}
                             {pmSession && (
@@ -788,9 +756,7 @@ export default function HomePage({ plan, onStartSession, onQuickStartSession, on
                                     session={{ ...pmSession, day_of_week: activeDayPlan.day_of_week }}
                                     title={`🌙 ${pmSession.session_name || 'Evening Session'}`}
                                     onStartSession={onStartSession}
-                                    onQuickStartSession={onQuickStartSession}
                                     isPrimary={!amSession}
-                                    userWeightKg={weightKg}
                                 />
                             )}
                         </div>
@@ -800,9 +766,7 @@ export default function HomePage({ plan, onStartSession, onQuickStartSession, on
                             session={activeDayPlan}
                             title={t('home.todaysWorkout')}
                             onStartSession={onStartSession}
-                            onQuickStartSession={onQuickStartSession}
                             isPrimary={true}
-                            userWeightKg={weightKg}
                         />
                     )
                 ) : (
