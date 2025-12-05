@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { XMarkIcon } from './icons';
 import { useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useUser } from '@clerk/clerk-react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ExerciseExplanationModalProps {
   exerciseName: string;
@@ -18,6 +19,7 @@ export default function ExerciseExplanationModal({
   isOpen,
   onClose,
 }: ExerciseExplanationModalProps) {
+  const { t } = useTranslation();
   const { user } = useUser();
   const explainExerciseAction = useAction(api.ai.explainExercise);
   const [explanation, setExplanation] = useState<string>('');
@@ -27,31 +29,53 @@ export default function ExerciseExplanationModal({
   const [stepByStep, setStepByStep] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const fetchExplanation = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+    try {
+      const result = await explainExerciseAction({
+        exerciseName,
+        userId: user?.id || 'anonymous'
+      });
+
+      clearTimeout(timeoutId);
+      setExplanation(result.explanation);
+      setMusclesWorked(result.muscles_worked || []);
+      setFormCue(result.form_cue || '');
+      setCommonMistake(result.common_mistake || '');
+      setStepByStep(result.step_by_step || []);
+      setIsLoading(false);
+      setRetryCount(0);
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      const errorMessage = err.name === 'AbortError'
+        ? 'Request timed out. Tap to retry.'
+        : (err.message || t('exercise.loadFailed'));
+      setError(errorMessage);
+      setIsLoading(false);
+    }
+  }, [exerciseName, explainExerciseAction, user?.id, t]);
 
   useEffect(() => {
     if (isOpen && exerciseName) {
-      setIsLoading(true);
-      setError(null);
       setExplanation('');
-
-      explainExerciseAction({
-        exerciseName,
-        userId: user?.id || 'anonymous'
-      })
-        .then((result) => {
-          setExplanation(result.explanation);
-          setMusclesWorked(result.muscles_worked || []);
-          setFormCue(result.form_cue || '');
-          setCommonMistake(result.common_mistake || '');
-          setStepByStep(result.step_by_step || []);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message || 'Failed to load');
-          setIsLoading(false);
-        });
+      fetchExplanation();
     }
-  }, [isOpen, exerciseName, explainExerciseAction, user?.id]);
+  }, [isOpen, exerciseName, fetchExplanation]);
+
+  const handleRetry = useCallback(() => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      fetchExplanation();
+    }
+  }, [retryCount, fetchExplanation]);
 
   if (!isOpen) return null;
 
@@ -107,23 +131,34 @@ export default function ExerciseExplanationModal({
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-10 h-10 border-3 border-[var(--brand-primary)]/20 border-t-[var(--brand-primary)] rounded-full animate-spin" />
               <p className="mt-4 text-[var(--text-sm)] text-[var(--text-tertiary)] font-[var(--weight-medium)]">
-                Loading...
+                {t('exercise.loading')}
               </p>
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <div className={cn(
-              "bg-[var(--status-error-bg)]/10",
-              "border border-[var(--status-error-bg)]/30",
-              "rounded-[var(--radius-xl)]",
-              "px-4 py-3"
-            )}>
+            <button
+              onClick={handleRetry}
+              disabled={retryCount >= 3}
+              className={cn(
+                "w-full text-left",
+                "bg-[var(--status-error-bg)]/10",
+                "border border-[var(--status-error-bg)]/30",
+                "rounded-[var(--radius-xl)]",
+                "px-4 py-3",
+                retryCount < 3 && "active:bg-[var(--status-error-bg)]/20"
+              )}
+            >
               <p className="text-[var(--text-sm)] text-[var(--status-error-text)] font-[var(--weight-medium)]">
                 {error}
               </p>
-            </div>
+              {retryCount < 3 && (
+                <p className="text-[var(--text-xs)] text-[var(--status-error-text)]/70 mt-1">
+                  Tap to retry ({3 - retryCount} attempts left)
+                </p>
+              )}
+            </button>
           )}
 
           {/* Content */}
@@ -162,7 +197,7 @@ export default function ExerciseExplanationModal({
                   "p-4"
                 )}>
                   <p className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-[var(--weight-black)] mb-3">
-                    How To
+                    {t('exercise.howTo')}
                   </p>
                   <div className="space-y-2.5">
                     {stepByStep.map((step, idx) => (
@@ -197,7 +232,7 @@ export default function ExerciseExplanationModal({
                       "p-3"
                     )}>
                       <p className="text-[9px] uppercase tracking-widest text-[var(--status-success-text)] font-[var(--weight-black)] mb-1.5">
-                        Do This
+                        {t('exercise.doThis')}
                       </p>
                       <p className="text-[var(--text-xs)] text-[var(--text-primary)] font-[var(--weight-semibold)] leading-snug">
                         {formCue}
@@ -214,7 +249,7 @@ export default function ExerciseExplanationModal({
                       "p-3"
                     )}>
                       <p className="text-[9px] uppercase tracking-widest text-[var(--status-error-text)] font-[var(--weight-black)] mb-1.5">
-                        Avoid
+                        {t('exercise.avoid')}
                       </p>
                       <p className="text-[var(--text-xs)] text-[var(--text-primary)] font-[var(--weight-semibold)] leading-snug">
                         {commonMistake}
@@ -232,7 +267,7 @@ export default function ExerciseExplanationModal({
                   "p-3"
                 )}>
                   <p className="text-[9px] uppercase tracking-widest text-[var(--text-tertiary)] font-[var(--weight-black)] mb-1.5">
-                    Your Notes
+                    {t('exercise.yourNotes')}
                   </p>
                   <p className="text-[var(--text-xs)] text-[var(--text-secondary)] font-[var(--weight-medium)]">
                     {exerciseNotes}
@@ -252,7 +287,7 @@ export default function ExerciseExplanationModal({
                   "transition-transform duration-100"
                 )}
               >
-                Got it
+                {t('exercise.gotIt')}
               </button>
             </div>
           )}

@@ -222,6 +222,7 @@ export default defineSchema({
         day_of_week: v.number(),
         focus: v.string(),
         notes: v.union(v.string(), v.null()),
+        estimated_duration: v.optional(v.number()), // minutes
         // Standard single-session structure (blocks directly on day)
         blocks: v.optional(v.array(
           v.union(
@@ -571,7 +572,7 @@ export default defineSchema({
     equipment_required: v.optional(v.array(v.string())), // ["barbell", "dumbbells", "none"]
     minimum_experience_level: v.optional(v.string()), // "beginner", "intermediate", "advanced"
     contraindications: v.optional(v.array(v.string())), // ["pregnancy", "hypertension", "back_injury"]
-    
+
     // NEW: Enhanced injury and sport-specific data
     injury_contraindications: v.optional(v.array(v.object({
       injury_type: v.string(), // "knee_pain", "lower_back", "shoulder_impingement"
@@ -584,7 +585,7 @@ export default defineSchema({
       safe_modifications: v.array(v.string()),
       alternative_exercises: v.array(v.string()),
     }))),
-    
+
     therapeutic_benefits: v.optional(v.array(v.object({
       condition: v.string(), // "knee_stability", "shoulder_health"
       benefit_level: v.union(
@@ -595,7 +596,7 @@ export default defineSchema({
       explanation: v.string(),
       recommended_protocol: v.union(v.string(), v.null()),
     }))),
-    
+
     sport_ratings: v.optional(v.object({
       boxing: v.union(v.number(), v.null()),
       hyrox: v.union(v.number(), v.null()),
@@ -815,30 +816,30 @@ export default defineSchema({
     last_used: v.string(), // ISO date string
   }).index("by_key", ["cache_key"])
     .index("by_goal_experience", ["user_goal", "user_experience"]),
-    
+
   // NEW: Sport-specific exercise buckets
   sportBuckets: defineTable({
     sport: v.string(), // "boxing", "hyrox", "rock_climbing", etc.
     exercise_name: v.string(), // normalized name
-    
+
     // Performance tracking
     usage_count: v.number(), // Times used in this sport
     success_rate: v.number(), // 0-1, completion rate
     avg_performance_score: v.number(), // 0-100
-    
+
     // Volume patterns
     typical_sets: v.number(),
     typical_reps: v.union(v.number(), v.null()),
     typical_duration_s: v.union(v.number(), v.null()),
     typical_weight_ratio: v.union(v.number(), v.null()), // % of user's capacity
-    
+
     // Placement data
     placement_stats: v.object({
       warmup_count: v.number(),
       main_count: v.number(),
       cooldown_count: v.number(),
     }),
-    
+
     // Metadata
     created_by_user: v.id("users"),
     last_updated: v.string(),
@@ -847,32 +848,32 @@ export default defineSchema({
     .index("by_sport", ["sport"])
     .index("by_sport_exercise", ["sport", "exercise_name"])
     .index("by_performance", ["sport", "avg_performance_score"]),
-    
+
   // NEW: Exercise performance tracking
   exercisePerformance: defineTable({
     user_id: v.string(),
     exercise_name: v.string(),
     sport_context: v.union(v.string(), v.null()),
     session_id: v.union(v.id("workoutLogs"), v.null()),
-    
+
     // Performance data
     completed: v.boolean(),
     skipped: v.boolean(),
     substituted: v.boolean(),
     substitute_reason: v.union(v.string(), v.null()),
-    
+
     // Metrics
     actual_sets: v.union(v.number(), v.null()),
     actual_reps: v.union(v.number(), v.null()),
     actual_weight: v.union(v.number(), v.null()),
     actual_duration_s: v.union(v.number(), v.null()),
-    
+
     // Subjective data
     rpe: v.union(v.number(), v.null()), // 1-10
     form_quality: v.union(v.number(), v.null()), // 1-5
     pain_experienced: v.union(v.boolean(), v.null()),
     pain_location: v.union(v.string(), v.null()),
-    
+
     // Context
     was_pr: v.boolean(),
     notes: v.union(v.string(), v.null()),

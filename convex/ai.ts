@@ -17,6 +17,7 @@ import { formatSupplementPrompt } from "./supplementData";
 import {
   extractAndParseJSON,
   generateWithRetry,
+  generateJSONWithRetry,
   addDurationEstimates,
   getHeartRateGuidance,
   getDurationConstraintPrompt
@@ -170,8 +171,8 @@ function formatTrainingSplitPrompt(split?: TrainingSplit, primaryGoal?: string):
 
   // Enhanced cardio guidance for training types that include cardio
   const needsCardioGuidance = split.training_type === 'strength_plus_cardio' ||
-                              split.training_type === 'combined' ||
-                              split.training_type === 'cardio_focused';
+    split.training_type === 'combined' ||
+    split.training_type === 'cardio_focused';
 
   const cardioGuidance = needsCardioGuidance ? `
 
@@ -371,8 +372,8 @@ Use this hierarchy when selecting exercises for each session:
 
 5. **CARDIO exercises (as needed)** - Based on goal and sport
    ${sportSpecific && ['marathon', 'hyrox', 'triathlon', 'running'].includes(sport.toLowerCase())
-     ? `For ${sport}, include specific cardio work: Long Run, Tempo Run, Intervals, etc.`
-     : 'Include conditioning work appropriate for the user goal.'}
+      ? `For ${sport}, include specific cardio work: Long Run, Tempo Run, Intervals, etc.`
+      : 'Include conditioning work appropriate for the user goal.'}
    Use appropriate metrics (duration_only, distance_time, or sets_distance_rest).
 
 6. **MOBILITY exercises (warmup/cooldown)** - Movement prep and recovery
@@ -456,6 +457,7 @@ export const parseWorkoutPlan = action({
       "day_of_week": 1-7 (1=Monday, 7=Sunday),
       "focus": "Day focus (e.g., 'Upper Body', 'Pull Day', 'Rest')",
       "notes": "Any day-level notes",
+      "estimated_duration": 60,
       "blocks": [
         {
           "type": "single" | "superset" | "amrap",
@@ -571,14 +573,14 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
               if (!exercise.category) {
                 const exerciseName = exercise.exercise_name?.toLowerCase() || '';
                 const isWarmup = exerciseName.includes('stretch') ||
-                                exerciseName.includes('warmup') ||
-                                exerciseName.includes('mobility') ||
-                                exerciseName.includes('foam roll') ||
-                                blockIndex === 0;
+                  exerciseName.includes('warmup') ||
+                  exerciseName.includes('mobility') ||
+                  exerciseName.includes('foam roll') ||
+                  blockIndex === 0;
 
                 const isCooldown = exerciseName.includes('cooldown') ||
-                                  exerciseName.includes('static stretch') ||
-                                  blockIndex === day.blocks.length - 1;
+                  exerciseName.includes('static stretch') ||
+                  blockIndex === day.blocks.length - 1;
 
                 exercise.category = isWarmup ? 'warmup' : (isCooldown ? 'cooldown' : 'main');
               }
@@ -1042,6 +1044,7 @@ ${examplePlansPrompt}
     {
       "day_of_week": 1,
       "focus": "Upper Body Strength",
+      "estimated_duration": 60,
       "blocks": [
         {
           "type": "single",
@@ -1115,9 +1118,9 @@ Return valid JSON WorkoutPlan.`;
     // ═══════════════════════════════════════════════════════════
     if (_generateDayOneOnly) {
       const dayOneFocus = primary_goal === 'strength' ? 'Lower Body Power (Squat focus)' :
-                         primary_goal === 'aesthetic' ? 'Chest & Triceps' :
-                         primary_goal === 'athletic' ? 'Power Development' :
-                         'Full Body';
+        primary_goal === 'aesthetic' ? 'Chest & Triceps' :
+          primary_goal === 'athletic' ? 'Power Development' :
+            'Full Body';
 
       finalPrompt = `Generate DAY 1 ONLY of a workout plan.
 
@@ -1206,18 +1209,18 @@ Return JSON:
               // Infer category based on position and exercise name
               const exerciseName = exercise.exercise_name?.toLowerCase() || '';
               const isWarmup = exerciseName.includes('stretch') ||
-                              exerciseName.includes('warmup') ||
-                              exerciseName.includes('mobility') ||
-                              exerciseName.includes('activation') ||
-                              exerciseName.includes('cat-cow') ||
-                              exerciseName.includes('foam roll') ||
-                              exerciseName.includes('band pull') ||
-                              exerciseName.includes('circle') ||
-                              blockIndex === 0;
+                exerciseName.includes('warmup') ||
+                exerciseName.includes('mobility') ||
+                exerciseName.includes('activation') ||
+                exerciseName.includes('cat-cow') ||
+                exerciseName.includes('foam roll') ||
+                exerciseName.includes('band pull') ||
+                exerciseName.includes('circle') ||
+                blockIndex === 0;
 
               const isCooldown = exerciseName.includes('cooldown') ||
-                                exerciseName.includes('static stretch') ||
-                                blockIndex === day.blocks.length - 1;
+                exerciseName.includes('static stretch') ||
+                blockIndex === day.blocks.length - 1;
 
               exercise.category = isWarmup ? 'warmup' : (isCooldown ? 'cooldown' : 'main');
               loggers.ai.debug(`Auto-assigned category "${exercise.category}" to "${exercise.exercise_name}"`);
@@ -1238,7 +1241,7 @@ Return JSON:
       // Log duration mismatch warnings
       for (const day of fixedPlan.weeklyPlan) {
         const isRestDay = day.focus?.toLowerCase().includes('rest') ||
-                          day.focus?.toLowerCase().includes('recovery');
+          day.focus?.toLowerCase().includes('recovery');
         if (isRestDay) continue;
 
         const estimatedDuration = day.estimated_duration || 0;
@@ -1332,23 +1335,26 @@ RULES:
 Return ONLY valid JSON.`;
 
     try {
-      const result = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: prompt,
-      });
-      const responseText = result.text || '';
+      // Validation function for exercise explanation
+      const validateExplanation = (data: any) => {
+        const errors = [];
+        if (!data.explanation) errors.push("Missing 'explanation' field");
+        if (!data.muscles_worked || !Array.isArray(data.muscles_worked)) errors.push("Missing or invalid 'muscles_worked'");
+        if (!data.form_cue) errors.push("Missing 'form_cue'");
+        return { valid: errors.length === 0, errors };
+      };
 
-      // Extract JSON
-      let jsonString = responseText;
-      if (responseText.includes('```json')) {
-        const match = responseText.match(/```json\n([\s\S]*?)\n```/);
-        if (match) jsonString = match[1];
-      } else if (responseText.includes('```')) {
-        const match = responseText.match(/```\n([\s\S]*?)\n```/);
-        if (match) jsonString = match[1];
-      }
+      loggers.ai.info(`Generating explanation for ${args.exerciseName}...`);
 
-      const exerciseData = JSON.parse(jsonString);
+      const exerciseData = await generateJSONWithRetry(
+        ai.models,
+        {
+          model: "gemini-2.0-flash",
+          contents: [{ parts: [{ text: prompt }] }],
+        },
+        validateExplanation,
+        2 // Max 2 attempts for simple task
+      ) as any;
 
       // Save to cache
       await ctx.runMutation(api.mutations.cacheExerciseExplanation, {
@@ -1751,20 +1757,29 @@ Image 1: FRONT view`,
 Respond in ${args.language || "English"} with valid JSON only.`,
       });
 
-      const result = await ai.models.generateContent({
-        model: "gemini-2.5-flash", // Fast model for simple body composition
-        contents: [{ parts: promptParts }],
-        config: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-          responseMimeType: "application/json",
+      const validateAnalysis = (data: any) => {
+        const errors = [];
+        if (typeof data.bodyFatEstimate !== 'number') errors.push("Missing or invalid 'bodyFatEstimate'");
+        if (!data.improvements || !Array.isArray(data.improvements)) errors.push("Missing 'improvements' array");
+        return { valid: errors.length === 0, errors };
+      };
+
+      const analysis = await generateJSONWithRetry(
+        ai.models,
+        {
+          model: "gemini-2.5-flash",
+          contents: [{ parts: promptParts }],
+          config: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+            responseMimeType: "application/json",
+          },
         },
-      });
+        validateAnalysis,
+        2
+      ) as any;
 
-      const analysisText = result.text || '';
 
-      // Parse JSON response
-      const analysis = JSON.parse(analysisText);
 
       loggers.ai.info("Paired body photo analysis completed");
 
@@ -1834,22 +1849,20 @@ RULES:
 
 Return ONLY valid JSON.`;
 
-        const result = await ai.models.generateContent({
-          model: "gemini-2.0-flash",
-          contents: prompt,
-        });
+        const validateSteps = (data: any) => {
+          if (!data.step_by_step || !Array.isArray(data.step_by_step)) return { valid: false, errors: ["Missing 'step_by_step' array"] };
+          return { valid: true, errors: [] };
+        };
 
-        const responseText = result.text || '';
-        let jsonString = responseText;
-        if (responseText.includes('```json')) {
-          const match = responseText.match(/```json\n([\s\S]*?)\n```/);
-          if (match) jsonString = match[1];
-        } else if (responseText.includes('```')) {
-          const match = responseText.match(/```\n([\s\S]*?)\n```/);
-          if (match) jsonString = match[1];
-        }
-
-        const data = JSON.parse(jsonString);
+        const data = await generateJSONWithRetry(
+          ai.models,
+          {
+            model: "gemini-2.0-flash",
+            contents: [{ parts: [{ text: prompt }] }],
+          },
+          validateSteps,
+          2
+        ) as any;
 
         // Update the exercise with step_by_step
         await ctx.runMutation(api.mutations.updateExerciseStepByStep, {

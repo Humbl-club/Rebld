@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { explainExercise } from './geminiService';
 
 /**
  * Exercise Explanation Caching Service
@@ -96,36 +95,6 @@ export const useExerciseExplanationWithCache = (
   return { explanation, loading };
 };
 
-// Legacy async functions for backwards compatibility
-export const getCachedExplanation = async (exerciseName: string): Promise<string | null> => {
-  console.warn("getCachedExplanation: Use useCachedExplanation hook instead");
-  return null;
-};
-
-export const cacheExplanation = async (
-  exerciseName: string,
-  explanation: string,
-  source: 'gemini_ultra' | 'gemini_api' = 'gemini_api'
-) => {
-  console.warn("cacheExplanation: Use useCachedExplanation hook instead");
-};
-
-export const getExerciseExplanationWithCache = async (
-  exerciseName: string,
-  exerciseNotes?: string
-): Promise<string> => {
-  console.warn("getExerciseExplanationWithCache: Use useExerciseExplanationWithCache hook instead");
-  // Fallback to direct API call
-  return explainExercise(exerciseName, exerciseNotes);
-};
-
-export const batchUploadExercises = async (exercises: Array<{
-  name: string;
-  explanation: string;
-  muscles?: string[];
-  form_cue?: string;
-  mistake?: string;
-}>) => {
-  console.warn("batchUploadExercises: This needs to be updated to use Convex mutations");
-  // This would need to be updated to use batch mutations
-};
+// Legacy functions removed - use hooks instead:
+// - useCachedExplanation for getting/setting cached explanations
+// - useExerciseExplanationWithCache for fetching with cache

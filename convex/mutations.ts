@@ -61,15 +61,15 @@ export const upsertSexSpecificGuideline = mutation({
 
     const goalValue = args.goal ?? null;
     const experienceValue = args.experience ?? null;
-    
+
     // Find existing record by unique key (sex, goal, experience)
     const candidates = await ctx.db
       .query("sexSpecificGuidelines")
       .withIndex("by_sex_goal_exp", (q) => q.eq("sex", args.sex))
       .collect();
-    
+
     const existing = candidates.find(
-      (r) => 
+      (r) =>
         (r.goal === goalValue || (r.goal === null && goalValue === null)) &&
         (r.experience === experienceValue || (r.experience === null && experienceValue === null))
     );
@@ -121,9 +121,9 @@ export const upsertSportGuideline = mutation({
       .query("sportGuidelines")
       .withIndex("by_sport_goal_exp", (q) => q.eq("sport", args.sport))
       .collect();
-    
+
     const existing = candidates.find(
-      (r) => 
+      (r) =>
         (r.goal === goalValue || (r.goal === null && goalValue === null)) &&
         (r.experience === experienceValue || (r.experience === null && experienceValue === null))
     );
@@ -169,15 +169,15 @@ export const upsertBodyContextGuideline = mutation({
 
     const athleticLevelValue = args.athletic_level ?? null;
     const bodyTypeValue = args.body_type ?? null;
-    
+
     // Find existing record by unique key (band, athletic_level, body_type)
     const candidates = await ctx.db
       .query("bodyContextGuidelines")
       .withIndex("by_band_level_type", (q) => q.eq("band", args.band))
       .collect();
-    
+
     const existing = candidates.find(
-      (r) => 
+      (r) =>
         (r.athletic_level === athleticLevelValue || (r.athletic_level === null && athleticLevelValue === null)) &&
         (r.body_type === bodyTypeValue || (r.body_type === null && bodyTypeValue === null))
     );
@@ -326,12 +326,12 @@ export const createWorkoutPlan = mutation({
       if (!category || typeof category !== "string") {
         const exerciseName = ex.exercise_name?.toLowerCase() || '';
         const isWarmup = exerciseName.includes('stretch') ||
-                        exerciseName.includes('warmup') ||
-                        exerciseName.includes('mobility') ||
-                        exerciseName.includes('activation') ||
-                        exerciseName.includes('foam roll');
+          exerciseName.includes('warmup') ||
+          exerciseName.includes('mobility') ||
+          exerciseName.includes('activation') ||
+          exerciseName.includes('foam roll');
         const isCooldown = exerciseName.includes('cooldown') ||
-                          exerciseName.includes('static stretch');
+          exerciseName.includes('static stretch');
         category = isWarmup ? 'warmup' : (isCooldown ? 'cooldown' : 'main');
       }
 
@@ -533,13 +533,13 @@ export const createWorkoutPlan = mutation({
       blocks: d.blocks?.length || 0,
       sessions: d.sessions?.length || 0,
       exercises: (d.blocks || []).flatMap((b: any) => b.exercises || []).length +
-                 (d.sessions || []).flatMap((s: any) => (s.blocks || []).flatMap((b: any) => b.exercises || [])).length
+        (d.sessions || []).flatMap((s: any) => (s.blocks || []).flatMap((b: any) => b.exercises || [])).length
     }));
     loggers.mutations.info("Plan structure:", JSON.stringify(daysSummary));
 
     // Extract unique exercises server-side (FAST - runs in Convex)
     const exerciseMap = new Map<string, { exercise_name: string; notes?: string; category: 'warmup' | 'main' | 'cooldown' }>();
-    
+
     // Helper to add exercise to map (deduplicates by lowercase name)
     const addExercise = (ex: { exercise_name: string; notes?: string | null; category: 'warmup' | 'main' | 'cooldown' }) => {
       const key = ex.exercise_name.toLowerCase().trim();
@@ -941,7 +941,7 @@ export const cacheExerciseExplanation = mutation({
   },
   handler: async (ctx, args) => {
     // Use normalized name if provided, otherwise normalize the provided name
-    const normalized = args.normalized_name 
+    const normalized = args.normalized_name
       ? args.normalized_name.toLowerCase().trim().replace(/\s+/g, "_")
       : args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
     const now = new Date().toISOString();
@@ -964,11 +964,11 @@ export const cacheExerciseExplanation = mutation({
       last_accessed: now,
       source: args.source,
       // NEW: Use provided metadata or preserve existing
-      equipment_required: args.equipment_required && args.equipment_required.length > 0 
-        ? args.equipment_required 
+      equipment_required: args.equipment_required && args.equipment_required.length > 0
+        ? args.equipment_required
         : (existing?.equipment_required || []),
-      contraindications: args.contraindications !== undefined 
-        ? args.contraindications 
+      contraindications: args.contraindications !== undefined
+        ? args.contraindications
         : (existing?.contraindications || []),
       movement_pattern: args.movement_pattern || existing?.movement_pattern || null,
       exercise_tier: args.exercise_tier || existing?.exercise_tier || null,
@@ -976,9 +976,9 @@ export const cacheExerciseExplanation = mutation({
       injury_risk: args.injury_risk || existing?.injury_risk || null,
       evidence_level: args.evidence_level || existing?.evidence_level || null,
       // Use provided value, preserve existing, or use smart default based on exercise characteristics
-      minimum_experience_level: args.minimum_experience_level || existing?.minimum_experience_level || 
-        (args.injury_risk === "high" ? "advanced" : 
-         args.injury_risk === "moderate" ? "intermediate" : "beginner"),
+      minimum_experience_level: args.minimum_experience_level || existing?.minimum_experience_level ||
+        (args.injury_risk === "high" ? "advanced" :
+          args.injury_risk === "moderate" ? "intermediate" : "beginner"),
       // Preserve other existing fields
       value_score: existing?.value_score || null,
       sport_applications: existing?.sport_applications || null,
@@ -1000,11 +1000,11 @@ export const cacheExerciseExplanation = mutation({
         equipment_required: cacheData.equipment_required || [],
         contraindications: cacheData.contraindications || [],
         // Ensure minimum_experience_level is never null (use smart default based on exercise characteristics)
-        minimum_experience_level: cacheData.minimum_experience_level || 
-          (cacheData.injury_risk === "high" ? "advanced" : 
-           cacheData.injury_risk === "moderate" ? "intermediate" : "beginner"),
+        minimum_experience_level: cacheData.minimum_experience_level ||
+          (cacheData.injury_risk === "high" ? "advanced" :
+            cacheData.injury_risk === "moderate" ? "intermediate" : "beginner"),
       };
-      
+
       await ctx.db.insert("exerciseCache", newCacheData);
     }
   },
@@ -1129,20 +1129,20 @@ export const updateExerciseMetadata = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     const existing = await ctx.db
       .query("exerciseCache")
       .withIndex("by_exerciseName", (q) => q.eq("exercise_name", normalized))
       .first();
-    
+
     if (!existing) {
       throw new Error(`Exercise ${args.exerciseName} not found`);
     }
-    
+
     const updateData: any = {
       last_accessed: new Date().toISOString(),
     };
-    
+
     // Only update provided fields
     if (args.equipment_required !== undefined) updateData.equipment_required = args.equipment_required;
     if (args.evidence_level !== undefined) updateData.evidence_level = args.evidence_level;
@@ -1152,7 +1152,7 @@ export const updateExerciseMetadata = mutation({
     if (args.minimum_experience_level !== undefined) updateData.minimum_experience_level = args.minimum_experience_level;
     if (args.injury_risk !== undefined) updateData.injury_risk = args.injury_risk;
     if (args.sport_applications !== undefined) updateData.sport_applications = args.sport_applications;
-    
+
     await ctx.db.patch(existing._id, updateData);
   },
 });
@@ -1234,7 +1234,7 @@ export const saveExerciseModification = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.base_exercise.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     // Check if modification exists for this exercise
     const existing = await ctx.db
       .query("exerciseModifications")
@@ -1293,7 +1293,7 @@ export const saveInjuryProtocol = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.issue.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     // Check if protocol exists for this issue
     const existing = await ctx.db
       .query("injuryProtocols")
@@ -1336,14 +1336,14 @@ export const updateUserExercisePreference = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     const existing = await ctx.db
       .query("userExercisePreferences")
-      .withIndex("by_userId_exercise", (q) => 
+      .withIndex("by_userId_exercise", (q) =>
         q.eq("userId", args.userId).eq("exerciseName", normalized)
       )
       .first();
-    
+
     const now = new Date().toISOString();
     const data = {
       userId: args.userId,
@@ -1351,7 +1351,7 @@ export const updateUserExercisePreference = mutation({
       last_updated: now,
       ...args.updates,
     };
-    
+
     if (existing) {
       await ctx.db.patch(existing._id, data);
     } else {
@@ -1386,52 +1386,52 @@ export const updateUserExerciseAnalytics = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     // Calculate analytics
     let totalVolume = 0;
     let bestWeight = 0;
     let bestReps = 0;
-    
+
     args.sets.forEach((set) => {
       const weight = typeof set.weight === 'string' ? parseFloat(set.weight) : set.weight;
       const reps = typeof set.reps === 'string' ? parseFloat(set.reps) : set.reps;
-      
+
       if (!isNaN(weight) && !isNaN(reps)) {
         totalVolume += weight * reps;
         if (weight > bestWeight) bestWeight = weight;
         if (reps > bestReps) bestReps = reps;
       }
     });
-    
+
     const existing = await ctx.db
       .query("userExerciseAnalytics")
-      .withIndex("by_userId_exercise", (q) => 
+      .withIndex("by_userId_exercise", (q) =>
         q.eq("userId", args.userId).eq("exerciseName", normalized)
       )
       .first();
-    
+
     const now = new Date().toISOString();
-    
+
     if (existing) {
       const newTotalSets = existing.total_sets_completed + args.sets.length;
       const newTotalVolume = existing.total_volume + totalVolume;
       const newBestWeight = bestWeight > (existing.best_weight || 0) ? bestWeight : existing.best_weight;
       const newBestReps = bestReps > (existing.best_reps || 0) ? bestReps : existing.best_reps;
-      
+
       // Determine strength trend (simplified - could be more sophisticated)
       let strengthTrend = existing.strength_trend;
       if (newBestWeight > (existing.best_weight || 0) || newBestReps > (existing.best_reps || 0)) {
         strengthTrend = "improving";
       }
-      
+
       await ctx.db.patch(existing._id, {
         total_sets_completed: newTotalSets,
         total_volume: newTotalVolume,
         best_weight: newBestWeight,
         best_reps: newBestReps,
         strength_trend: strengthTrend,
-        last_pr_date: (newBestWeight > (existing.best_weight || 0) || newBestReps > (existing.best_reps || 0)) 
-          ? now 
+        last_pr_date: (newBestWeight > (existing.best_weight || 0) || newBestReps > (existing.best_reps || 0))
+          ? now
           : existing.last_pr_date,
       });
     } else {
@@ -1447,13 +1447,13 @@ export const updateUserExerciseAnalytics = mutation({
         injury_incidents: [],
       });
     }
-    
+
     // Also update global exercise usage count
     const exerciseCache = await ctx.db
       .query("exerciseCache")
       .withIndex("by_exerciseName", (q) => q.eq("exercise_name", normalized))
       .first();
-    
+
     if (exerciseCache) {
       await ctx.db.patch(exerciseCache._id, {
         global_usage_count: (exerciseCache.global_usage_count || 0) + 1,
@@ -1477,20 +1477,20 @@ export const recordExerciseInjury = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     const existing = await ctx.db
       .query("userExerciseAnalytics")
-      .withIndex("by_userId_exercise", (q) => 
+      .withIndex("by_userId_exercise", (q) =>
         q.eq("userId", args.userId).eq("exerciseName", normalized)
       )
       .first();
-    
+
     const incident = {
       date: new Date().toISOString(),
       severity: args.severity,
       notes: args.notes,
     };
-    
+
     if (existing) {
       await ctx.db.patch(existing._id, {
         injury_incidents: [...(existing.injury_incidents || []), incident],
@@ -1548,16 +1548,16 @@ export const updateExerciseClassification = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exerciseName.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     const existing = await ctx.db
       .query("exerciseCache")
       .withIndex("by_exerciseName", (q) => q.eq("exercise_name", normalized))
       .first();
-    
+
     if (!existing) {
       throw new Error(`Exercise ${args.exerciseName} not found in cache`);
     }
-    
+
     const updates: any = {};
     if (args.primary_category !== undefined) updates.primary_category = args.primary_category;
     if (args.exercise_tier !== undefined) updates.exercise_tier = args.exercise_tier;
@@ -1570,7 +1570,7 @@ export const updateExerciseClassification = mutation({
       updates.verified_by_expert = args.verified_by_expert;
       updates.last_reviewed = new Date().toISOString();
     }
-    
+
     await ctx.db.patch(existing._id, updates);
   },
 });
@@ -1603,7 +1603,7 @@ export const cacheCompressedKnowledge = mutation({
       .query("knowledgeCache")
       .withIndex("by_key", (q) => q.eq("cache_key", args.cache_key))
       .first();
-    
+
     if (existing) {
       // Update existing cache
       await ctx.db.patch(existing._id, {
@@ -1657,9 +1657,9 @@ export const cacheCompressedGuidelines = mutation({
       .query("knowledgeCache")
       .withIndex("by_key", (q) => q.eq("cache_key", args.cache_key))
       .first();
-    
+
     const now = new Date().toISOString();
-    
+
     if (existing) {
       // Update existing cache
       await ctx.db.patch(existing._id, {
@@ -1693,7 +1693,7 @@ export const incrementKnowledgeCacheUsage = mutation({
       .query("knowledgeCache")
       .withIndex("by_key", (q) => q.eq("cache_key", args.cache_key))
       .first();
-    
+
     if (existing) {
       await ctx.db.patch(existing._id, {
         usage_count: existing.usage_count + 1,
@@ -1750,7 +1750,7 @@ export const addExerciseRelationship = mutation({
   handler: async (ctx, args) => {
     const normalized_primary = args.primary_exercise.toLowerCase().replace(/\s+/g, '_');
     const normalized_related = args.related_exercise.toLowerCase().replace(/\s+/g, '_');
-    
+
     return await ctx.db.insert("exerciseRelationships", {
       primary_exercise: normalized_primary,
       related_exercise: normalized_related,
@@ -1870,14 +1870,14 @@ export const updateSportBucket = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exercise_name.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     const existing = await ctx.db
       .query("sportBuckets")
-      .withIndex("by_sport_exercise", (q) => 
+      .withIndex("by_sport_exercise", (q) =>
         q.eq("sport", args.sport).eq("exercise_name", normalized)
       )
       .first();
-    
+
     const now = new Date().toISOString();
     const data = {
       sport: args.sport,
@@ -1898,7 +1898,7 @@ export const updateSportBucket = mutation({
       last_updated: now,
       confidence_score: args.confidence_score ?? (existing?.confidence_score ?? 0),
     };
-    
+
     if (existing) {
       await ctx.db.patch(existing._id, data);
       return existing._id;
@@ -1932,7 +1932,7 @@ export const recordExercisePerformance = mutation({
   },
   handler: async (ctx, args) => {
     const normalized = args.exercise_name.toLowerCase().trim().replace(/\s+/g, "_");
-    
+
     return await ctx.db.insert("exercisePerformance", {
       user_id: args.user_id,
       exercise_name: normalized,
@@ -2141,5 +2141,199 @@ export const setAdminRole = mutation({
     await ctx.db.patch(targetUser._id, { role: args.role });
 
     return { success: true, userId: args.targetUserId, role: args.role };
+  },
+});
+
+// Delete user account - Permanent deletion for App Store compliance
+export const deleteUserAccount = mutation({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // SECURITY: Verify userId matches authenticated user
+    await verifyAuthenticatedUser(ctx, args.userId);
+    const userId = args.userId;
+
+    // 1. Delete user from users table
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+
+    if (user) {
+      await ctx.db.delete(user._id);
+    }
+
+    // 2. Delete workout plans
+    const workoutPlans = await ctx.db
+      .query("workoutPlans")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const plan of workoutPlans) {
+      // Also clean up shared plans and buddies for each plan
+      const sharedPlans = await ctx.db
+        .query("sharedPlans")
+        .filter((q) => q.eq(q.field("planId"), plan._id))
+        .collect();
+      for (const sharedPlan of sharedPlans) {
+        await ctx.db.delete(sharedPlan._id);
+      }
+
+      const buddyRelationships = await ctx.db
+        .query("workoutBuddies")
+        .filter((q) => q.eq(q.field("sharedPlanId"), plan._id))
+        .collect();
+
+      for (const buddy of buddyRelationships) {
+        await ctx.db.delete(buddy._id);
+      }
+
+      await ctx.db.delete(plan._id);
+    }
+
+    // 3. Delete workout logs
+    const workoutLogs = await ctx.db
+      .query("workoutLogs")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const log of workoutLogs) {
+      await ctx.db.delete(log._id);
+    }
+
+    // 4. Delete exercise history
+    const exerciseHistory = await ctx.db
+      .query("exerciseHistory")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const history of exerciseHistory) {
+      await ctx.db.delete(history._id);
+    }
+
+    // 5. Delete user exercise preferences
+    const userExercisePreferences = await ctx.db
+      .query("userExercisePreferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const pref of userExercisePreferences) {
+      await ctx.db.delete(pref._id);
+    }
+
+    // 6. Delete user exercise analytics
+    const userExerciseAnalytics = await ctx.db
+      .query("userExerciseAnalytics")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const analytics of userExerciseAnalytics) {
+      await ctx.db.delete(analytics._id);
+    }
+
+    // 7. Delete workout buddies (where user is initiator)
+    const workoutBuddies = await ctx.db
+      .query("workoutBuddies")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const buddy of workoutBuddies) {
+      await ctx.db.delete(buddy._id);
+    }
+    // Delete workout buddies (where user is receiver)
+    const workoutBuddiesReceiver = await ctx.db
+      .query("workoutBuddies")
+      .withIndex("by_buddyId", (q) => q.eq("buddyId", userId))
+      .collect();
+    for (const buddy of workoutBuddiesReceiver) {
+      await ctx.db.delete(buddy._id);
+    }
+
+    // 8. Delete shared plans (where sharedBy is user)
+    const sharedPlansBy = await ctx.db
+      .query("sharedPlans")
+      .withIndex("by_sharedBy", (q) => q.eq("sharedBy", userId))
+      .collect();
+    for (const sp of sharedPlansBy) {
+      await ctx.db.delete(sp._id);
+    }
+
+    // 9. Delete buddy settings
+    const buddySettings = await ctx.db
+      .query("buddySettings")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const setting of buddySettings) {
+      await ctx.db.delete(setting._id);
+    }
+
+    // 10. Delete buddy notifications
+    const buddyNotifications = await ctx.db
+      .query("buddyNotifications")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const notif of buddyNotifications) {
+      await ctx.db.delete(notif._id);
+    }
+
+    // 11. Delete achievements
+    const achievements = await ctx.db
+      .query("achievements")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const achievement of achievements) {
+      await ctx.db.delete(achievement._id);
+    }
+
+    // 12. Delete streak data
+    const streakData = await ctx.db
+      .query("streakData")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const streak of streakData) {
+      await ctx.db.delete(streak._id);
+    }
+
+    // 13. Delete user submitted plans
+    const userSubmittedPlans = await ctx.db
+      .query("userSubmittedPlans")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const usp of userSubmittedPlans) {
+      await ctx.db.delete(usp._id);
+    }
+
+    // 14. Delete progress photos
+    const progressPhotos = await ctx.db
+      .query("progressPhotos")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const photo of progressPhotos) {
+      await ctx.db.delete(photo._id);
+    }
+
+    // 15. Delete health metrics
+    const healthMetrics = await ctx.db
+      .query("healthMetrics")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const metric of healthMetrics) {
+      await ctx.db.delete(metric._id);
+    }
+
+    // 16. Delete events
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const event of events) {
+      await ctx.db.delete(event._id);
+    }
+
+    // 17. Delete exercise performance
+    const exercisePerformance = await ctx.db
+      .query("exercisePerformance")
+      .withIndex("by_user", (q) => q.eq("user_id", userId))
+      .collect();
+    for (const perf of exercisePerformance) {
+      await ctx.db.delete(perf._id);
+    }
+
+    return { success: true };
   },
 });

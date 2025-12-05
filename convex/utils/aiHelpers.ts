@@ -15,15 +15,14 @@ interface MetricsTemplate {
   target_sets?: number;
   sets?: number;
   target_reps?: string | number;
-  duration_minutes?: number;
-  target_duration_minutes?: number;
-  duration_seconds?: number;
-  target_duration_s?: number;
+  duration_minutes?: number | string;
+  target_duration_minutes?: number | string;
+  duration_seconds?: number | string;
+  target_duration_s?: number | string;
   rest_seconds?: number;
   rest_period_s?: number;
   distance_km?: number;
   distance_m?: number;
-  [key: string]: unknown;
 }
 
 interface Exercise {
@@ -69,8 +68,8 @@ interface AIModel {
 }
 
 interface GenerationConfig {
-  model?: string;
-  contents: Array<{ parts: Array<{ text: string }> }>;
+  model: string;
+  contents: Array<{ parts: Array<{ text: string }> }> | string;
   config?: Record<string, unknown>;
 }
 
@@ -133,7 +132,7 @@ export async function generateWithRetry(
         const feedbackText = `\n\nPREVIOUS ATTEMPT HAD ERRORS - FIX THESE:\n${errorList}\n\nRegenerate with these fixes applied.`;
 
         // Add feedback to the prompt
-        if (config.contents && config.contents[0] && config.contents[0].parts) {
+        if (typeof config.contents !== 'string' && Array.isArray(config.contents) && config.contents.length > 0 && config.contents[0]?.parts) {
           config.contents[0].parts.push({ text: feedbackText });
         }
       }
@@ -199,6 +198,68 @@ export async function generateWithRetry(
 }
 
 /**
+ * Generic retry logic for any JSON-based AI generation
+ */
+export async function generateJSONWithRetry<T>(
+  model: AIModel,
+  config: GenerationConfig,
+  validateFn?: (parsed: T) => { valid: boolean; errors: string[] },
+  maxAttempts: number = 3
+): Promise<T> {
+  let lastError: Error | null = null;
+  let validationErrors: string[] = [];
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[Attempt ${attempt}/${maxAttempts}] Generating JSON content...`);
+
+      // Add validation feedback to subsequent attempts
+      if (attempt > 1 && validationErrors.length > 0) {
+        const errorList = validationErrors.map((e, i) => `${i + 1}. ${e}`).join('\n');
+        const feedbackText = `\n\nPREVIOUS ATTEMPT HAD ERRORS - FIX THESE:\n${errorList}\n\nRegenerate with these fixes applied. Return ONLY valid JSON.`;
+
+        if (typeof config.contents !== 'string' && Array.isArray(config.contents) && config.contents.length > 0 && config.contents[0]?.parts) {
+          const parts = config.contents[0].parts as any[]; // Cast to allow push
+          parts.push({ text: feedbackText });
+        }
+      }
+
+      const result = await model.generateContent(config);
+      const text = result.text || result.response?.text() || '';
+
+      const parsed = extractAndParseJSON(text) as T;
+
+      if (validateFn) {
+        const validation = validateFn(parsed);
+        if (validation.valid) {
+          return parsed;
+        }
+        validationErrors = validation.errors;
+        console.warn(`[Attempt ${attempt}] INVALID JSON - Errors: ${validation.errors.join(', ')}`);
+
+        if (attempt === maxAttempts) {
+          throw new Error(`Validation failed after ${maxAttempts} attempts: ${validation.errors.join(', ')}`);
+        }
+        continue;
+      }
+
+      return parsed;
+
+    } catch (error: any) {
+      lastError = error;
+      console.error(`[Attempt ${attempt}] ERROR: ${error.message}`);
+
+      if (attempt === maxAttempts) break;
+
+      const delay = 500 + Math.floor(Math.random() * 500);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError || new Error('JSON Generation failed');
+}
+
+/**
  * Estimate workout duration based on plan structure
  */
 export function estimateWorkoutDuration(day: Day | { blocks?: Block[] }): number {
@@ -234,18 +295,24 @@ export function estimateWorkoutDuration(day: Day | { blocks?: Block[] }): number
       // Main work - strength
       else if (metricsTemplate.type === 'sets_reps_weight' || metricsTemplate.type === 'sets_reps') {
         const sets = metricsTemplate.target_sets || 3;
-        const restSeconds = ex.rest_seconds || 120;
+        const restSeconds = metricsTemplate.rest_seconds || 120;
         const workTimePerSet = 30; // ~30 seconds per set (conservative)
         const totalSetTime = (workTimePerSet + restSeconds) * sets;
         totalMinutes += totalSetTime / 60;
       }
       // Cardio - duration
       else if (metricsTemplate.type === 'duration_only') {
-        totalMinutes += metricsTemplate.duration_minutes || 0;
+        const duration = typeof metricsTemplate.duration_minutes === 'string'
+          ? parseInt(metricsTemplate.duration_minutes) || 0
+          : metricsTemplate.duration_minutes || 0;
+        totalMinutes += duration;
       }
       // Distance + duration
       else if (metricsTemplate.type === 'distance_duration') {
-        totalMinutes += metricsTemplate.target_duration_minutes || 0;
+        const duration = typeof metricsTemplate.target_duration_minutes === 'string'
+          ? parseInt(metricsTemplate.target_duration_minutes) || 0
+          : metricsTemplate.target_duration_minutes || 0;
+        totalMinutes += duration;
       }
       // AMRAP blocks
       else if (block.type === 'amrap') {

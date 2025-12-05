@@ -386,7 +386,14 @@
     "logSet": "Satz protokollieren",
     "completedSets": "Abgeschlossene Sätze",
     "setNumber": "Satz {{number}}:",
-    "weightReps": "{{weight}}kg × {{reps}}W"
+    "weightReps": "{{weight}}kg × {{reps}}W",
+    "howTo": "Anleitung",
+    "doThis": "Richtig",
+    "avoid": "Vermeiden",
+    "yourNotes": "Deine Notizen",
+    "gotIt": "Verstanden",
+    "loading": "Lädt...",
+    "loadFailed": "Fehler beim Laden"
   },
   "errors": {
     "somethingWentWrong": "Etwas ist schiefgelaufen",
