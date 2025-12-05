@@ -472,6 +472,7 @@
     "setOf": "Satz {{current}}/{{total}}",
     "roundsShort": "{{count}} Rnd",
     "rpeValue": "RPE {{value}}",
+    "duration": "Dauer",
     "comingUp": "KOMMT ALS NÄCHSTES",
     "last": "LETZTE",
     "weightLabel": "Gewicht (kg)",

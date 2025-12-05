@@ -453,6 +453,7 @@
     "setOf": "Set {{current}}/{{total}}",
     "roundsShort": "{{count}} rnds",
     "rpeValue": "RPE {{value}}",
+    "duration": "Duration",
     "comingUp": "COMING UP",
     "last": "LAST",
     "weightLabel": "Weight (kg)",
