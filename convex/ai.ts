@@ -549,11 +549,10 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
       const parsedPlan = await generateWithRetry(
         ai.models,
         {
-          model: 'gemini-3-pro-preview', // Upgraded to Gemini 3 Pro
+          model: 'gemini-2.5-pro', // Stable pro model for complex parsing
           contents: `${fullPrompt}\n\n---\nUSER'S PLAN TO PARSE:\n---\n${args.planText}`,
           config: {
             responseMimeType: "application/json",
-            thinkingConfig: { thinkingBudget: 8192 }
           }
         },
         validateWorkoutPlan,
@@ -763,21 +762,21 @@ export const generateWorkoutPlan = action({
 
     // ═══════════════════════════════════════════════════════════
     // PERFORMANCE OPTIMIZATION: Smart Model Selection
-    // Upgraded to Gemini 3 Pro Preview for faster generation (Dec 2025)
+    // Using stable Gemini 2.5 Pro for reliable plan generation
     // ═══════════════════════════════════════════════════════════
-    let selectedModel = 'gemini-3-pro-preview'; // Default to Gemini 3 Pro
+    let selectedModel = 'gemini-2.5-pro'; // Stable, high-quality model
 
     // Force model if specified
     if (_forceProModel) {
-      selectedModel = 'gemini-3-pro-preview';
-      loggers.ai.info("🎯 Model: Gemini 3 Pro (forced - quality mode)");
+      selectedModel = 'gemini-2.5-pro';
+      loggers.ai.info("🎯 Model: Gemini 2.5 Pro (forced - quality mode)");
     } else if (_useFlashModel) {
       selectedModel = 'gemini-2.5-flash';
       loggers.ai.info("⚡ Model: 2.5 Flash (forced - fast mode)");
     } else {
-      // Default to Gemini 3 Pro Preview - latest model with best quality
-      selectedModel = 'gemini-3-pro-preview';
-      loggers.ai.info("🎯 Model: Gemini 3 Pro (default - latest model)");
+      // Default to Gemini 2.5 Pro - stable, reliable model
+      selectedModel = 'gemini-2.5-pro';
+      loggers.ai.info("🎯 Model: Gemini 2.5 Pro (default - stable model)");
     }
 
     // Get sport-specific training context
@@ -1178,8 +1177,6 @@ Return JSON:
           contents: finalPrompt,
           config: {
             responseMimeType: "application/json",
-            // Gemini 3 Pro benefits from a healthy thinking budget for complex planning
-            thinkingConfig: selectedModel === 'gemini-3-pro-preview' ? { thinkingBudget: 8192 } : undefined
           }
         },
         validateWorkoutPlan,
