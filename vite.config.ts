@@ -40,6 +40,19 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     plugins: [react()],
+    build: {
+      chunkSizeWarningLimit: 1000, // Increase from 500kb to 1000kb
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor chunks for better caching
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-clerk': ['@clerk/clerk-react'],
+            'vendor-convex': ['convex/react'],
+          },
+        },
+      },
+    },
     define: {
       // Environment variables exposed to client
       // Local dev: reads from .env.local to avoid stale shell variables
