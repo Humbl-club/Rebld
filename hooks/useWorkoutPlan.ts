@@ -288,6 +288,7 @@ export default function useWorkoutPlan() {
 
     const activePlanFormatted: WorkoutPlan | null = activePlan ? {
         id: activePlan._id,
+        _id: activePlan._id, // Required for Chatbot to send messages
         name: activePlan.name,
         weeklyPlan: activePlan.weeklyPlan,
         dailyRoutine: activePlan.dailyRoutine || undefined,

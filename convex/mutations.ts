@@ -504,6 +504,7 @@ export const createWorkoutPlan = mutation({
           notes: notes,
           sessions: day.sessions.map((session: any, idx: number) => normalizeSession(session, idx)),
           blocks: [], // Empty for 2x daily days - exercises are in sessions
+          estimated_duration: day.estimated_duration,
         };
       } else if (hasBlocks) {
         // Single session training: normalize blocks
@@ -513,6 +514,7 @@ export const createWorkoutPlan = mutation({
           focus: focus,
           notes: notes,
           blocks: day.blocks.map((block: any, idx: number) => normalizeBlock(block, idx)),
+          estimated_duration: day.estimated_duration,
         };
       } else {
         // Rest day or empty day
@@ -522,6 +524,7 @@ export const createWorkoutPlan = mutation({
           focus: focus,
           notes: notes,
           blocks: [],
+          estimated_duration: day.estimated_duration,
         };
       }
     });
