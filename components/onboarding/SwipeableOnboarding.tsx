@@ -74,14 +74,82 @@ const CARDS: CardConfig[] = [
   { id: 'review', title: "Ready to\nbuild your plan?", subtitle: 'Review & generate', required: true },
 ];
 
-// Option configurations
-const GOAL_OPTIONS: { id: Goal; label: string; desc: string; icon: string }[] = [
-  { id: 'Aesthetic Physique', label: 'Aesthetic', desc: 'Build muscle, reduce body fat', icon: '💪' },
-  { id: 'Strength & Power', label: 'Strength', desc: 'Increase 1RM and power', icon: '🏋️' },
-  { id: 'Athletic Performance', label: 'Athletic', desc: 'Sport-specific conditioning', icon: '⚡' },
-  { id: 'Health & Longevity', label: 'Health', desc: 'Sustainable fitness for life', icon: '❤️' },
-  { id: 'Competition Prep', label: 'Competition', desc: 'Prepare for a specific event', icon: '🏆' },
+// Option configurations - Using sophisticated SVG icons instead of emojis
+const GOAL_OPTIONS: { id: Goal; label: string; desc: string; iconType: 'aesthetic' | 'strength' | 'athletic' | 'health' | 'competition' }[] = [
+  { id: 'Aesthetic Physique', label: 'Aesthetic', desc: 'Build muscle, reduce body fat', iconType: 'aesthetic' },
+  { id: 'Strength & Power', label: 'Strength', desc: 'Increase 1RM and power', iconType: 'strength' },
+  { id: 'Athletic Performance', label: 'Athletic', desc: 'Sport-specific conditioning', iconType: 'athletic' },
+  { id: 'Health & Longevity', label: 'Health', desc: 'Sustainable fitness for life', iconType: 'health' },
+  { id: 'Competition Prep', label: 'Competition', desc: 'Prepare for a specific event', iconType: 'competition' },
 ];
+
+// Sophisticated minimal icons for goals
+function GoalIcon({ type, selected }: { type: string; selected: boolean }) {
+  const strokeColor = selected ? 'currentColor' : 'var(--text-secondary)';
+  const strokeWidth = selected ? 2 : 1.5;
+
+  switch (type) {
+    case 'aesthetic':
+      // Diamond/gem shape - represents refinement and sculpting
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 3h12l4 6-10 13L2 9l4-6z" />
+          <path d="M11 3l1 6h9" />
+          <path d="M2 9h9l1-6" />
+          <path d="M12 22l-1-13" />
+          <path d="M12 22l1-13" />
+        </svg>
+      );
+    case 'strength':
+      // Hexagon with center - represents solid foundation and power
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case 'athletic':
+      // Lightning bolt in circle - represents speed and explosiveness
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M13 2.05v5.95l3-1 -4 8v-6l-3 1 4-8z" />
+        </svg>
+      );
+    case 'health':
+      // Infinity loop - represents longevity and balance
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4z" />
+        </svg>
+      );
+    case 'competition':
+      // Target/bullseye - represents precision and goals
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+// Fitness level descriptions for the 1-10 scale
+const FITNESS_LEVEL_INFO: Record<number, { label: string; desc: string }> = {
+  1: { label: 'Starting out', desc: 'New to training or returning after a long break' },
+  2: { label: 'Building base', desc: 'Training occasionally, still learning form' },
+  3: { label: 'Getting consistent', desc: '1-2x per week, basic exercises' },
+  4: { label: 'Regular', desc: '2-3x per week, comfortable with fundamentals' },
+  5: { label: 'Solid foundation', desc: '3x per week, good form on main lifts' },
+  6: { label: 'Committed', desc: '3-4x per week, tracking progress' },
+  7: { label: 'Dedicated', desc: '4-5x per week, structured programming' },
+  8: { label: 'Advanced', desc: '5+ days, years of consistent training' },
+  9: { label: 'Elite amateur', desc: 'Near competition-level conditioning' },
+  10: { label: 'Competition ready', desc: 'Peak form, professional-level prep' },
+};
 
 const EXPERIENCE_OPTIONS: { id: Experience; label: string; desc: string }[] = [
   { id: 'Beginner', label: 'Beginner', desc: 'Less than 1 year training' },
@@ -254,37 +322,45 @@ export default function SwipeableOnboarding({
       case 'goal':
         return (
           <div className="space-y-3">
-            {GOAL_OPTIONS.map(option => (
-              <button
-                key={option.id}
-                onClick={() => selectOption('goal', option.id)}
-                className={cn(
-                  'w-full p-4 rounded-2xl text-left transition-all duration-200',
-                  'border-2 active:scale-[0.98]',
-                  data.goal === option.id
-                    ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
-                    : 'bg-[var(--surface-secondary)] border-transparent'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{option.icon}</span>
-                  <div>
-                    <p className={cn(
-                      'font-bold text-[16px]',
-                      data.goal === option.id ? 'text-white' : 'text-[var(--text-primary)]'
+            {GOAL_OPTIONS.map(option => {
+              const isSelected = data.goal === option.id;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => selectOption('goal', option.id)}
+                  className={cn(
+                    'w-full p-4 rounded-2xl text-left transition-all duration-200',
+                    'border-2 active:scale-[0.98]',
+                    isSelected
+                      ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
+                      : 'bg-[var(--surface-secondary)] border-transparent'
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      'w-12 h-12 rounded-xl flex items-center justify-center',
+                      isSelected ? 'bg-white/20' : 'bg-[var(--surface-hover)]'
                     )}>
-                      {option.label}
-                    </p>
-                    <p className={cn(
-                      'text-[13px]',
-                      data.goal === option.id ? 'text-white/80' : 'text-[var(--text-secondary)]'
-                    )}>
-                      {option.desc}
-                    </p>
+                      <GoalIcon type={option.iconType} selected={isSelected} />
+                    </div>
+                    <div>
+                      <p className={cn(
+                        'font-bold text-[16px]',
+                        isSelected ? 'text-white' : 'text-[var(--text-primary)]'
+                      )}>
+                        {option.label}
+                      </p>
+                      <p className={cn(
+                        'text-[13px]',
+                        isSelected ? 'text-white/80' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {option.desc}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         );
 
@@ -616,26 +692,52 @@ function SpecificGoalCard({ value, onChange, sport, onSportChange, onNext }: Spe
 
       {/* Readiness */}
       <div>
-        <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
-          Current fitness level (1-10)
+        <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
+          Current fitness level
         </p>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-            <button
-              key={num}
-              onClick={() => onChange({ ...value, current_readiness: num })}
-              className={cn(
-                'flex-1 aspect-square rounded-xl font-bold text-[14px] transition-all',
-                'active:scale-[0.95]',
-                value?.current_readiness === num
-                  ? 'bg-[var(--brand-primary)] text-white'
-                  : 'bg-[var(--surface-secondary)] text-[var(--text-primary)]'
-              )}
-            >
-              {num}
-            </button>
-          ))}
+        <p className="text-[12px] text-[var(--text-secondary)] mb-3">
+          Rate your current conditioning for this event
+        </p>
+
+        {/* Visual scale with markers */}
+        <div className="mb-3">
+          <div className="flex justify-between text-[10px] text-[var(--text-tertiary)] mb-1 px-1">
+            <span>Beginner</span>
+            <span>Intermediate</span>
+            <span>Elite</span>
+          </div>
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+              <button
+                key={num}
+                onClick={() => onChange({ ...value, current_readiness: num })}
+                className={cn(
+                  'flex-1 h-10 rounded-lg font-bold text-[13px] transition-all',
+                  'active:scale-[0.95]',
+                  value?.current_readiness === num
+                    ? 'bg-[var(--brand-primary)] text-white'
+                    : num <= (value?.current_readiness || 0)
+                    ? 'bg-[var(--brand-primary)]/30 text-[var(--text-primary)]'
+                    : 'bg-[var(--surface-secondary)] text-[var(--text-primary)]'
+                )}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Dynamic explanation based on selection */}
+        {value?.current_readiness && (
+          <div className="bg-[var(--surface-secondary)] rounded-xl p-3 animate-fade-in">
+            <p className="font-semibold text-[14px] text-[var(--text-primary)]">
+              {FITNESS_LEVEL_INFO[value.current_readiness]?.label}
+            </p>
+            <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
+              {FITNESS_LEVEL_INFO[value.current_readiness]?.desc}
+            </p>
+          </div>
+        )}
       </div>
 
       <button
