@@ -1,7 +1,7 @@
 # REBLD Workout App - Master Documentation
 
-**Version:** 3.2 (Admin Security + Analytics Protection)
-**Last Updated:** December 2, 2025
+**Version:** 3.3 (Premium Onboarding + Plan Validation)
+**Last Updated:** December 8, 2025
 **Status:** Production-Ready - Full Security Hardening ✅
 
 ---
@@ -236,8 +236,64 @@ User lands on app
 
 ### 2. Onboarding Flow (New User)
 
+**Premium SwipeableOnboarding Component** (`components/onboarding/SwipeableOnboarding.tsx`)
+
+Design inspiration: Whoop/Oura editorial approach - dark, immersive, conversational.
+
 ```
-PlanImporter Component (4-step wizard)
+SwipeableOnboarding (6-card swipeable flow)
+
+Visual Design:
+  ├─ Dark immersive theme (#0a0a0a background)
+  ├─ Goal-specific gradient overlays (amber, slate, red, emerald, rose)
+  ├─ Film grain texture overlay for premium feel
+  ├─ Lucide icons throughout (Gem, Hexagon, Zap, Infinity, Target)
+  ├─ Conversational question phrasing
+  └─ White-on-dark selection states
+
+Card 1: Goal Selection
+  ├─ "What drives you?" - conversational question
+  ├─ Goals: Aesthetic Physique, Strength & Power, Athletic Performance,
+  │         General Fitness, Lose Weight
+  └─ Each goal has gradient theme + mood tagline
+
+Card 2: Experience Level
+  ├─ "How long have you been training?"
+  └─ Options: Beginner (<1 year), Intermediate (1-3 years), Advanced (3+ years)
+
+Card 3: Fitness Level (1-10 scale)
+  ├─ "How would you rate your current fitness?"
+  ├─ Visual slider with explanations for each level:
+  │   - 1-2: Sedentary, no regular exercise
+  │   - 3-4: Light activity, walks occasionally
+  │   - 5-6: Moderate fitness, works out 2-3x/week
+  │   - 7-8: Good shape, consistent training
+  │   - 9-10: Peak condition, serious athlete
+  └─ Dynamic description updates as user selects
+
+Card 4: Equipment
+  ├─ "What do you have access to?"
+  └─ Options: Minimal (bodyweight), Home Gym, Full Gym
+
+Card 5: Training Days
+  ├─ "How many days can you train?"
+  └─ Grid selection: Mon-Sun toggles
+
+Card 6: Commitment Card
+  ├─ Summary of all selections
+  ├─ Goal-specific motivational tagline
+  └─ "Build My Program" CTA button
+
+Navigation:
+  ├─ Swipe left/right between cards
+  ├─ Back button (ChevronLeft icon)
+  ├─ Progress dots at bottom
+  └─ Haptic feedback on selection (via useHaptic())
+```
+
+**Legacy PlanImporter** (still available, disabled by default)
+```
+PlanImporter Component (4-step wizard) - useSwipeableUI = true by default
 
 Step 1: Goals & Experience
   ├─ Primary goal: Strength, Hypertrophy, Athletic, Aesthetics
@@ -2108,7 +2164,84 @@ npx convex run queries:getWorkoutPlans '{"userId": "user_abc123"}'
 
 ## Recent Improvements
 
-### December 2, 2025 - Admin Authentication & Security Hardening ⭐ LATEST
+### December 8, 2025 - Premium Onboarding Redesign + Plan Validation Fix ⭐ LATEST
+
+**Complete onboarding overhaul with Whoop/Oura inspired editorial design**
+
+#### 1. Premium SwipeableOnboarding Component ✅
+**Location:** `components/onboarding/SwipeableOnboarding.tsx`
+
+**Design Features:**
+- Dark immersive theme (#0a0a0a background)
+- Goal-specific gradient overlays:
+  - Aesthetic Physique: amber/stone gradient
+  - Strength & Power: slate/zinc gradient
+  - Athletic Performance: red/stone gradient
+  - General Fitness: emerald/stone gradient
+  - Lose Weight: rose/stone gradient
+- Film grain texture overlay (SVG noise filter)
+- Conversational question phrasing ("What drives you?", "How long have you been training?")
+- White-on-dark selection states
+- Lucide icons (Gem, Hexagon, Zap, Infinity, Target, ChevronLeft)
+- Haptic feedback on all selections
+
+**6-Card Flow:**
+1. Goal selection with mood taglines
+2. Experience level (Beginner/Intermediate/Advanced)
+3. Fitness level 1-10 with dynamic explanations
+4. Equipment access
+5. Training days (Mon-Sun toggles)
+6. Commitment card with summary + "Build My Program" CTA
+
+#### 2. Fitness Level Explanations ✅
+**Problem:** Users didn't understand what fitness levels 1-10 meant
+**Solution:** Added dynamic descriptions that update as user selects:
+```typescript
+const FITNESS_LEVEL_INFO = {
+  1: { label: "Sedentary", description: "No regular exercise, mostly inactive" },
+  2: { label: "Very Low", description: "Occasional light activity" },
+  // ... through 10
+  10: { label: "Elite", description: "Peak condition, competition-ready" },
+};
+```
+
+#### 3. Plan Validation Auto-Fix ✅
+**Location:** `convex/planValidator.ts` - `fixCardioTemplates()`
+
+**Problem:** AI sometimes generated incomplete metrics templates for exercises like "Sled Push/Pull"
+**Error:** `metrics_template type 'sets_distance_rest' requires field 'sets'`
+
+**Solution:** Extended auto-fixer to add missing required fields:
+```typescript
+// For sets_distance_rest templates (e.g., Sled Push/Pull)
+if (template.type === 'sets_distance_rest') {
+  if (!template.sets) template.sets = 4;
+  if (!template.rest_seconds) template.rest_seconds = 90;
+  if (!template.distance_m) template.distance_m = 50;
+}
+
+// For sets_duration_rest templates (e.g., Plank holds)
+if (template.type === 'sets_duration_rest') {
+  if (!template.sets) template.sets = 6;
+  if (!template.duration_seconds) template.duration_seconds = 30;
+  if (!template.rest_seconds) template.rest_seconds = 60;
+}
+```
+
+#### 4. Lucide Icons Integration ✅
+**Dependency:** `lucide-react`
+**Replaced:** Custom SVG icons with consistent Lucide icon set
+**Icons used:** Gem, Hexagon, Zap, Infinity, Target, ChevronLeft, Sparkles
+
+#### 5. iOS Layout Optimization ✅
+- Fixed header with back button
+- Scrollable content area
+- Safe area insets for notch/home indicator
+- 100dvh height for proper mobile viewport
+
+---
+
+### December 2, 2025 - Admin Authentication & Security Hardening
 
 **CRITICAL: Fixed unauthenticated admin queries and analytics endpoints**
 
