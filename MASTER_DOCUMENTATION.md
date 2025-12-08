@@ -874,6 +874,13 @@ npm run seed:sex              # Sex-specific guidelines
 
 ### AI Services Architecture
 
+**Primary AI: DeepSeek V3.2** (switched December 2025)
+- `deepseek-reasoner` - Thinking mode for complex plan generation (better reasoning)
+- `deepseek-chat` - Fast mode for chat, exercise explanations, quick responses
+
+**Secondary AI: Gemini** (vision-only features)
+- `gemini-2.5-flash` - Body photo analysis (DeepSeek doesn't support vision)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      AI Layer Architecture                   │
@@ -892,10 +899,12 @@ Component
    │            ├─ Query: getSportGuidelines()
    │            ├─ Query: getBodyGuidelines()
    │            ├─ Query: getInjuryProtocols()
+   │            ├─ Build pain point rehab protocol prompt
+   │            ├─ Build user notes priority section
    │            │
    │            ├─ Build prompt with User Profile
    │            │
-   │            └──────────────────────────────────► Gemini API
+   │            └──────────────────────────────────► DeepSeek API
    │                                                     │
    │            ┌───────────────────────────────────────┘
    │            │  Returns: Structured plan JSON
@@ -908,6 +917,7 @@ Component
    │                    │
    │                    └─ Save to workoutPlans
    │                        └─ Extract & cache exercises
+   │                        └─ Schedule background enrichment
 ```
 
 ### Prompt Engineering Strategy
@@ -977,8 +987,66 @@ RULES:
 
 **Injury & Rehabilitation:**
 - McGill "Back Mechanic" (spine sparing)
+- ATG / Knees Over Toes (knee rehab protocols)
 - Cook Functional Movement Screen
 - ACSM guidelines for special populations
+
+### Evidence-Based Injury Rehab Protocols (NEW - December 2025)
+
+Location: `convex/rehab/injuryProtocolsData.ts`
+
+**Supported Pain Points (7 protocols):**
+- Knee Pain (ATG/Knees Over Toes style)
+- Lower Back Pain (McGill Big 3)
+- Shoulder Pain/Impingement
+- Hip Pain/Hip Flexor Issues
+- Wrist Pain/Carpal Tunnel
+- Ankle Pain/Instability
+- Elbow Pain (Tennis/Golfer's Elbow)
+
+**Each Protocol Includes:**
+```typescript
+{
+  issue: string,                    // "knee_pain"
+  display_name: string,             // "Knee Pain / Knee Issues"
+  exercises_to_avoid: [{            // Absolute contraindications
+    exercise: string,
+    reason: string
+  }],
+  safe_alternatives: [{             // USE INSTEAD mappings
+    avoid: string,
+    use_instead: string,
+    reason: string
+  }],
+  rehab_exercises: [{               // Therapeutic exercises
+    exercise: string,
+    category: 'warmup' | 'main' | 'cooldown',
+    priority: 'essential' | 'recommended' | 'optional',
+    sets: number,
+    reps: string,
+    notes: string,
+    evidence_level: 'high' | 'moderate' | 'low'
+  }],
+  warning_signs: string[],
+  when_to_progress: string,
+  when_to_regress: string
+}
+```
+
+**Example - Knee Pain Protocol:**
+- **AVOID:** Deep Barbell Back Squat, Walking Lunges, Box Jumps, Jump Squats
+- **USE INSTEAD:** Box Squat to Safe Depth, Reverse Lunges, Spanish Squat, Cycling
+- **MUST INCLUDE (Essential):**
+  - Backwards Walking / Sled Drag (5-10 min warmup)
+  - Tibialis Raises (2x25)
+  - Patrick Step / Peterson Step (2x15 each leg)
+
+**Integration with AI Prompt:**
+The `buildPainPointPrompt(painPoints)` function generates a comprehensive prompt section with:
+- Exercises to AVOID (absolute contraindications)
+- Safe alternatives (USE INSTEAD mappings)
+- MUST INCLUDE rehab exercises
+- Recommended exercises (when possible)
 
 #### How to Add New Knowledge
 
@@ -5271,6 +5339,47 @@ type WorkoutBlock =
 
 ---
 
-**Version:** 2.0
-**Last Updated:** November 24, 2025
+## Recent Changes (December 2025)
+
+### December 8, 2025 - AI Overhaul & Evidence-Based Rehab
+
+**AI Provider Switch:**
+- Switched from Gemini to **DeepSeek V3.2** for all AI features (except photo analysis)
+- `deepseek-reasoner` (thinking mode) for workout plan generation
+- `deepseek-chat` (fast mode) for chat, exercise explanations
+- Gemini retained only for body photo analysis (vision required)
+
+**User Notes Priority:**
+- User's `additional_notes` field now treated as **non-negotiable requirements**
+- AI prompt includes explicit "USER NOTES - HIGHEST PRIORITY" section
+- Exercises mentioned by user must be included/excluded as requested
+
+**Evidence-Based Injury Rehab Protocols:**
+- Added comprehensive ATG/McGill-style protocols for 7 pain points
+- New file: `convex/rehab/injuryProtocolsData.ts`
+- Each protocol includes exercises to avoid, safe alternatives, and mandatory rehab exercises
+- `buildPainPointPrompt()` generates AI-ready protocol sections
+
+**Database Population System:**
+- New file: `convex/populateData.ts`
+- Actions to seed: injury protocols, exercise modifications, knowledge cache
+- Background job to enrich exercise cache with AI-generated data after plan creation
+- `populateAllData` master action seeds all tables at once
+
+**Exercise Modifications:**
+- 14 major exercises with progressions/regressions
+- Injury-specific modifications included
+- Stored in `exerciseModifications` table
+
+**Files Changed:**
+- `convex/ai.ts` - DeepSeek integration, pain point prompts, user notes priority
+- `convex/mutations.ts` - Background job scheduling for exercise enrichment
+- `convex/populateData.ts` - NEW: Database population utilities
+- `convex/rehab/injuryProtocolsData.ts` - NEW: Injury rehab protocols
+- `convex/utils/aiHelpers.ts` - DeepSeek client wrapper
+
+---
+
+**Version:** 2.1
+**Last Updated:** December 8, 2025
 **Status:** Production-Ready ✅
