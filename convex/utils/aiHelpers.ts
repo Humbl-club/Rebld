@@ -383,6 +383,78 @@ This helps users track intensity with heart rate monitors.
 `;
 }
 
+// ═══════════════════════════════════════════════════════════
+// DeepSeek API Client (OpenAI-compatible)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * DeepSeek client wrapper - compatible with our AIModel interface
+ * Uses OpenAI-compatible API format
+ */
+export function createDeepSeekClient(apiKey: string) {
+  const baseUrl = 'https://api.deepseek.com/chat/completions';
+
+  return {
+    models: {
+      generateContent: async (config: GenerationConfig): Promise<GenerationResult> => {
+        // Default to deepseek-reasoner (thinking mode) for complex workout plans
+        const model = config.model || 'deepseek-reasoner';
+
+        // Convert contents to message format
+        let messageContent: string;
+        if (typeof config.contents === 'string') {
+          messageContent = config.contents;
+        } else if (Array.isArray(config.contents) && config.contents[0]?.parts) {
+          messageContent = config.contents[0].parts.map((p: { text: string }) => p.text).join('\n');
+        } else {
+          messageContent = String(config.contents);
+        }
+
+        const response = await fetch(baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an elite fitness coach and workout planner. Always respond with valid JSON when asked for workout plans.'
+              },
+              {
+                role: 'user',
+                content: messageContent
+              }
+            ],
+            stream: false,
+            // DeepSeek-specific: request JSON output
+            response_format: { type: 'json_object' },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        // Extract text from OpenAI-compatible response format
+        const text = data.choices?.[0]?.message?.content || '';
+
+        // Log reasoning content if present (deepseek-reasoner returns this)
+        if (data.choices?.[0]?.message?.reasoning_content) {
+          console.log('[DeepSeek] Reasoning:', data.choices[0].message.reasoning_content.substring(0, 200) + '...');
+        }
+
+        return { text };
+      }
+    }
+  };
+}
+
 /**
  * Get duration constraint prompt - for STRENGTH TRAINING ONLY
  * Cardio duration is handled separately based on user preferences and goals

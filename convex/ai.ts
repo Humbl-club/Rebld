@@ -1,10 +1,13 @@
 /**
- * Convex AI Actions - Server-side Gemini API calls
+ * Convex AI Actions - Server-side AI API calls
  *
  * SECURITY: API keys are kept server-side only, never exposed to client
  *
- * Model Selection:
- * - gemini-2.5-pro: Complex plan generation (higher quality, slower)
+ * Primary AI: DeepSeek V3.2 (workout plan generation)
+ * - deepseek-reasoner: Thinking mode for complex plan generation (better reasoning)
+ * - deepseek-chat: Fast mode for quick responses
+ *
+ * Secondary AI: Gemini (exercise explanations, chat)
  * - gemini-2.5-flash: Quick responses, exercise explanations (faster, cheaper)
  */
 
@@ -20,7 +23,8 @@ import {
   generateJSONWithRetry,
   addDurationEstimates,
   getHeartRateGuidance,
-  getDurationConstraintPrompt
+  getDurationConstraintPrompt,
+  createDeepSeekClient
 } from "./utils/aiHelpers";
 import {
   buildBriefMasterPrompt,
@@ -404,19 +408,19 @@ export const parseWorkoutPlan = action({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Use DeepSeek for plan parsing (better at understanding varied formats)
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-      throw new Error("Gemini API key not configured. Set GEMINI_API_KEY in Convex environment variables.");
+      throw new Error("DeepSeek API key not configured. Set DEEPSEEK_API_KEY in Convex environment variables.");
     }
 
     // Rate limiting
     const { checkRateLimit } = await import("./rateLimiter");
     checkRateLimit(args.userId, "parseWorkoutPlan");
 
-    // Dynamic import to avoid bundling issues
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
+    // Create DeepSeek client
+    const ai = createDeepSeekClient(apiKey);
 
     const systemPrompt = `You are an ELITE workout plan parser. Your job is to intelligently analyze ANY workout plan format and convert it into structured JSON.
 
@@ -540,7 +544,7 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
 ` : '';
 
     try {
-      loggers.ai.info('Parsing workout plan with Gemini Pro (with retry logic)...', hasTwoADayPatterns ? '(2x/day detected)' : '');
+      loggers.ai.info('Parsing workout plan with DeepSeek Reasoner (with retry logic)...', hasTwoADayPatterns ? '(2x/day detected)' : '');
 
       const fullPrompt = twoADayParsingPrompt
         ? `${systemPrompt}\n\n${twoADayParsingPrompt}`
@@ -549,7 +553,7 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
       const parsedPlan = await generateWithRetry(
         ai.models,
         {
-          model: 'gemini-2.5-pro', // Stable pro model for complex parsing
+          model: 'deepseek-reasoner', // Thinking mode for intelligent parsing
           contents: `${fullPrompt}\n\n---\nUSER'S PLAN TO PARSE:\n---\n${args.planText}`,
           config: {
             responseMimeType: "application/json",
@@ -667,10 +671,11 @@ export const generateWorkoutPlan = action({
     }))),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Use DeepSeek API (faster, cheaper, better reasoning for workout plans)
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-      throw new Error("Gemini API key not configured. Set GEMINI_API_KEY in Convex environment variables.");
+      throw new Error("DeepSeek API key not configured. Set DEEPSEEK_API_KEY in Convex environment variables.");
     }
 
     // Rate limiting - prevent abuse of expensive AI calls
@@ -679,8 +684,8 @@ export const generateWorkoutPlan = action({
       checkRateLimit(args.userId, "generateWorkoutPlan");
     }
 
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
+    // Create DeepSeek client (OpenAI-compatible API)
+    const ai = createDeepSeekClient(apiKey);
 
     const {
       primary_goal,
@@ -761,22 +766,23 @@ export const generateWorkoutPlan = action({
     } : training_split;
 
     // ═══════════════════════════════════════════════════════════
-    // PERFORMANCE OPTIMIZATION: Smart Model Selection
-    // Using stable Gemini 2.5 Pro for reliable plan generation
+    // PERFORMANCE OPTIMIZATION: DeepSeek Model Selection
+    // deepseek-reasoner = thinking mode (better reasoning for complex plans)
+    // deepseek-chat = fast mode (non-thinking, quicker responses)
     // ═══════════════════════════════════════════════════════════
-    let selectedModel = 'gemini-2.5-pro'; // Stable, high-quality model
+    let selectedModel = 'deepseek-reasoner'; // Thinking mode for better workout planning
 
     // Force model if specified
     if (_forceProModel) {
-      selectedModel = 'gemini-2.5-pro';
-      loggers.ai.info("🎯 Model: Gemini 2.5 Pro (forced - quality mode)");
+      selectedModel = 'deepseek-reasoner';
+      loggers.ai.info("🧠 Model: DeepSeek Reasoner (forced - thinking mode)");
     } else if (_useFlashModel) {
-      selectedModel = 'gemini-2.5-flash';
-      loggers.ai.info("⚡ Model: 2.5 Flash (forced - fast mode)");
+      selectedModel = 'deepseek-chat';
+      loggers.ai.info("⚡ Model: DeepSeek Chat (forced - fast mode)");
     } else {
-      // Default to Gemini 2.5 Pro - stable, reliable model
-      selectedModel = 'gemini-2.5-pro';
-      loggers.ai.info("🎯 Model: Gemini 2.5 Pro (default - stable model)");
+      // Default to deepseek-reasoner for complex workout planning
+      selectedModel = 'deepseek-reasoner';
+      loggers.ai.info("🧠 Model: DeepSeek Reasoner (default - thinking mode)");
     }
 
     // Get sport-specific training context
