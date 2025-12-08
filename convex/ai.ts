@@ -3,12 +3,12 @@
  *
  * SECURITY: API keys are kept server-side only, never exposed to client
  *
- * Primary AI: DeepSeek V3.2 (workout plan generation)
+ * Primary AI: DeepSeek V3.2 (most features)
  * - deepseek-reasoner: Thinking mode for complex plan generation (better reasoning)
- * - deepseek-chat: Fast mode for quick responses
+ * - deepseek-chat: Fast mode for chat, exercise explanations, quick responses
  *
- * Secondary AI: Gemini (exercise explanations, chat)
- * - gemini-2.5-flash: Quick responses, exercise explanations (faster, cheaper)
+ * Secondary AI: Gemini (vision-only features)
+ * - gemini-2.5-flash: Body photo analysis (DeepSeek doesn't support vision)
  */
 
 import { action } from "./_generated/server";
@@ -1306,15 +1306,14 @@ export const explainExercise = action({
     const { checkRateLimit } = await import("./rateLimiter");
     checkRateLimit(args.userId, "explainExercise");
 
-    // Not in cache, generate explanation
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Not in cache, generate explanation using DeepSeek
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-      throw new Error("Gemini API key not configured");
+      throw new Error("DeepSeek API key not configured");
     }
 
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = createDeepSeekClient(apiKey);
 
     const prompt = `Exercise: "${args.exerciseName}"
 
@@ -1347,13 +1346,13 @@ Return ONLY valid JSON.`;
         return { valid: errors.length === 0, errors };
       };
 
-      loggers.ai.info(`Generating explanation for ${args.exerciseName}...`);
+      loggers.ai.info(`Generating explanation for ${args.exerciseName} using DeepSeek...`);
 
       const exerciseData = await generateJSONWithRetry(
         ai.models,
         {
-          model: "gemini-2.0-flash",
-          contents: [{ parts: [{ text: prompt }] }],
+          model: "deepseek-chat", // Fast mode for simple explanations
+          contents: prompt,
         },
         validateExplanation,
         2 // Max 2 attempts for simple task
@@ -1367,7 +1366,7 @@ Return ONLY valid JSON.`;
         form_cue: exerciseData.form_cue || null,
         common_mistake: exerciseData.common_mistake || null,
         step_by_step: exerciseData.step_by_step || [],
-        source: "gemini_api"
+        source: "deepseek_api"
       });
 
       return {
@@ -1375,14 +1374,15 @@ Return ONLY valid JSON.`;
         cached: false
       };
     } catch (error: any) {
-      loggers.ai.error("Gemini API error:", error);
+      loggers.ai.error("DeepSeek API error:", error);
       throw new Error(`Failed to explain exercise: ${error.message}`);
     }
   },
 });
 
 /**
- * Chatbot action - handles user messages with function calling for workout plan modifications
+ * Chatbot action - handles user messages with JSON-based function calling for workout plan modifications
+ * Uses DeepSeek for fast, intelligent responses
  * Supports: substitute exercise, add exercise, modify, remove, adjust difficulty, extend/shorten workout
  */
 export const handleChatMessage = action({
@@ -1397,9 +1397,9 @@ export const handleChatMessage = action({
     language: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      throw new Error("Gemini API key not configured");
+      throw new Error("DeepSeek API key not configured");
     }
 
     // Get the workout plan
@@ -1414,59 +1414,8 @@ export const handleChatMessage = action({
       checkRateLimit(plan.userId, "handleChatMessage");
     }
 
-    const { GoogleGenAI, Type } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
-
-    // Define function declarations for plan modifications
-    const functions = [
-      {
-        name: "substituteExercise",
-        description: "Replace an exercise in a specific day with a new exercise and metrics.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            day_of_week: { type: Type.NUMBER, description: "Target day: 1=Mon ... 7=Sun" },
-            original_exercise_name: { type: Type.STRING, description: "Exact name of the exercise to replace" },
-            new_exercise_name: { type: Type.STRING, description: "Name of the new exercise" },
-            new_sets: { type: Type.NUMBER, description: "Number of sets" },
-            new_reps: { type: Type.STRING, description: "Rep range (e.g., '8-10' or '12')" },
-            new_rest_period_s: { type: Type.NUMBER, description: "Rest period in seconds" },
-          },
-          required: ["day_of_week", "original_exercise_name", "new_exercise_name", "new_sets", "new_reps"],
-        },
-      },
-      {
-        name: "modifyExercise",
-        description: "Modify sets, reps, rest, or RPE of an existing exercise without replacing it.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            day_of_week: { type: Type.NUMBER },
-            exercise_name: { type: Type.STRING },
-            new_sets: { type: Type.NUMBER },
-            new_reps: { type: Type.STRING },
-            new_rest_period_s: { type: Type.NUMBER },
-          },
-          required: ["day_of_week", "exercise_name"],
-        },
-      },
-      {
-        name: "addExercise",
-        description: "Add a new exercise to a specific day.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            day_of_week: { type: Type.NUMBER },
-            exercise_name: { type: Type.STRING },
-            category: { type: Type.STRING, description: "warmup | main | cooldown" },
-            sets: { type: Type.NUMBER },
-            reps: { type: Type.STRING },
-            rest_period_s: { type: Type.NUMBER },
-          },
-          required: ["day_of_week", "exercise_name", "category", "sets", "reps"],
-        },
-      },
-    ];
+    // Create DeepSeek client
+    const ai = createDeepSeekClient(apiKey);
 
     // Build system instruction with plan context
     const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -1485,19 +1434,25 @@ TODAY: ${dayNames[currentDay - 1]}
 PLAN: ${plan.name}
 TODAY'S WORKOUT: ${todayPlan?.focus || 'Rest day'}
 
-CAPABILITIES:
-- substituteExercise: Swap one exercise for another
-- modifyExercise: Change sets/reps/rest without swapping
-- addExercise: Add new exercise to the plan
+AVAILABLE ACTIONS (use JSON format when user wants to modify their plan):
+1. substituteExercise - Swap one exercise for another
+   {"action": "substituteExercise", "params": {"day_of_week": 1, "original_exercise_name": "Bench Press", "new_exercise_name": "Dumbbell Press", "new_sets": 3, "new_reps": "8-10", "new_rest_period_s": 90}}
+
+2. modifyExercise - Change sets/reps/rest without swapping
+   {"action": "modifyExercise", "params": {"day_of_week": 1, "exercise_name": "Squat", "new_sets": 4, "new_reps": "6-8"}}
+
+3. addExercise - Add new exercise to the plan
+   {"action": "addExercise", "params": {"day_of_week": 1, "exercise_name": "Bicep Curls", "category": "main", "sets": 3, "reps": "12-15", "rest_period_s": 60}}
 
 RULES:
 1. ONLY answer workout/fitness questions
 2. Be concise (2-3 sentences max)
-3. When modifying the plan, call the appropriate function
-4. Refuse off-topic questions politely
+3. When user asks to modify their plan, respond ONLY with the JSON action object
+4. For general questions, respond with plain text
+5. Refuse off-topic questions politely
 
 CONTEXT:
-Plan has weeklyPlan[] with days (day_of_week 1-7), focus, and blocks.
+Plan has weeklyPlan[] with days (day_of_week 1-7, where 1=Monday), focus, and blocks.
 Blocks have type (single|superset|amrap) and exercises[] with exercise_name, metrics_template, rpe.`;
 
     // Build conversation history for context
@@ -1510,48 +1465,49 @@ Blocks have type (single|superset|amrap) and exercises[] with exercise_name, met
 CONVERSATION HISTORY:
 ${historyText || 'No previous messages.'}
 
-USER MESSAGE: ${args.message}
-
-Respond conversationally. If the user asks to modify their plan, respond with a JSON object in this format:
-{"action": "substituteExercise"|"modifyExercise"|"addExercise", "params": {...}}
-Otherwise, respond with plain text.`;
+USER MESSAGE: ${args.message}`;
 
     try {
       const result = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "deepseek-chat", // Fast mode for conversational responses
         contents: prompt,
-        config: {
-          tools: [{ functionDeclarations: functions }],
-        },
       });
 
       const responseText = result.text || '';
 
       // Check if response contains a function call JSON
-      const functionMatch = responseText.match(/\{"action"\s*:\s*"(\w+)",\s*"params"\s*:\s*(\{[^}]+\})\}/);
-      if (functionMatch) {
+      // Match both compact and formatted JSON
+      const jsonMatch = responseText.match(/\{\s*"action"\s*:\s*"(\w+)"\s*,\s*"params"\s*:\s*(\{[\s\S]*?\})\s*\}/);
+      if (jsonMatch) {
         const actionMap: Record<string, string> = {
           'substituteExercise': 'substituteExercise',
           'modifyExercise': 'modifyExercise',
           'addExercise': 'addExercise',
         };
         try {
-          const params = JSON.parse(functionMatch[2]);
+          const params = JSON.parse(jsonMatch[2]);
           return {
             type: "function_call",
-            functionName: actionMap[functionMatch[1]] || functionMatch[1],
+            functionName: actionMap[jsonMatch[1]] || jsonMatch[1],
             functionArgs: params,
             textResponse: null,
           };
         } catch {
-          // Fall through to text response
+          // Fall through to text response if JSON parsing fails
         }
       }
 
-      // Regular text response
+      // Regular text response - clean up any partial JSON attempts
+      let cleanResponse = responseText;
+      if (responseText.includes('"action"') && !jsonMatch) {
+        // AI tried to output JSON but it was malformed, extract just the text part
+        cleanResponse = responseText.replace(/\{[\s\S]*"action"[\s\S]*\}/g, '').trim() ||
+          "I understand you want to modify your workout. Could you please be more specific about which exercise you'd like to change?";
+      }
+
       return {
         type: "text",
-        textResponse: responseText,
+        textResponse: cleanResponse,
         functionCall: null,
       };
     } catch (error: any) {
@@ -1803,7 +1759,7 @@ Respond in ${args.language || "English"} with valid JSON only.`,
 
 /**
  * Batch populate step_by_step for exercises that don't have them
- * Processes in small batches to avoid rate limits
+ * Uses DeepSeek for fast, cheap batch processing
  */
 export const batchPopulateStepByStep = action({
   args: {
@@ -1812,11 +1768,11 @@ export const batchPopulateStepByStep = action({
   },
   handler: async (ctx, args) => {
     const batchSize = args.batchSize || 5;
-    const delayMs = args.delayMs || 4500; // ~13 requests/minute to stay under limit
+    const delayMs = args.delayMs || 1000; // DeepSeek has higher rate limits
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      throw new Error("Gemini API key not configured");
+      throw new Error("DeepSeek API key not configured");
     }
 
     // Get exercises without step_by_step
@@ -1828,8 +1784,7 @@ export const batchPopulateStepByStep = action({
       return { processed: 0, message: "All exercises already have step_by_step" };
     }
 
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = createDeepSeekClient(apiKey);
 
     let processed = 0;
     const results: { name: string; success: boolean; error?: string }[] = [];
@@ -1860,8 +1815,8 @@ Return ONLY valid JSON.`;
         const data = await generateJSONWithRetry(
           ai.models,
           {
-            model: "gemini-2.0-flash",
-            contents: [{ parts: [{ text: prompt }] }],
+            model: "deepseek-chat", // Fast mode for simple task
+            contents: prompt,
           },
           validateSteps,
           2
