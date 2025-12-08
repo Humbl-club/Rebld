@@ -542,6 +542,10 @@ export function validateAndExplain(plan: Plan): { valid: boolean; message: strin
 /**
  * Auto-fix cardio exercises that incorrectly use sets_reps_weight
  * Changes them to duration_only with a sensible duration based on context
+ *
+ * Also fixes metrics templates with missing required fields:
+ * - sets_distance_rest: adds default sets (4) and rest_seconds (90)
+ * - sets_duration_rest: adds default sets, duration_seconds, rest_seconds
  */
 export function fixCardioTemplates(plan: Plan, sessionDurationMinutes?: number): Plan {
   const fixedPlan = JSON.parse(JSON.stringify(plan)); // Deep clone
@@ -550,10 +554,82 @@ export function fixCardioTemplates(plan: Plan, sessionDurationMinutes?: number):
     exercises.forEach(exercise => {
       if (!exercise.exercise_name || !exercise.metrics_template) return;
 
-      // Only fix cardio exercises with wrong template
-      if (isCardioExercise(exercise.exercise_name)) {
-        const template = exercise.metrics_template;
+      const template = exercise.metrics_template;
 
+      // ═══════════════════════════════════════════════════════════
+      // FIX 1: sets_distance_rest missing required fields
+      // Common issue with Sled Push/Pull and track sprints
+      // ═══════════════════════════════════════════════════════════
+      if (template.type === 'sets_distance_rest') {
+        let wasFixed = false;
+
+        // Add missing 'sets' field (default 4 sets)
+        const hasSets = template.sets !== undefined || template.target_sets !== undefined;
+        if (!hasSets) {
+          template.sets = 4;
+          wasFixed = true;
+        }
+
+        // Add missing 'rest_seconds' field (default 90s)
+        const hasRest = template.rest_seconds !== undefined ||
+                        template.target_rest_s !== undefined ||
+                        template.rest_period_s !== undefined;
+        if (!hasRest) {
+          template.rest_seconds = 90;
+          wasFixed = true;
+        }
+
+        // Add missing distance if not present (default 50m for sled work)
+        const hasDistance = template.distance_km !== undefined ||
+                           template.distance_m !== undefined ||
+                           template.target_distance_m !== undefined;
+        if (!hasDistance) {
+          template.distance_m = 50;
+          wasFixed = true;
+        }
+
+        if (wasFixed) {
+          console.log(`[planValidator] Fixed sets_distance_rest for "${exercise.exercise_name}": added missing fields (sets: ${template.sets}, distance_m: ${template.distance_m}, rest_seconds: ${template.rest_seconds})`);
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // FIX 2: sets_duration_rest missing required fields
+      // Common issue with interval training exercises
+      // ═══════════════════════════════════════════════════════════
+      if (template.type === 'sets_duration_rest') {
+        let wasFixed = false;
+
+        // Add missing 'sets' field (default 6 sets for intervals)
+        const hasSets = template.sets !== undefined || template.target_sets !== undefined;
+        if (!hasSets) {
+          template.sets = 6;
+          wasFixed = true;
+        }
+
+        // Add missing 'duration_seconds' / 'work_duration_s' (default 30s work)
+        const hasDuration = template.duration_seconds !== undefined || template.work_duration_s !== undefined;
+        if (!hasDuration) {
+          template.duration_seconds = 30;
+          wasFixed = true;
+        }
+
+        // Add missing 'rest_seconds' / 'rest_duration_s' (default 60s rest)
+        const hasRest = template.rest_seconds !== undefined || template.rest_duration_s !== undefined;
+        if (!hasRest) {
+          template.rest_seconds = 60;
+          wasFixed = true;
+        }
+
+        if (wasFixed) {
+          console.log(`[planValidator] Fixed sets_duration_rest for "${exercise.exercise_name}": added missing fields (sets: ${template.sets}, duration: ${template.duration_seconds}s, rest: ${template.rest_seconds}s)`);
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // FIX 3: Cardio exercises with wrong template (original logic)
+      // ═══════════════════════════════════════════════════════════
+      if (isCardioExercise(exercise.exercise_name)) {
         // If using sets_reps_weight or sets_reps for cardio, fix it
         if (template.type === 'sets_reps_weight' || template.type === 'sets_reps') {
           // Calculate a sensible duration
