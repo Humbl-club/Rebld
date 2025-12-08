@@ -1103,6 +1103,104 @@ export default defineSchema({
     .index("by_userId_date", ["userId", "date"])
     .index("by_date", ["date"]),
 
+  // Generation locks - prevent duplicate background generations
+  generationLocks: defineTable({
+    planId: v.id("workoutPlans"),
+    userId: v.string(),
+    targetWeek: v.number(),
+    status: v.union(
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string()),
+    error: v.optional(v.string()),
+  })
+    .index("by_planId", ["planId"])
+    .index("by_planId_week", ["planId", "targetWeek"])
+    .index("by_status", ["status"]),
+
+  // Periodization Week History - Store past weeks for progress comparison
+  weekHistory: defineTable({
+    userId: v.string(),
+    planId: v.id("workoutPlans"),
+    weekNumber: v.number(),
+    phase: v.union(
+      v.literal("base"),
+      v.literal("build"),
+      v.literal("peak"),
+      v.literal("taper"),
+      v.literal("recovery")
+    ),
+    weeklyPlan: v.any(), // Snapshot of that week's plan
+    completedAt: v.string(), // When the week ended
+    stats: v.optional(v.object({
+      workoutsCompleted: v.number(),
+      workoutsPlanned: v.number(),
+      totalVolume: v.optional(v.number()), // Total weight lifted
+      totalDuration: v.optional(v.number()), // Total minutes
+      avgRpe: v.optional(v.number()),
+      prsAchieved: v.optional(v.number()),
+    })),
+    isDeloadWeek: v.boolean(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_planId", ["planId"])
+    .index("by_userId_planId", ["userId", "planId"])
+    .index("by_userId_weekNumber", ["userId", "weekNumber"]),
+
+  // Push notifications for periodization and other events
+  pushNotifications: defineTable({
+    userId: v.string(),
+    type: v.union(
+      v.literal("new_week_ready"),
+      v.literal("phase_change"),
+      v.literal("deload_reminder"),
+      v.literal("event_countdown"),
+      v.literal("workout_reminder"),
+      v.literal("streak_at_risk"),
+      v.literal("pr_achieved")
+    ),
+    title: v.string(),
+    body: v.string(),
+    data: v.optional(v.any()), // Extra payload data
+    read: v.boolean(),
+    sentAt: v.string(), // ISO date
+    readAt: v.optional(v.string()), // ISO date when read
+    // For push delivery
+    pushToken: v.optional(v.string()),
+    delivered: v.boolean(),
+    deliveredAt: v.optional(v.string()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_read", ["userId", "read"])
+    .index("by_userId_type", ["userId", "type"])
+    .index("by_sentAt", ["sentAt"]),
+
+  // User push notification settings and tokens
+  pushSettings: defineTable({
+    userId: v.string(),
+    pushToken: v.optional(v.string()), // Device push token from Capacitor
+    platform: v.optional(v.union(v.literal("ios"), v.literal("android"))),
+    // Notification preferences
+    enabledTypes: v.object({
+      new_week_ready: v.boolean(),
+      phase_change: v.boolean(),
+      deload_reminder: v.boolean(),
+      event_countdown: v.boolean(),
+      workout_reminder: v.boolean(),
+      streak_at_risk: v.boolean(),
+      pr_achieved: v.boolean(),
+    }),
+    // Quiet hours (don't send during these times)
+    quietHoursStart: v.optional(v.number()), // Hour in 24h format (0-23)
+    quietHoursEnd: v.optional(v.number()),
+    timezone: v.optional(v.string()), // e.g., "America/Los_Angeles"
+    lastUpdated: v.string(),
+  })
+    .index("by_userId", ["userId"]),
+
   // Event Tracking - Analytics and user behavior tracking
   events: defineTable({
     userId: v.string(),

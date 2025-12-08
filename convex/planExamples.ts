@@ -402,3 +402,76 @@ Before outputting your plan, verify:
 
 `;
 }
+
+/**
+ * CONDENSED example prompt - same structure info, ~70% fewer tokens
+ * Used for speed optimization when full examples aren't needed
+ */
+export function getCondensedExamplePrompt(isTwiceDaily: boolean = false): string {
+  if (isTwiceDaily) {
+    // Only show 2x daily structure when needed
+    return `**PLAN STRUCTURE (2x Daily)**
+
+Day structure:
+\`\`\`json
+{
+  "day_of_week": 1,
+  "focus": "Cardio + Upper Strength",
+  "sessions": [
+    {
+      "session_name": "AM Cardio",
+      "time_of_day": "morning",
+      "estimated_duration": 45,
+      "blocks": [{ "type": "single", "exercises": [...] }]
+    },
+    {
+      "session_name": "PM Strength",
+      "time_of_day": "evening",
+      "estimated_duration": 60,
+      "blocks": [{ "type": "single", "exercises": [...] }]
+    }
+  ]
+}
+\`\`\`
+
+Exercise structure:
+\`\`\`json
+{"exercise_name": "Treadmill Run", "category": "main", "metrics_template": {"type": "duration_only", "duration_minutes": 45, "rpe": 6}}
+{"exercise_name": "Barbell Bench Press", "category": "main", "metrics_template": {"type": "sets_reps_weight", "target_sets": 4, "target_reps": 8, "rpe": 8}}
+\`\`\`
+
+RULES:
+- 2x daily uses "sessions" array (NOT "blocks" at day level)
+- AM Cardio → duration_only template
+- PM Strength → sets_reps_weight template
+- All categories: "warmup", "main", or "cooldown"
+`;
+  }
+
+  // Standard 1x daily structure
+  return `**PLAN STRUCTURE**
+
+Day structure:
+\`\`\`json
+{
+  "day_of_week": 1,
+  "focus": "Upper Body",
+  "blocks": [
+    {
+      "type": "single",
+      "exercises": [
+        {"exercise_name": "Barbell Bench Press", "category": "main", "metrics_template": {"type": "sets_reps_weight", "target_sets": 4, "target_reps": "8-10", "rest_period_s": 90, "rpe": 7}}
+      ]
+    }
+  ]
+}
+\`\`\`
+
+Block types: "single" (normal), "superset" (back-to-back), "amrap" (timed circuit with duration_minutes)
+
+RULES:
+- Standard plans use "blocks" array directly on day
+- All exercises must have "metrics_template" with "type" field
+- All categories: "warmup", "main", or "cooldown"
+`;
+}

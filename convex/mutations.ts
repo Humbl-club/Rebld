@@ -306,6 +306,21 @@ export const createWorkoutPlan = mutation({
     name: v.string(),
     weeklyPlan: v.array(v.any()),
     dailyRoutine: v.optional(v.union(v.any(), v.null())),
+    // NEW: Periodization metadata for goal-based training
+    periodization: v.optional(v.object({
+      total_weeks: v.number(),
+      current_week: v.number(),
+      phase: v.union(
+        v.literal("base"),
+        v.literal("build"),
+        v.literal("peak"),
+        v.literal("taper"),
+        v.literal("recovery")
+      ),
+      phase_description: v.optional(v.string()),
+      weeks_in_phase: v.optional(v.number()),
+      phase_end_week: v.optional(v.number()),
+    })),
   },
   handler: async (ctx, args) => {
     // SECURITY: Verify userId matches authenticated user
@@ -597,6 +612,8 @@ export const createWorkoutPlan = mutation({
         weeklyPlan: normalizedWeeklyPlan,
         dailyRoutine: normalizedDailyRoutine,
         createdAt: new Date().toISOString(),
+        // Include periodization if provided (for goal-based training plans)
+        ...(args.periodization && { periodization: args.periodization }),
       });
       tracker.trackInsert("workoutPlans", planId);
 
@@ -2352,6 +2369,103 @@ export const deleteUserAccount = mutation({
     for (const perf of exercisePerformance) {
       await ctx.db.delete(perf._id);
     }
+
+    return { success: true };
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// PERIODIZATION MUTATIONS - For goal-based training progression
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Update the periodization state of a workout plan (advance to next week)
+ * This should be called when the week changes to update the phase info
+ */
+export const updatePlanPeriodization = mutation({
+  args: {
+    planId: v.id("workoutPlans"),
+    userId: v.string(),
+    periodization: v.object({
+      total_weeks: v.number(),
+      current_week: v.number(),
+      phase: v.union(
+        v.literal("base"),
+        v.literal("build"),
+        v.literal("peak"),
+        v.literal("taper"),
+        v.literal("recovery")
+      ),
+      phase_description: v.optional(v.string()),
+      weeks_in_phase: v.optional(v.number()),
+      phase_end_week: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    // SECURITY: Verify userId matches authenticated user
+    await verifyAuthenticatedUser(ctx, args.userId);
+
+    // Verify plan belongs to user
+    const plan = await ctx.db.get(args.planId);
+    if (!plan || plan.userId !== args.userId) {
+      throw new Error("Plan not found or access denied");
+    }
+
+    await ctx.db.patch(args.planId, {
+      periodization: args.periodization,
+    });
+
+    loggers.mutations.info(`Updated periodization for plan ${args.planId}: Week ${args.periodization.current_week}, Phase ${args.periodization.phase}`);
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update the current week's plan (replace weeklyPlan with new week's training)
+ * This is called after AI generates the next week
+ */
+export const updatePlanWeeklyContent = mutation({
+  args: {
+    planId: v.id("workoutPlans"),
+    userId: v.string(),
+    weeklyPlan: v.array(v.any()),
+    periodization: v.optional(v.object({
+      total_weeks: v.number(),
+      current_week: v.number(),
+      phase: v.union(
+        v.literal("base"),
+        v.literal("build"),
+        v.literal("peak"),
+        v.literal("taper"),
+        v.literal("recovery")
+      ),
+      phase_description: v.optional(v.string()),
+      weeks_in_phase: v.optional(v.number()),
+      phase_end_week: v.optional(v.number()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    // SECURITY: Verify userId matches authenticated user
+    await verifyAuthenticatedUser(ctx, args.userId);
+
+    // Verify plan belongs to user
+    const plan = await ctx.db.get(args.planId);
+    if (!plan || plan.userId !== args.userId) {
+      throw new Error("Plan not found or access denied");
+    }
+
+    const updates: Record<string, unknown> = {
+      weeklyPlan: args.weeklyPlan,
+    };
+
+    if (args.periodization) {
+      updates.periodization = args.periodization;
+    }
+
+    await ctx.db.patch(args.planId, updates);
+
+    loggers.mutations.info(`Updated weekly content for plan ${args.planId}${args.periodization ? `, Week ${args.periodization.current_week}` : ''}`);
 
     return { success: true };
   },

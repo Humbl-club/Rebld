@@ -546,6 +546,31 @@ COMMON MISTAKES - AVOID THESE
 }
 
 // ═══════════════════════════════════════════════════════════
+// CONDENSED AI PROMPT - OPTIMIZED FOR SPEED
+// Same information, ~60% fewer tokens
+// ═══════════════════════════════════════════════════════════
+
+export function getCondensedMetricsPrompt(): string {
+  return `**METRICS TEMPLATE TYPES (MANDATORY)**
+
+| Exercise Type | template "type" | Required Fields | Example |
+|--------------|-----------------|-----------------|---------|
+| Strength (BB/DB/machines) | sets_reps_weight | target_sets, target_reps | {"type":"sets_reps_weight","target_sets":4,"target_reps":"8-10","rest_period_s":90,"rpe":7} |
+| Bodyweight | sets_reps | target_sets, target_reps | {"type":"sets_reps","target_sets":3,"target_reps":15} |
+| Cardio machines | duration_only | duration_minutes | {"type":"duration_only","duration_minutes":45,"rpe":6} |
+| Distance cardio | distance_time | distance_km OR distance_m | {"type":"distance_time","distance_km":5} |
+| Intervals (time) | sets_duration_rest | sets, duration_seconds, rest_seconds | {"type":"sets_duration_rest","sets":8,"duration_seconds":30,"rest_seconds":90} |
+| Intervals (distance) | sets_distance_rest | sets, distance_m, rest_seconds | {"type":"sets_distance_rest","sets":8,"distance_m":400,"rest_seconds":90} |
+| Holds (plank/wall sit) | sets_duration | target_sets, duration_seconds | {"type":"sets_duration","target_sets":3,"duration_seconds":60} |
+
+**RULES:**
+1. ALWAYS include "type" field exactly as shown
+2. Treadmill/Bike/Elliptical → duration_only (NOT "cardio" or custom)
+3. All categories must be "warmup", "main", or "cooldown"
+`;
+}
+
+// ═══════════════════════════════════════════════════════════
 // TERMINOLOGY PROMPT
 // ═══════════════════════════════════════════════════════════
 
@@ -564,5 +589,17 @@ Usage: ${t.usage}
 `).join('\n')}
 
 IMPORTANT: When you see these abbreviations in user input, expand them appropriately in your output.
+`;
+}
+
+// Condensed terminology - only essential abbreviations
+export function getCondensedTerminologyPrompt(): string {
+  return `**KEY ABBREVIATIONS:**
+RPE = Rate of Perceived Exertion (1-10 scale, 7 = 3 reps left, 9 = 1 rep left)
+1RM = One Rep Max
+AMRAP = As Many Rounds As Possible
+EMOM = Every Minute On the Minute
+DB = Dumbbell, BB = Barbell, KB = Kettlebell, BW = Bodyweight
+RDL = Romanian Deadlift, GHR = Glute Ham Raise
 `;
 }

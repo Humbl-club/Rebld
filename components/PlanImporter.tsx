@@ -16,6 +16,7 @@ import { analytics, EventTypes } from '../services/analyticsService';
 import TrainingSplitStep from './onboarding/TrainingSplitStep';
 import SpecificGoalStep from './onboarding/SpecificGoalStep';
 import PlanPreviewStep from './onboarding/PlanPreviewStep';
+import SwipeableOnboarding from './onboarding/SwipeableOnboarding';
 
 interface OnboardingProps {
   onPlanGenerated: (plan: Omit<WorkoutPlan, 'id'>) => void;
@@ -95,6 +96,7 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [onboardingStartTime, setOnboardingStartTime] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [useSwipeableUI, setUseSwipeableUI] = useState(true); // New swipeable UI by default
 
   // Restore state from localStorage on mount
   useEffect(() => {
@@ -597,6 +599,137 @@ export default function Onboarding({ onPlanGenerated }: OnboardingProps) {
           onBack={() => setStep('welcome')}
         />;
     }
+  }
+
+  // Handler for SwipeableOnboarding data changes
+  const handleSwipeableDataChange = useCallback((data: Partial<{
+    goal: Goal | null;
+    experience: Experience | null;
+    frequency: Frequency | null;
+    equipment: 'minimal' | 'home_gym' | 'commercial_gym' | '';
+    sessionLength: '30' | '45' | '60' | '75' | '90' | '';
+    painPoints: PainPoint[];
+    sport: string;
+    trainingSplit: TrainingSplit;
+    specificGoal: SpecificGoal | null;
+    currentStrength: CurrentStrength;
+    userAge: number | undefined;
+    userSex: 'male' | 'female' | 'other' | undefined;
+  }>) => {
+    if (data.goal !== undefined) setGoal(data.goal);
+    if (data.experience !== undefined) setExperience(data.experience);
+    if (data.frequency !== undefined) setFrequency(data.frequency);
+    if (data.equipment !== undefined) setEquipment(data.equipment || '');
+    if (data.sessionLength !== undefined) setSessionLength(data.sessionLength as '30' | '45' | '60' | '75' | '' || '');
+    if (data.painPoints !== undefined) setPainPoints(data.painPoints);
+    if (data.sport !== undefined) setSport(data.sport);
+    if (data.trainingSplit !== undefined) setTrainingSplit(data.trainingSplit);
+    if (data.specificGoal !== undefined) setSpecificGoal(data.specificGoal);
+    if (data.currentStrength !== undefined) setCurrentStrength(data.currentStrength);
+    if (data.userAge !== undefined) setUserAge(data.userAge);
+    if (data.userSex !== undefined) setUserSex(data.userSex);
+  }, []);
+
+  // Handler for SwipeableOnboarding completion
+  const handleSwipeableComplete = useCallback(() => {
+    // Trigger plan generation
+    setStep('generate');
+    handleGeneratePersonalizedPlan();
+  }, [handleGeneratePersonalizedPlan]);
+
+  // Handler for SwipeableOnboarding back (exit to welcome)
+  const handleSwipeableBack = useCallback(() => {
+    setUseSwipeableUI(false);
+    setStep('welcome');
+  }, []);
+
+  // If using swipeable UI and not on preview/generate/custom step
+  if (useSwipeableUI && step !== 'preview' && step !== 'generate' && step !== 'custom') {
+    return (
+      <>
+        {/* Resume Prompt Modal */}
+        {showResumePrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-sm bg-[var(--surface-primary)] border border-[var(--border-default)] rounded-2xl p-6 shadow-2xl">
+              <h3 className="text-[20px] font-bold text-[var(--text-primary)] mb-2">
+                Resume Your Setup?
+              </h3>
+              <p className="text-[14px] text-[var(--text-secondary)] mb-6">
+                You have an incomplete onboarding session. Would you like to continue where you left off?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleStartFresh}
+                  className="flex-1 h-12 rounded-xl font-semibold text-[14px] text-[var(--text-secondary)] bg-[var(--surface-secondary)] active:bg-[var(--surface-hover)] transition-colors"
+                >
+                  Start Over
+                </button>
+                <button
+                  onClick={handleResume}
+                  className="flex-1 h-12 rounded-xl font-bold text-[14px] text-white bg-[var(--brand-primary)] active:scale-[0.98] transition-transform"
+                >
+                  Resume
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <SwipeableOnboarding
+          initialData={{
+            goal,
+            experience,
+            frequency,
+            equipment: equipment || null,
+            sessionLength: sessionLength || null,
+            painPoints,
+            sport,
+            trainingSplit: trainingSplit || { sessions_per_day: '1', training_type: 'combined' },
+            specificGoal,
+            currentStrength,
+            userAge,
+            userSex,
+          }}
+          onDataChange={handleSwipeableDataChange}
+          onComplete={handleSwipeableComplete}
+          onBack={handleSwipeableBack}
+        />
+      </>
+    );
+  }
+
+  // Show generate step loading screen
+  if (step === 'generate') {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-lg">
+          <div className="bg-[var(--surface-primary)] rounded-2xl p-6 text-center">
+            <GenerateStep
+              onGenerate={handleGeneratePersonalizedPlan}
+              onBack={() => {
+                setStep(useSwipeableUI ? 'essentials' : 'customize');
+                if (useSwipeableUI) setUseSwipeableUI(true);
+              }}
+              isLoading={isLoading}
+              error={error}
+              showSuccess={showSuccess}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show plan preview
+  if (step === 'preview' && generatedPlan) {
+    return (
+      <PlanPreviewStep
+        plan={generatedPlan as WorkoutPlan}
+        onConfirm={handleConfirmPlan}
+        onRegenerate={handleRegenerateWithFeedback}
+        isRegenerating={isRegenerating}
+      />
+    );
   }
 
   return (

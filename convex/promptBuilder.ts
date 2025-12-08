@@ -18,6 +18,12 @@
  */
 
 import { formatSportPrompt } from './sportData';
+import {
+  getPeriodizationInfo,
+  generatePeriodizationPrompt,
+  createInitialPeriodization,
+  PeriodizationInfo,
+} from './utils/periodization';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCIENTIFIC CONSTANTS
@@ -1320,3 +1326,14 @@ export function getGoalEmphasis(goal: string | null | undefined): string {
 
   return '';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RE-EXPORT PERIODIZATION UTILITIES FOR CONVENIENCE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export {
+  getPeriodizationInfo,
+  generatePeriodizationPrompt,
+  createInitialPeriodization,
+  type PeriodizationInfo,
+};

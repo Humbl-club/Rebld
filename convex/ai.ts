@@ -47,9 +47,11 @@ import {
 import {
   getMetricsTemplatePrompt,
   getTerminologyPrompt,
+  getCondensedMetricsPrompt,
+  getCondensedTerminologyPrompt,
   METRICS_TEMPLATES,
 } from "./metricsTemplateReference";
-import { getExamplePlansPrompt } from "./planExamples";
+import { getExamplePlansPrompt, getCondensedExamplePrompt } from "./planExamples";
 import { validateWorkoutPlan, validateAndExplain, fixCardioTemplates } from "./planValidator";
 import { buildPainPointPrompt, getProtocolsForPainPoints } from "./rehab/injuryProtocolsData";
 
@@ -254,8 +256,12 @@ Do NOT use "blocks" directly on the day - use "sessions" with nested "blocks" in
 
 /**
  * Format periodization prompt for goal-based training
+ * Now uses centralized periodization utilities for consistent phase calculation
+ *
+ * @param goal - Specific goal with target date
+ * @param planCreatedAt - When the plan was created (for calculating current week)
  */
-function formatPeriodizationPrompt(goal?: SpecificGoal): string {
+function formatPeriodizationPrompt(goal?: SpecificGoal, planCreatedAt?: string): string {
   if (!goal?.target_date) return '';
 
   const targetDate = new Date(goal.target_date);
@@ -264,15 +270,38 @@ function formatPeriodizationPrompt(goal?: SpecificGoal): string {
 
   if (weeksUntil <= 0) return ''; // Target date has passed
 
+  // Import utilities for phase calculation
+  const { createInitialPeriodization, generatePeriodizationPrompt, getPeriodizationInfo } = require('./utils/periodization');
+
   // Calculate phase distribution
   const baseWeeks = Math.floor(weeksUntil * 0.35);
   const buildWeeks = Math.floor(weeksUntil * 0.35);
   const peakWeeks = Math.floor(weeksUntil * 0.15);
   const taperWeeks = weeksUntil - baseWeeks - buildWeeks - peakWeeks;
 
-  // Determine current phase (week 1 is always BASE)
-  const currentPhase = 'base';
-  const phaseEndWeek = baseWeeks;
+  // If plan already exists, calculate current week and phase
+  // Otherwise, default to Week 1 (new plan generation)
+  let currentWeek = 1;
+  let currentPhase = 'base';
+  let phaseEndWeek = baseWeeks;
+  let phaseDescription = "Building aerobic foundation and movement proficiency";
+  let isDeload = false;
+  let dynamicPeriodizationPrompt = '';
+
+  if (planCreatedAt) {
+    // Existing plan - calculate based on creation date
+    const periodizationInfo = getPeriodizationInfo(planCreatedAt, goal.target_date);
+    if (periodizationInfo) {
+      currentWeek = periodizationInfo.currentWeek;
+      currentPhase = periodizationInfo.phase;
+      phaseEndWeek = periodizationInfo.phaseEndWeek;
+      phaseDescription = periodizationInfo.phaseDescription;
+      isDeload = periodizationInfo.isDeloadWeek;
+
+      // Generate the dynamic phase-specific prompt
+      dynamicPeriodizationPrompt = generatePeriodizationPrompt(periodizationInfo);
+    }
+  }
 
   return `
 **PERIODIZATION - TARGET DATE: ${goal.target_date}**
@@ -287,7 +316,9 @@ Phase Distribution:
 - PEAK Phase: Weeks ${baseWeeks + buildWeeks + 1}-${baseWeeks + buildWeeks + peakWeeks} (${peakWeeks} weeks) - High intensity, competition simulation
 - TAPER Phase: Weeks ${baseWeeks + buildWeeks + peakWeeks + 1}-${weeksUntil} (${taperWeeks} weeks) - Recovery, maintain sharpness
 
-CURRENT PHASE: ${currentPhase.toUpperCase()} (Week 1 of ${phaseEndWeek})
+CURRENT PHASE: ${currentPhase.toUpperCase()} (Week ${currentWeek} of ${weeksUntil})${isDeload ? '\n🔄 THIS IS A DELOAD WEEK - Reduce volume by 40-50%' : ''}
+
+${dynamicPeriodizationPrompt}
 
 ${PERIODIZATION_PROMPT}
 
@@ -295,10 +326,10 @@ Include "periodization" object in your output:
 {
   "periodization": {
     "total_weeks": ${weeksUntil},
-    "current_week": 1,
+    "current_week": ${currentWeek},
     "phase": "${currentPhase}",
-    "phase_description": "Building aerobic foundation and movement proficiency",
-    "weeks_in_phase": ${phaseEndWeek},
+    "phase_description": "${phaseDescription}",
+    "weeks_in_phase": ${phaseEndWeek - (currentWeek > baseWeeks ? (currentWeek > baseWeeks + buildWeeks ? baseWeeks + buildWeeks : baseWeeks) : 0)},
     "phase_end_week": ${phaseEndWeek}
   }
 }
@@ -683,6 +714,9 @@ export const generateWorkoutPlan = action({
       timing: v.string(),
       dosage: v.optional(v.string()),
     }))),
+    // Optional periodization context for background week generation
+    // Contains phase info, previous week exercises, progression guidance
+    periodizationContext: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Use DeepSeek API (faster, cheaper, better reasoning for workout plans)
@@ -942,10 +976,21 @@ Example: If user benched 80kg last week, suggest 82.5kg this week with same reps
       loggers.ai.warn('Failed to generate master prompt, using legacy prompt:', e);
     }
 
-    // Get comprehensive metrics template reference (CRITICAL for correct formatting)
+    // ═══════════════════════════════════════════════════════════
+    // PROMPT ASSEMBLY - Full quality prompts for best plan generation
+    // Condensed versions available (getCondensedMetricsPrompt, etc.) but
+    // we prioritize quality over speed for initial plan generation.
+    // ═══════════════════════════════════════════════════════════
+
+    // Use FULL prompts for maximum quality - plan generation is a one-time operation
+    // where quality matters more than speed
     const metricsTemplatePrompt = getMetricsTemplatePrompt();
     const terminologyPrompt = getTerminologyPrompt();
     const examplePlansPrompt = getExamplePlansPrompt();
+
+    // Always include sport context if user has a sport - it significantly improves
+    // plan personalization and exercise selection
+    const sportContextOptimized = sportContext;
 
     // Comprehensive system prompt for high-quality plan generation
     const systemPrompt = `You are an elite, evidence-based personal trainer for the REBLD fitness app. Create a world-class, personalized 7-day workout plan.
@@ -962,6 +1007,10 @@ Example: If user benched 80kg last week, suggest 82.5kg this week with same reps
 ${training_split?.sessions_per_day === '2' ? `- Training Split: 2x DAILY (${training_split.training_type})` : ''}
 ${specific_goal?.target_date ? `- Target Event Date: ${specific_goal.target_date}` : ''}
 ${specific_goal?.event_type ? `- Event Type: ${specific_goal.event_type}` : ''}
+
+${args.periodizationContext ? `
+${args.periodizationContext}
+` : ''}
 
 ${eventTypeContext ? `
 **═══════════════════════════════════════════════════════════════**
@@ -1024,7 +1073,7 @@ ${training_split?.cardio_preferences?.cardio_duration_minutes ? `
 **END OF ABSOLUTE CONSTRAINTS**
 **═══════════════════════════════════════════════════════════════**
 
-${sportContext}
+${sportContextOptimized}
 ${supplementContext}
 ${sessionLengthPrompt}
 ${durationConstraintPrompt}
