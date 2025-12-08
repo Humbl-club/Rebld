@@ -834,8 +834,8 @@ export const generateWorkoutPlan = action({
     // - deepseek-reasoner: Thinking mode, best quality, 2-5 minutes
     // - deepseek-chat: Fast mode, good quality, ~30 seconds
     //
-    // For background periodization jobs (periodizationContext provided),
-    // use faster model since users aren't waiting
+    // Always use deepseek-reasoner for quality - especially for background
+    // periodization since users will wake up to these plans
     // ═══════════════════════════════════════════════════════════
     let selectedModel = 'deepseek-reasoner'; // Default: Thinking mode for best quality
 
@@ -846,12 +846,9 @@ export const generateWorkoutPlan = action({
     } else if (_useFlashModel) {
       selectedModel = 'deepseek-chat';
       loggers.ai.info("⚡ Model: DeepSeek Chat (forced - fast mode)");
-    } else if (args.periodizationContext) {
-      // Background generation - use faster model since user isn't waiting
-      selectedModel = 'deepseek-chat';
-      loggers.ai.info("⚡ Model: DeepSeek Chat (background periodization - fast mode)");
     } else {
       // Default to deepseek-reasoner for best quality workout plans
+      // This applies to both interactive AND background periodization
       selectedModel = 'deepseek-reasoner';
       loggers.ai.info("🧠 Model: DeepSeek Reasoner (default - thinking mode, may take 2-5 min)");
     }
