@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 import { executeWithRollback } from "./utils/transactionHelpers";
 import { loggers } from "./utils/logger";
 import {
@@ -684,6 +685,21 @@ export const createWorkoutPlan = mutation({
         newExercisesAdded,
       };
     });
+
+    // Schedule background job to enrich exercise cache with AI-generated data
+    // This runs AFTER the mutation completes (non-blocking)
+    if (result.newExercisesAdded > 0) {
+      try {
+        // Schedule with 5 second delay to let the transaction complete
+        await ctx.scheduler.runAfter(5000, api.populateData.populateExerciseCacheForPlan, {
+          planId: result.planId.toString(),
+        });
+        loggers.mutations.info(`Scheduled background exercise enrichment for ${result.newExercisesAdded} exercises`);
+      } catch (scheduleError) {
+        // Don't fail the mutation if scheduling fails - exercises are already saved
+        loggers.mutations.warn('Failed to schedule exercise enrichment:', scheduleError);
+      }
+    }
 
     return result;
   },

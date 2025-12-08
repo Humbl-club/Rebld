@@ -51,6 +51,7 @@ import {
 } from "./metricsTemplateReference";
 import { getExamplePlansPrompt } from "./planExamples";
 import { validateWorkoutPlan, validateAndExplain, fixCardioTemplates } from "./planValidator";
+import { buildPainPointPrompt, getProtocolsForPainPoints } from "./rehab/injuryProtocolsData";
 
 // Type for cardio preferences
 interface CardioPreferences {
@@ -1009,6 +1010,29 @@ ${CARDIO_PARSING_RULES}
 
 ${masterPromptSection}
 
+${pain_points && pain_points.length > 0 ? buildPainPointPrompt(pain_points) : ''}
+
+${additional_notes ? `
+**═══════════════════════════════════════════════════════════════**
+**🔴 USER NOTES - HIGHEST PRIORITY (NON-NEGOTIABLE)**
+**═══════════════════════════════════════════════════════════════**
+
+The user has provided specific notes/requests. These MUST be addressed:
+
+"${additional_notes}"
+
+**MANDATORY ACTIONS:**
+1. If user mentions specific exercises they want → INCLUDE THEM in the plan
+2. If user mentions exercises they don't want → EXCLUDE THEM completely
+3. If user has specific requirements → PRIORITIZE them over generic recommendations
+4. If user mentions body parts to focus on → Allocate MORE exercises to those areas
+5. If user mentions time constraints → Adjust accordingly
+
+**This is the user's direct input. Ignoring it = plan rejection.**
+
+**═══════════════════════════════════════════════════════════════**
+` : ''}
+
 ${metricsTemplatePrompt}
 
 ${terminologyPrompt}
@@ -1034,11 +1058,10 @@ ${examplePlansPrompt}
 
 4. **Cooldown**: 2-4 specific stretching exercises relevant to the sport
 
-5. **Pain Point Protocol**:
-   - Knee pain → AVOID: deep squats, lunges, jump exercises
-   - Lower back pain → AVOID: deadlifts, bent rows, good mornings
-   - Shoulder pain → AVOID: overhead press, dips, upright rows
-   - ALSO avoid any exercises listed in the "AVOID" section above
+5. **Pain Point Protocol**: See detailed INJURY/PAIN POINT PROTOCOLS section above for:
+   - Specific exercises to AVOID (with reasons)
+   - Safe alternatives (USE INSTEAD)
+   - MANDATORY rehab exercises to include
 
 6. **Core Training**: Include the core exercises listed above as essential for this sport
 
