@@ -554,7 +554,7 @@ IMPORTANT: For 2x/day, use "sessions" array. For single session days, use "block
       const parsedPlan = await generateWithRetry(
         ai.models,
         {
-          model: 'deepseek-reasoner', // Thinking mode for intelligent parsing
+          model: 'deepseek-chat', // Fast mode for parsing (reasoner is too slow)
           contents: `${fullPrompt}\n\n---\nUSER'S PLAN TO PARSE:\n---\n${args.planText}`,
           config: {
             responseMimeType: "application/json",
@@ -625,12 +625,25 @@ export const generateWorkoutPlan = action({
       sex: v.optional(v.string()),
       age: v.optional(v.number()),
       // Current strength levels for starting weight calculations
+      // Comprehensive benchmarks allow educated weight estimation for all exercises
       current_strength: v.optional(v.object({
+        // Compound lifts (barbell)
         squat_kg: v.optional(v.number()),
         bench_kg: v.optional(v.number()),
         deadlift_kg: v.optional(v.number()),
         row_kg: v.optional(v.number()),
+        overhead_press_kg: v.optional(v.number()),
+        // Bodyweight
         pullup_count: v.optional(v.number()),
+        pushup_count: v.optional(v.number()),
+        dip_count: v.optional(v.number()),
+        // Dumbbell (per hand)
+        dumbbell_press_kg: v.optional(v.number()),
+        dumbbell_row_kg: v.optional(v.number()),
+        goblet_squat_kg: v.optional(v.number()),
+        // Machine
+        leg_press_kg: v.optional(v.number()),
+        lat_pulldown_kg: v.optional(v.number()),
       })),
       // NEW: Training split for 2x daily training
       training_split: v.optional(v.object({
@@ -742,13 +755,25 @@ export const generateWorkoutPlan = action({
       ? Math.max(1, Math.min(10, rawReadiness))
       : rawReadiness;
 
-    // Strength values: Validate between 0-500kg (reasonable max for elite lifters)
+    // Strength values: Validate between 0-500kg for weights, 0-100 for rep counts
     const current_strength = rawStrength ? {
+      // Barbell lifts (0-500kg range)
       squat_kg: rawStrength.squat_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.squat_kg)) : undefined,
       bench_kg: rawStrength.bench_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.bench_kg)) : undefined,
       deadlift_kg: rawStrength.deadlift_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.deadlift_kg)) : undefined,
-      row_kg: rawStrength.row_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.row_kg)) : undefined,
+      row_kg: rawStrength.row_kg !== undefined ? Math.max(0, Math.min(300, rawStrength.row_kg)) : undefined,
+      overhead_press_kg: rawStrength.overhead_press_kg !== undefined ? Math.max(0, Math.min(200, rawStrength.overhead_press_kg)) : undefined,
+      // Bodyweight (0-100 rep range)
       pullup_count: rawStrength.pullup_count !== undefined ? Math.max(0, Math.min(100, rawStrength.pullup_count)) : undefined,
+      pushup_count: rawStrength.pushup_count !== undefined ? Math.max(0, Math.min(200, rawStrength.pushup_count)) : undefined,
+      dip_count: rawStrength.dip_count !== undefined ? Math.max(0, Math.min(100, rawStrength.dip_count)) : undefined,
+      // Dumbbell (0-100kg per hand)
+      dumbbell_press_kg: rawStrength.dumbbell_press_kg !== undefined ? Math.max(0, Math.min(100, rawStrength.dumbbell_press_kg)) : undefined,
+      dumbbell_row_kg: rawStrength.dumbbell_row_kg !== undefined ? Math.max(0, Math.min(100, rawStrength.dumbbell_row_kg)) : undefined,
+      goblet_squat_kg: rawStrength.goblet_squat_kg !== undefined ? Math.max(0, Math.min(100, rawStrength.goblet_squat_kg)) : undefined,
+      // Machine (0-500kg range)
+      leg_press_kg: rawStrength.leg_press_kg !== undefined ? Math.max(0, Math.min(500, rawStrength.leg_press_kg)) : undefined,
+      lat_pulldown_kg: rawStrength.lat_pulldown_kg !== undefined ? Math.max(0, Math.min(200, rawStrength.lat_pulldown_kg)) : undefined,
     } : undefined;
 
     // Rebuild specific_goal with validated readiness
@@ -768,10 +793,12 @@ export const generateWorkoutPlan = action({
 
     // ═══════════════════════════════════════════════════════════
     // PERFORMANCE OPTIMIZATION: DeepSeek Model Selection
-    // deepseek-reasoner = thinking mode (better reasoning for complex plans)
-    // deepseek-chat = fast mode (non-thinking, quicker responses)
+    // deepseek-reasoner = thinking mode (SLOW: 2-5+ minutes, better reasoning)
+    // deepseek-chat = fast mode (FAST: 10-30 seconds, excellent for JSON)
     // ═══════════════════════════════════════════════════════════
-    let selectedModel = 'deepseek-reasoner'; // Thinking mode for better workout planning
+    // NOTE: User prefers deepseek-reasoner for better quality output
+    // despite longer wait times (2-5 minutes for complex plans)
+    let selectedModel = 'deepseek-reasoner'; // Thinking mode for best quality
 
     // Force model if specified
     if (_forceProModel) {
@@ -781,9 +808,9 @@ export const generateWorkoutPlan = action({
       selectedModel = 'deepseek-chat';
       loggers.ai.info("⚡ Model: DeepSeek Chat (forced - fast mode)");
     } else {
-      // Default to deepseek-reasoner for complex workout planning
+      // Default to deepseek-reasoner for best quality workout plans
       selectedModel = 'deepseek-reasoner';
-      loggers.ai.info("🧠 Model: DeepSeek Reasoner (default - thinking mode)");
+      loggers.ai.info("🧠 Model: DeepSeek Reasoner (default - thinking mode, may take 2-5 min)");
     }
 
     // Get sport-specific training context
@@ -1449,30 +1476,145 @@ export const handleChatMessage = action({
       ? 'IMPORTANT: Respond in German (Deutsch). All your responses must be in German.'
       : 'Respond in English.';
 
-    const systemInstruction = `You are REBLD's AI workout coach. Help users with their workout plans.
+    // Build exercise list for today to help AI understand exact names
+    const todayExercises = (todayPlan?.blocks || [])
+      .flatMap((b: any) => b.exercises || [])
+      .map((e: any) => e.exercise_name)
+      .join(', ');
+
+    // Build full week summary for context
+    const weekSummary = (plan.weeklyPlan || []).map((d: any) => {
+      const exercises = (d.blocks || []).flatMap((b: any) => b.exercises || []).length;
+      return `Day ${d.day_of_week} (${dayNames[d.day_of_week - 1]}): ${d.focus || 'Rest'} - ${exercises} exercises`;
+    }).join('\n');
+
+    const systemInstruction = `You are REBLD's AI workout coach. You can understand and execute a wide variety of workout modification requests.
 
 ${languageInstruction}
 
-TODAY: ${dayNames[currentDay - 1]}
+═══════════════════════════════════════════════════════════════
+CURRENT CONTEXT
+═══════════════════════════════════════════════════════════════
+TODAY: ${dayNames[currentDay - 1]} (day_of_week: ${currentDay})
 PLAN: ${plan.name}
 TODAY'S WORKOUT: ${todayPlan?.focus || 'Rest day'}
+TODAY'S EXERCISES: ${todayExercises || 'None (rest day)'}
 
-AVAILABLE ACTIONS (use JSON format when user wants to modify their plan):
-1. substituteExercise - Swap one exercise for another
-   {"action": "substituteExercise", "params": {"day_of_week": 1, "original_exercise_name": "Bench Press", "new_exercise_name": "Dumbbell Press", "new_sets": 3, "new_reps": "8-10", "new_rest_period_s": 90}}
+WEEKLY OVERVIEW:
+${weekSummary}
 
-2. modifyExercise - Change sets/reps/rest without swapping
-   {"action": "modifyExercise", "params": {"day_of_week": 1, "exercise_name": "Squat", "new_sets": 4, "new_reps": "6-8"}}
+═══════════════════════════════════════════════════════════════
+AVAILABLE ACTIONS (respond with JSON when modifying the plan)
+═══════════════════════════════════════════════════════════════
 
-3. addExercise - Add new exercise to the plan
-   {"action": "addExercise", "params": {"day_of_week": 1, "exercise_name": "Bicep Curls", "category": "main", "sets": 3, "reps": "12-15", "rest_period_s": 60}}
+1. **substituteExercise** - Swap/replace one exercise for another
+   Triggers: "swap X for Y", "replace X with Y", "change X to Y", "use Y instead of X"
+   {"action": "substituteExercise", "params": {"day_of_week": ${currentDay}, "original_exercise_name": "EXACT_NAME", "new_exercise_name": "New Exercise", "new_sets": 3, "new_reps": "8-10", "new_rest_period_s": 90}}
 
-RULES:
-1. ONLY answer workout/fitness questions
-2. Be concise (2-3 sentences max)
-3. When user asks to modify their plan, respond ONLY with the JSON action object
-4. For general questions, respond with plain text
-5. Refuse off-topic questions politely
+2. **modifyExercise** - Change sets/reps/rest for a specific exercise
+   Triggers: "more sets", "less reps", "change rest time", "increase volume for X"
+   {"action": "modifyExercise", "params": {"day_of_week": ${currentDay}, "exercise_name": "EXACT_NAME", "new_sets": 4, "new_reps": "6-8", "new_rest_period_s": 120, "new_rpe": "8"}}
+
+3. **addExercise** - Add a new exercise to the plan
+   Triggers: "add bicep curls", "include cardio", "I want to do abs", "add more chest work"
+   {"action": "addExercise", "params": {"day_of_week": ${currentDay}, "exercise_name": "Exercise Name", "category": "main", "sets": 3, "reps": "12-15", "rest_period_s": 60}}
+   Categories: "warmup", "main", "cooldown"
+
+4. **removeExercise** - Remove an exercise from the plan
+   Triggers: "remove X", "take out X", "I don't want to do X", "skip X", "delete X"
+   {"action": "removeExercise", "params": {"day_of_week": ${currentDay}, "exercise_name": "EXACT_NAME"}}
+
+5. **adjustDifficulty** - Make workout harder or easier (affects ALL main exercises)
+   Triggers: "make it harder", "too easy", "make today easier", "I want more challenge", "tone it down"
+   {"action": "adjustDifficulty", "params": {"day_of_week": ${currentDay}, "direction": "harder", "method": "all"}}
+   - direction: "harder" or "easier"
+   - method: "volume" (sets), "intensity" (RPE), or "all" (both)
+
+6. **shortenWorkout** - Make the workout shorter/quicker
+   Triggers: "make it shorter", "I only have 30 minutes", "quick workout", "less exercises", "faster session"
+   {"action": "shortenWorkout", "params": {"day_of_week": ${currentDay}}}
+
+7. **extendWorkout** - Make the workout longer
+   Triggers: "make it longer", "add more exercises", "I have extra time", "extend the workout"
+   {"action": "extendWorkout", "params": {"day_of_week": ${currentDay}}}
+
+8. **swapDayFocus** - Swap workouts between two days
+   Triggers: "swap Monday and Tuesday", "move leg day to Wednesday", "switch day 1 and day 3"
+   {"action": "swapDayFocus", "params": {"day_from": 1, "day_to": 3}}
+
+9. **createSuperset** - Combine exercises into a superset
+   Triggers: "make a superset", "combine X and Y", "superset these exercises"
+   {"action": "createSuperset", "params": {"day_of_week": ${currentDay}, "exercises": [{"exercise_name": "Exercise A", "metrics_template": {"type": "sets_reps_weight", "target_sets": 3, "target_reps": "10"}}, {"exercise_name": "Exercise B", "metrics_template": {"type": "sets_reps_weight", "target_sets": 3, "target_reps": "12"}}], "rounds": 3, "rest_between_rounds": 90}}
+
+═══════════════════════════════════════════════════════════════
+NATURAL LANGUAGE UNDERSTANDING (BE FLEXIBLE!)
+═══════════════════════════════════════════════════════════════
+You are a conversational AI coach. Understand:
+
+**Difficulty adjustments:**
+- "Make it harder/tougher/more intense/challenging" → adjustDifficulty (harder)
+- "Make it easier/lighter/less intense/simpler" → adjustDifficulty (easier)
+- "More volume/sets/reps" → adjustDifficulty (volume, harder)
+- "Less volume" → adjustDifficulty (volume, easier)
+- "I want a challenge" → adjustDifficulty (harder)
+- "Go easy on me" → adjustDifficulty (easier)
+
+**Pain/Discomfort (IMPORTANT - be empathetic):**
+- "This hurts my knees/back/shoulder" → Suggest substituteExercise with joint-friendly alternative
+- "X exercise hurts" → Offer to replace with safer alternative
+- "I feel pain when doing X" → Recommend stopping, suggest alternative
+- "My [body part] is sore" → Suggest lighter work or rest for that area
+- "I have bad knees/back" → Proactively suggest modifications
+
+**Adding/Removing:**
+- "Add cardio/running/bike/treadmill" → addExercise (appropriate cardio)
+- "Add abs/core/planks" → addExercise (core work)
+- "More chest/arms/legs" → addExercise (exercises for that muscle)
+- "Remove/skip/delete X" → removeExercise
+- "I don't want to do X" → removeExercise or substituteExercise
+
+**Duration:**
+- "Shorter/quicker/less time" → shortenWorkout
+- "Longer/more time/extend" → extendWorkout
+- "I only have X minutes" → shortenWorkout or adjust
+
+**Conversational:**
+- "What should I do today?" → Describe today's workout
+- "How's my form on X?" → Give form tips
+- "Why this exercise?" → Explain the benefit
+- "I'm tired/exhausted" → Suggest easier workout or rest
+- "I feel great!" → Consider making it harder
+- "Is this good for X goal?" → Relate to their goals
+
+**Handle spelling mistakes & casual language:**
+- "benchpress" = "Bench Press"
+- "squats" = "Squat" or "Back Squat"
+- "deadlift" = "Deadlift" or "Conventional Deadlift"
+- "make it hardder" = "make it harder"
+- "i dont like this" = remove or substitute
+- "wanna add" = "want to add"
+- Typos, abbreviations, slang - understand the intent!
+
+**Pain-to-Exercise Substitution Guide:**
+- Knee pain: Avoid deep squats/lunges → Use box squats, leg press, step-ups
+- Back pain: Avoid deadlifts/rows → Use lat pulldown, chest-supported row, hip hinge machines
+- Shoulder pain: Avoid overhead press/dips → Use landmine press, neutral grip, floor press
+- Wrist pain: Avoid barbell exercises → Use dumbbells, EZ bar, neutral grips
+
+═══════════════════════════════════════════════════════════════
+RULES
+═══════════════════════════════════════════════════════════════
+1. Be CONVERSATIONAL and EMPATHETIC - talk like a real coach
+2. For plan modifications, respond with the JSON action object
+3. For questions/advice/conversation, respond with helpful plain text
+4. Understand the INTENT even with typos or casual language
+5. When user mentions pain/discomfort, ALWAYS offer a safer alternative
+6. Use EXACT exercise names from TODAY'S EXERCISES when referencing them
+7. When user says "today", use day_of_week: ${currentDay}
+8. When user mentions a day name, convert to day_of_week (Monday=1, Sunday=7)
+9. Be helpful, encouraging, and supportive
+10. If unsure, ASK for clarification in a friendly way
+11. You can have a normal conversation about fitness - don't just execute commands
 
 CONTEXT:
 Plan has weeklyPlan[] with days (day_of_week 1-7, where 1=Monday), focus, and blocks.
@@ -1502,20 +1644,30 @@ USER MESSAGE: ${args.message}`;
       // Match both compact and formatted JSON
       const jsonMatch = responseText.match(/\{\s*"action"\s*:\s*"(\w+)"\s*,\s*"params"\s*:\s*(\{[\s\S]*?\})\s*\}/);
       if (jsonMatch) {
+        // All supported actions - must match frontend Chatbot.tsx handlers
         const actionMap: Record<string, string> = {
           'substituteExercise': 'substituteExercise',
           'modifyExercise': 'modifyExercise',
           'addExercise': 'addExercise',
+          'removeExercise': 'removeExercise',
+          'adjustDifficulty': 'adjustDifficulty',
+          'shortenWorkout': 'shortenWorkout',
+          'extendWorkout': 'extendWorkout',
+          'swapDayFocus': 'swapDayFocus',
+          'createSuperset': 'createSuperset',
         };
         try {
           const params = JSON.parse(jsonMatch[2]);
+          const actionName = actionMap[jsonMatch[1]] || jsonMatch[1];
+          loggers.ai.info(`Chat action detected: ${actionName}`, params);
           return {
             type: "function_call",
-            functionName: actionMap[jsonMatch[1]] || jsonMatch[1],
+            functionName: actionName,
             functionArgs: params,
             textResponse: null,
           };
-        } catch {
+        } catch (parseError) {
+          loggers.ai.warn('Failed to parse action params:', parseError);
           // Fall through to text response if JSON parsing fails
         }
       }

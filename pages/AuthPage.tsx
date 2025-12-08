@@ -114,7 +114,7 @@ function BackgroundOrbs() {
   );
 }
 
-type AuthMode = 'select' | 'signin' | 'signup' | 'verify';
+type AuthMode = 'select' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset';
 
 export default function AuthPage() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
@@ -129,6 +129,8 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   // Animation reveal
   const revealed = useSequentialReveal(6, 80, 200);
@@ -138,6 +140,8 @@ export default function AuthPage() {
     setError('');
     setPassword('');
     setCode('');
+    setResetCode('');
+    setNewPassword('');
   }, [mode]);
 
   // OAuth handlers
@@ -215,6 +219,60 @@ export default function AuthPage() {
       haptic.success();
     } catch (err: any) {
       const message = err.errors?.[0]?.message || 'Sign up failed. Please try again.';
+      setError(message);
+      haptic.error();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Forgot password - send reset code
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signInLoaded || !signIn) return;
+
+    haptic.light();
+    setLoading(true);
+    setError('');
+
+    try {
+      await signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: email,
+      });
+      haptic.success();
+      setMode('reset');
+    } catch (err: any) {
+      const message = err.errors?.[0]?.message || 'Failed to send reset code. Check your email.';
+      setError(message);
+      haptic.error();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset password with code
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signInLoaded || !signIn) return;
+
+    haptic.light();
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: resetCode,
+        password: newPassword,
+      });
+
+      if (result.status === 'complete') {
+        haptic.success();
+        await setSignInActive({ session: result.createdSessionId });
+      }
+    } catch (err: any) {
+      const message = err.errors?.[0]?.message || 'Failed to reset password. Check the code.';
       setError(message);
       haptic.error();
     } finally {
@@ -393,6 +451,22 @@ export default function AuthPage() {
             {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
           </button>
         </div>
+
+        {/* Forgot password link */}
+        <button
+          type="button"
+          onClick={() => { haptic.light(); setMode('forgot'); }}
+          className={cn(
+            'w-full text-right',
+            'text-sm font-medium',
+            'text-[var(--brand-primary)]',
+            'active:opacity-70',
+            'transition-opacity duration-150',
+            'min-h-[44px] flex items-center justify-end'
+          )}
+        >
+          Forgot Password?
+        </button>
       </div>
 
       {error && (
@@ -425,6 +499,184 @@ export default function AuthPage() {
           className="w-full py-2 text-[var(--text-secondary)] text-sm font-medium"
         >
           ← Back to options
+        </button>
+      </div>
+    </form>
+  );
+
+  // Forgot password form - enter email
+  const renderForgot = () => (
+    <form onSubmit={handleForgotPassword} className="space-y-5">
+      <div
+        className={cn(
+          'text-center space-y-2 mb-4',
+          'opacity-0 translate-y-4',
+          revealed[0] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--brand-primary-subtle)] flex items-center justify-center">
+          <LockIcon className="w-8 h-8 text-[var(--brand-primary)]" />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--text-primary)]">Reset Password</h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Enter your email and we'll send you a code to reset your password.
+        </p>
+      </div>
+
+      <div
+        className={cn(
+          'opacity-0 translate-y-4',
+          revealed[1] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <Input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<MailIcon className="w-5 h-5" />}
+          size="lg"
+          autoComplete="email"
+          autoCapitalize="none"
+          required
+        />
+      </div>
+
+      {error && (
+        <p className="text-[var(--status-error-bg)] text-sm font-medium animate-fade-in text-center">
+          {error}
+        </p>
+      )}
+
+      <div
+        className={cn(
+          'space-y-4',
+          'opacity-0 translate-y-4',
+          revealed[2] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={loading}
+          className="h-14 rounded-2xl"
+        >
+          Send Reset Code
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => { haptic.light(); setMode('signin'); }}
+          className="w-full py-2 text-[var(--text-secondary)] text-sm font-medium"
+        >
+          ← Back to sign in
+        </button>
+      </div>
+    </form>
+  );
+
+  // Reset password form - enter code and new password
+  const renderReset = () => (
+    <form onSubmit={handleResetPassword} className="space-y-5">
+      <div
+        className={cn(
+          'text-center space-y-2',
+          'opacity-0 translate-y-4',
+          revealed[0] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--brand-primary-subtle)] flex items-center justify-center">
+          <MailIcon className="w-8 h-8 text-[var(--brand-primary)]" />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--text-primary)]">Check your email</h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          We sent a reset code to<br />
+          <span className="font-semibold text-[var(--text-primary)]">{email}</span>
+        </p>
+      </div>
+
+      <div
+        className={cn(
+          'space-y-4',
+          'opacity-0 translate-y-4',
+          revealed[1] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <Input
+          type="text"
+          placeholder="Enter 6-digit code"
+          value={resetCode}
+          onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          size="lg"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          className="text-center text-2xl tracking-[0.5em] font-bold"
+          required
+        />
+
+        <div className="relative">
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="New password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            leftIcon={<LockIcon className="w-5 h-5" />}
+            size="lg"
+            autoComplete="new-password"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className={cn(
+              'absolute right-4 top-1/2 -translate-y-1/2',
+              'p-2 -m-2',
+              'text-[var(--text-tertiary)]',
+              'active:text-[var(--text-primary)]'
+            )}
+          >
+            {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+          </button>
+        </div>
+
+        <p className="text-xs text-[var(--text-tertiary)]">
+          Password must be at least 8 characters
+        </p>
+      </div>
+
+      {error && (
+        <p className="text-[var(--status-error-bg)] text-sm font-medium animate-fade-in text-center">
+          {error}
+        </p>
+      )}
+
+      <div
+        className={cn(
+          'space-y-4',
+          'opacity-0 translate-y-4',
+          revealed[2] && 'opacity-100 translate-y-0 transition-all duration-500 ease-out'
+        )}
+      >
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={loading}
+          disabled={resetCode.length !== 6 || newPassword.length < 8}
+          className="h-14 rounded-2xl"
+        >
+          Reset Password
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => { haptic.light(); setMode('forgot'); }}
+          className="w-full py-2 text-[var(--text-secondary)] text-sm font-medium"
+        >
+          ← Use different email
         </button>
       </div>
     </form>
@@ -602,6 +854,8 @@ export default function AuthPage() {
       case 'signin': return 'Welcome back';
       case 'signup': return 'Create account';
       case 'verify': return 'Verify email';
+      case 'forgot': return 'Forgot password';
+      case 'reset': return 'Reset password';
       default: return 'Get Started';
     }
   };
@@ -664,6 +918,8 @@ export default function AuthPage() {
           {mode === 'signin' && renderSignIn()}
           {mode === 'signup' && renderSignUp()}
           {mode === 'verify' && renderVerify()}
+          {mode === 'forgot' && renderForgot()}
+          {mode === 'reset' && renderReset()}
         </div>
       </div>
 

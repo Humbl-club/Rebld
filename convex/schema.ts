@@ -95,13 +95,25 @@ export default defineSchema({
           description: v.union(v.string(), v.null()), // Free-form goal description
         })),
         // NEW: Current strength levels for AI plan generation context
+        // Comprehensive benchmarks for educated weight estimation
         current_strength: v.optional(v.object({
+          // Compound lifts (barbell)
           squat_kg: v.optional(v.number()),
           bench_kg: v.optional(v.number()),
           deadlift_kg: v.optional(v.number()),
           row_kg: v.optional(v.number()),
           overhead_press_kg: v.optional(v.number()),
+          // Bodyweight
           pullup_count: v.optional(v.number()),
+          pushup_count: v.optional(v.number()),
+          dip_count: v.optional(v.number()),
+          // Dumbbell (for those without barbells)
+          dumbbell_press_kg: v.optional(v.number()),
+          dumbbell_row_kg: v.optional(v.number()),
+          goblet_squat_kg: v.optional(v.number()),
+          // Machine (beginner-friendly)
+          leg_press_kg: v.optional(v.number()),
+          lat_pulldown_kg: v.optional(v.number()),
         })),
       }),
       v.null()
@@ -121,15 +133,26 @@ export default defineSchema({
       active: v.boolean(),
     }))),
 
-    // NEW: Strength profile for weight suggestions
+    // NEW: Strength profile for weight suggestions (mirrors current_strength)
     strengthProfile: v.optional(v.object({
-      squat_kg: v.optional(v.number()), // Current squat 1RM or working weight
-      bench_kg: v.optional(v.number()), // Current bench 1RM or working weight
-      deadlift_kg: v.optional(v.number()), // Current deadlift 1RM or working weight
-      row_kg: v.optional(v.number()), // Current row weight
-      overhead_press_kg: v.optional(v.number()), // Current OHP weight
-      pullup_count: v.optional(v.number()), // Max pullups
-      last_updated: v.string(), // ISO date string
+      // Compound lifts
+      squat_kg: v.optional(v.number()),
+      bench_kg: v.optional(v.number()),
+      deadlift_kg: v.optional(v.number()),
+      row_kg: v.optional(v.number()),
+      overhead_press_kg: v.optional(v.number()),
+      // Bodyweight
+      pullup_count: v.optional(v.number()),
+      pushup_count: v.optional(v.number()),
+      dip_count: v.optional(v.number()),
+      // Dumbbell
+      dumbbell_press_kg: v.optional(v.number()),
+      dumbbell_row_kg: v.optional(v.number()),
+      goblet_squat_kg: v.optional(v.number()),
+      // Machine
+      leg_press_kg: v.optional(v.number()),
+      lat_pulldown_kg: v.optional(v.number()),
+      last_updated: v.string(),
     })),
 
     // NEW: Injury profile for personalized exercise selection

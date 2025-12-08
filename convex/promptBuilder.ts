@@ -202,11 +202,23 @@ export interface UserProfile {
 }
 
 export interface CurrentStrength {
+  // Compound lifts (barbell)
   squat_kg?: number;
   bench_kg?: number;
   deadlift_kg?: number;
   row_kg?: number;
+  overhead_press_kg?: number;
+  // Bodyweight
   pullup_count?: number;
+  pushup_count?: number;
+  dip_count?: number;
+  // Dumbbell (per hand)
+  dumbbell_press_kg?: number;
+  dumbbell_row_kg?: number;
+  goblet_squat_kg?: number;
+  // Machine
+  leg_press_kg?: number;
+  lat_pulldown_kg?: number;
 }
 
 export interface GoalConfig {
@@ -282,32 +294,136 @@ function getDeloadFrequency(level: string, age?: number) {
 }
 
 function calculateStartingWeights(strength: CurrentStrength) {
-  if (!strength.squat_kg && !strength.bench_kg && !strength.deadlift_kg) {
+  // Check if ANY benchmarks were provided
+  const hasAnyBenchmark = Object.values(strength).some(v => v !== undefined && v !== null);
+  if (!hasAnyBenchmark) {
     return null;
   }
 
-  // Calculate derivative lifts based on known lifts
-  // Source: Common strength ratios from powerlifting
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SMART WEIGHT ESTIMATION SYSTEM
+  // Uses all available benchmarks to estimate starting weights
+  // Based on common strength ratios from research and coaching experience
+  // ═══════════════════════════════════════════════════════════════════════════
+
   const bench = strength.bench_kg;
   const squat = strength.squat_kg;
   const deadlift = strength.deadlift_kg;
+  const row = strength.row_kg;
+  const ohp = strength.overhead_press_kg;
+  const pullups = strength.pullup_count;
+  const pushups = strength.pushup_count;
+  const dips = strength.dip_count;
+  const dbPress = strength.dumbbell_press_kg;
+  const dbRow = strength.dumbbell_row_kg;
+  const goblet = strength.goblet_squat_kg;
+  const legPress = strength.leg_press_kg;
+  const latPull = strength.lat_pulldown_kg;
+
+  // Calculate derivatives using multiple pathways for better accuracy
+  // If user provided dumbbell benchmarks but not barbell, we can estimate barbell
+  // This allows beginners who only use dumbbells to get accurate barbell estimates
+
+  // Bench estimation: prefer direct, then from DB press, then from OHP
+  const estimatedBench = bench || (dbPress ? Math.round(dbPress * 2 * 1.1) : null) || (ohp ? Math.round(ohp * 1.5) : null);
+
+  // Squat estimation: prefer direct, then from goblet, then from leg press
+  const estimatedSquat = squat || (goblet ? Math.round(goblet * 1.5) : null) || (legPress ? Math.round(legPress * 0.5) : null);
+
+  // Deadlift estimation: prefer direct, then from squat
+  const estimatedDeadlift = deadlift || (estimatedSquat ? Math.round(estimatedSquat * 1.2) : null);
+
+  // Row estimation: prefer direct, then from DB row, then from deadlift
+  const estimatedRow = row || (dbRow ? Math.round(dbRow * 2 * 0.9) : null) || (estimatedDeadlift ? Math.round(estimatedDeadlift * 0.55) : null);
+
+  // OHP estimation: prefer direct, then from bench
+  const estimatedOHP = ohp || (estimatedBench ? Math.round(estimatedBench * 0.65) : null);
 
   return {
-    // Known lifts
-    squat: squat,
-    bench: bench,
-    deadlift: deadlift,
-    row: strength.row_kg,
+    // ════════════════════════════════════════════════════════════════
+    // KNOWN LIFTS (User-provided benchmarks)
+    // ════════════════════════════════════════════════════════════════
+    known: {
+      squat: squat,
+      bench: bench,
+      deadlift: deadlift,
+      row: row,
+      ohp: ohp,
+      pullups: pullups,
+      pushups: pushups,
+      dips: dips,
+      dumbbell_press: dbPress,
+      dumbbell_row: dbRow,
+      goblet_squat: goblet,
+      leg_press: legPress,
+      lat_pulldown: latPull,
+    },
 
-    // Calculated derivatives (if base lift is known)
-    incline_bench: bench ? Math.round(bench * 0.85) : null,
-    overhead_press: bench ? Math.round(bench * 0.65) : null,
-    front_squat: squat ? Math.round(squat * 0.85) : null,
-    romanian_deadlift: deadlift ? Math.round(deadlift * 0.65) : null,
-    barbell_row: deadlift ? Math.round(deadlift * 0.55) : null,
-    dumbbell_bench: bench ? Math.round((bench * 0.4) / 2) : null, // Per hand
-    dumbbell_row: strength.row_kg ? Math.round(strength.row_kg * 0.6) : null,
-    lat_pulldown: strength.pullup_count && strength.pullup_count < 5 ? 'bodyweight_assist' : null,
+    // ════════════════════════════════════════════════════════════════
+    // BARBELL COMPOUNDS (core strength exercises)
+    // ════════════════════════════════════════════════════════════════
+    barbell: {
+      back_squat: estimatedSquat,
+      bench_press: estimatedBench,
+      deadlift: estimatedDeadlift,
+      barbell_row: estimatedRow,
+      overhead_press: estimatedOHP,
+      front_squat: estimatedSquat ? Math.round(estimatedSquat * 0.85) : null,
+      romanian_deadlift: estimatedDeadlift ? Math.round(estimatedDeadlift * 0.65) : null,
+      incline_bench: estimatedBench ? Math.round(estimatedBench * 0.85) : null,
+      close_grip_bench: estimatedBench ? Math.round(estimatedBench * 0.85) : null,
+      hip_thrust: estimatedSquat ? Math.round(estimatedSquat * 1.3) : null,
+    },
+
+    // ════════════════════════════════════════════════════════════════
+    // DUMBBELL EXERCISES (single arm/bilateral)
+    // ════════════════════════════════════════════════════════════════
+    dumbbell: {
+      dumbbell_bench: dbPress || (estimatedBench ? Math.round(estimatedBench * 0.4) : null),
+      dumbbell_row: dbRow || (estimatedRow ? Math.round(estimatedRow * 0.55) : null),
+      dumbbell_shoulder_press: dbPress ? Math.round(dbPress * 0.7) : (estimatedOHP ? Math.round(estimatedOHP * 0.45) : null),
+      dumbbell_curl: dbRow ? Math.round(dbRow * 0.4) : (estimatedRow ? Math.round(estimatedRow * 0.2) : null),
+      lateral_raise: dbPress ? Math.round(dbPress * 0.25) : null,
+      dumbbell_lunges: goblet ? Math.round(goblet * 0.5) : (estimatedSquat ? Math.round(estimatedSquat * 0.25) : null),
+      goblet_squat: goblet || (estimatedSquat ? Math.round(estimatedSquat * 0.5) : null),
+    },
+
+    // ════════════════════════════════════════════════════════════════
+    // MACHINE EXERCISES
+    // ════════════════════════════════════════════════════════════════
+    machine: {
+      leg_press: legPress || (estimatedSquat ? Math.round(estimatedSquat * 2) : null),
+      lat_pulldown: latPull || (pullups && pullups >= 5 ? 'bodyweight' : (pullups ? Math.round(70 - (5 - pullups) * 5) : null)),
+      cable_row: latPull || (estimatedRow ? Math.round(estimatedRow * 0.75) : null),
+      leg_curl: estimatedDeadlift ? Math.round(estimatedDeadlift * 0.2) : null,
+      leg_extension: estimatedSquat ? Math.round(estimatedSquat * 0.35) : null,
+      chest_press: estimatedBench ? Math.round(estimatedBench * 0.85) : null,
+      shoulder_press_machine: estimatedOHP ? Math.round(estimatedOHP * 0.9) : null,
+    },
+
+    // ════════════════════════════════════════════════════════════════
+    // BODYWEIGHT EXERCISE GUIDANCE
+    // ════════════════════════════════════════════════════════════════
+    bodyweight: {
+      pullup_recommendation: pullups !== undefined ? (
+        pullups >= 10 ? 'weighted_pullups' :
+        pullups >= 5 ? 'strict_pullups' :
+        pullups >= 1 ? 'assisted_or_negatives' :
+        'lat_pulldown_progression'
+      ) : null,
+      pushup_strength_indicator: pushups !== undefined ? (
+        pushups >= 40 ? 'advanced' :
+        pushups >= 20 ? 'intermediate' :
+        pushups >= 10 ? 'beginner' :
+        'assisted_progression'
+      ) : null,
+      dip_recommendation: dips !== undefined ? (
+        dips >= 15 ? 'weighted_dips' :
+        dips >= 8 ? 'strict_dips' :
+        dips >= 1 ? 'assisted_or_negatives' :
+        'bench_dip_progression'
+      ) : null,
+    },
   };
 }
 
@@ -640,28 +756,99 @@ Start conservatively:
 `;
   }
 
+  // Helper to format weight entries
+  const formatWeight = (name: string, value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return `- ${name}: ${value}`;
+    return `- ${name}: ${value}kg`;
+  };
+
+  // Build known lifts section (only show what user actually provided)
+  const knownSection = [
+    formatWeight('Back Squat', calculated.known.squat),
+    formatWeight('Bench Press', calculated.known.bench),
+    formatWeight('Deadlift', calculated.known.deadlift),
+    formatWeight('Barbell Row', calculated.known.row),
+    formatWeight('Overhead Press', calculated.known.ohp),
+    calculated.known.pullups !== undefined ? `- Pullups: ${calculated.known.pullups} reps` : '',
+    calculated.known.pushups !== undefined ? `- Pushups: ${calculated.known.pushups} reps` : '',
+    calculated.known.dips !== undefined ? `- Dips: ${calculated.known.dips} reps` : '',
+    formatWeight('Dumbbell Press (per hand)', calculated.known.dumbbell_press),
+    formatWeight('Dumbbell Row (per hand)', calculated.known.dumbbell_row),
+    formatWeight('Goblet Squat', calculated.known.goblet_squat),
+    formatWeight('Leg Press', calculated.known.leg_press),
+    formatWeight('Lat Pulldown', calculated.known.lat_pulldown),
+  ].filter(Boolean).join('\n');
+
+  // Build estimated barbell section
+  const barbellSection = [
+    formatWeight('Back Squat', calculated.barbell.back_squat),
+    formatWeight('Bench Press', calculated.barbell.bench_press),
+    formatWeight('Deadlift', calculated.barbell.deadlift),
+    formatWeight('Barbell Row', calculated.barbell.barbell_row),
+    formatWeight('Overhead Press', calculated.barbell.overhead_press),
+    formatWeight('Front Squat', calculated.barbell.front_squat),
+    formatWeight('Romanian Deadlift', calculated.barbell.romanian_deadlift),
+    formatWeight('Incline Bench', calculated.barbell.incline_bench),
+    formatWeight('Close-Grip Bench', calculated.barbell.close_grip_bench),
+    formatWeight('Hip Thrust', calculated.barbell.hip_thrust),
+  ].filter(Boolean).join('\n');
+
+  // Build dumbbell section
+  const dumbbellSection = [
+    formatWeight('Dumbbell Bench Press', calculated.dumbbell.dumbbell_bench),
+    formatWeight('Dumbbell Row', calculated.dumbbell.dumbbell_row),
+    formatWeight('Dumbbell Shoulder Press', calculated.dumbbell.dumbbell_shoulder_press),
+    formatWeight('Dumbbell Curl', calculated.dumbbell.dumbbell_curl),
+    formatWeight('Lateral Raise', calculated.dumbbell.lateral_raise),
+    formatWeight('Dumbbell Lunges', calculated.dumbbell.dumbbell_lunges),
+    formatWeight('Goblet Squat', calculated.dumbbell.goblet_squat),
+  ].filter(Boolean).join('\n');
+
+  // Build machine section
+  const machineSection = [
+    formatWeight('Leg Press', calculated.machine.leg_press),
+    formatWeight('Lat Pulldown', calculated.machine.lat_pulldown),
+    formatWeight('Cable Row', calculated.machine.cable_row),
+    formatWeight('Leg Curl', calculated.machine.leg_curl),
+    formatWeight('Leg Extension', calculated.machine.leg_extension),
+    formatWeight('Chest Press Machine', calculated.machine.chest_press),
+    formatWeight('Shoulder Press Machine', calculated.machine.shoulder_press_machine),
+  ].filter(Boolean).join('\n');
+
+  // Build bodyweight guidance section
+  const bwGuidance = [
+    calculated.bodyweight.pullup_recommendation ? `- Pullups: ${calculated.bodyweight.pullup_recommendation.replace(/_/g, ' ')}` : '',
+    calculated.bodyweight.pushup_strength_indicator ? `- Pushup Level: ${calculated.bodyweight.pushup_strength_indicator}` : '',
+    calculated.bodyweight.dip_recommendation ? `- Dips: ${calculated.bodyweight.dip_recommendation.replace(/_/g, ' ')}` : '',
+  ].filter(Boolean).join('\n');
+
   return `
 ═══════════════════════════════════════════════════════════════════════════════
-STARTING WEIGHTS (Based on User's Current Strength for 8-10 Reps)
+STARTING WEIGHTS - INTELLIGENT ESTIMATION
+Based on user benchmarks with standard strength ratios
 ═══════════════════════════════════════════════════════════════════════════════
 
-KNOWN LIFTS (use these EXACTLY in Week 1):
-${calculated.squat ? `- Back Squat: ${calculated.squat}kg` : ''}
-${calculated.bench ? `- Bench Press: ${calculated.bench}kg` : ''}
-${calculated.deadlift ? `- Deadlift: ${calculated.deadlift}kg` : ''}
-${calculated.row ? `- Barbell Row: ${calculated.row}kg` : ''}
+🎯 USER-PROVIDED BENCHMARKS (exact values):
+${knownSection || '(None provided)'}
 
-CALCULATED DERIVATIVES (use these for related exercises):
-${calculated.incline_bench ? `- Incline Bench: ${calculated.incline_bench}kg (85% of flat bench)` : ''}
-${calculated.overhead_press ? `- Overhead Press: ${calculated.overhead_press}kg (65% of bench)` : ''}
-${calculated.front_squat ? `- Front Squat: ${calculated.front_squat}kg (85% of back squat)` : ''}
-${calculated.romanian_deadlift ? `- Romanian Deadlift: ${calculated.romanian_deadlift}kg (65% of deadlift)` : ''}
-${calculated.dumbbell_bench ? `- Dumbbell Press: ${calculated.dumbbell_bench}kg per hand (40% of barbell)` : ''}
+💪 BARBELL EXERCISES (estimated 8-10 rep weights):
+${barbellSection || '(Insufficient data)'}
+
+🏋️ DUMBBELL EXERCISES (per hand, estimated):
+${dumbbellSection || '(Insufficient data)'}
+
+⚙️ MACHINE EXERCISES (estimated):
+${machineSection || '(Insufficient data)'}
+
+${bwGuidance ? `🏃 BODYWEIGHT GUIDANCE:
+${bwGuidance}` : ''}
 
 PRESCRIPTION RULES:
-- For exercises with known weights: Use EXACT weight in Week 1
-- For new exercises: Start at RPE 6, record weight, progress from there
-- Never guess - if unsure, start lighter and adjust
+- For exercises with KNOWN weights: Use EXACT weight in Week 1
+- For ESTIMATED weights: Start 10% lighter, adjust based on RPE
+- If exercise not listed: Start at RPE 6, record weight, progress from there
+- NEVER exceed recommended weight - start conservative, progress weekly
 `;
 }
 
@@ -911,18 +1098,33 @@ export function buildBriefMasterPrompt(inputs: PromptInputs): string {
   const volumeMarks = VOLUME_LANDMARKS[exp as keyof typeof VOLUME_LANDMARKS] || VOLUME_LANDMARKS.intermediate;
   const ageMods = getAgeModifications(profile.age);
 
-  // Calculate starting weights if provided
+  // Calculate starting weights if any benchmarks provided
   let startingWeightsInfo = '';
-  if (strength.squat_kg || strength.bench_kg || strength.deadlift_kg) {
+  const hasAnyBenchmark = Object.values(strength).some(v => v !== undefined && v !== null);
+  if (hasAnyBenchmark) {
     const calculated = calculateStartingWeights(strength);
-    startingWeightsInfo = `
-**STARTING WEIGHTS (from user's known lifts):**
-${strength.squat_kg ? `- Back Squat: ${calculated.squat}kg` : ''}
-${strength.bench_kg ? `- Bench Press: ${calculated.bench}kg` : ''}
-${strength.deadlift_kg ? `- Deadlift: ${calculated.deadlift}kg` : ''}
-${strength.bench_kg ? `- Overhead Press: ${calculated.overhead_press}kg (65% of bench)` : ''}
-${strength.squat_kg ? `- Front Squat: ${calculated.front_squat}kg (85% of back squat)` : ''}
-Use these weights in Week 1 exercises.`;
+    if (calculated) {
+      // Build compact weight reference from calculated values
+      const weights: string[] = [];
+      if (calculated.barbell.back_squat) weights.push(`Squat: ${calculated.barbell.back_squat}kg`);
+      if (calculated.barbell.bench_press) weights.push(`Bench: ${calculated.barbell.bench_press}kg`);
+      if (calculated.barbell.deadlift) weights.push(`Deadlift: ${calculated.barbell.deadlift}kg`);
+      if (calculated.barbell.overhead_press) weights.push(`OHP: ${calculated.barbell.overhead_press}kg`);
+      if (calculated.barbell.barbell_row) weights.push(`Row: ${calculated.barbell.barbell_row}kg`);
+      if (calculated.dumbbell.dumbbell_bench) weights.push(`DB Press: ${calculated.dumbbell.dumbbell_bench}kg/hand`);
+      if (calculated.dumbbell.dumbbell_row) weights.push(`DB Row: ${calculated.dumbbell.dumbbell_row}kg/hand`);
+      if (calculated.machine.leg_press) weights.push(`Leg Press: ${calculated.machine.leg_press}kg`);
+      if (calculated.machine.lat_pulldown && typeof calculated.machine.lat_pulldown === 'number') {
+        weights.push(`Lat Pull: ${calculated.machine.lat_pulldown}kg`);
+      }
+
+      if (weights.length > 0) {
+        startingWeightsInfo = `
+**STARTING WEIGHTS (estimated from benchmarks):**
+${weights.map(w => `- ${w}`).join('\n')}
+Use these weights in Week 1 exercises. Start 10% lighter for estimated exercises.`;
+      }
+    }
   }
 
   return `

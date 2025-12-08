@@ -920,7 +920,7 @@ const EssentialsStep = ({
                 <p className="text-[10px] text-[var(--text-tertiary)] mt-1">For recovery optimization</p>
             </div>
 
-            {/* Current Strength - Collapsible */}
+            {/* Current Strength - Collapsible with Categories */}
             <div>
                 <button
                     onClick={() => setShowStrengthInputs(!showStrengthInputs)}
@@ -935,52 +935,179 @@ const EssentialsStep = ({
                 </button>
 
                 {showStrengthInputs && (
-                    <div className="space-y-2 pt-1">
-                        <p className="text-[10px] text-[var(--text-tertiary)] mb-2">Enter your 8-10 rep max (kg)</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Squat</span>
-                                <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    value={currentStrength.squat_kg || ''}
-                                    onChange={(e) => setCurrentStrength({ ...currentStrength, squat_kg: e.target.value ? parseInt(e.target.value) : undefined })}
-                                    placeholder="kg"
-                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
-                                />
+                    <div className="space-y-4 pt-1">
+                        <p className="text-[10px] text-[var(--text-tertiary)]">
+                            Fill in what you know — helps us estimate starting weights
+                        </p>
+
+                        {/* Barbell Section */}
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">Barbell (8-10 rep max)</span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Squat</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.squat_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, squat_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Bench</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.bench_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, bench_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Deadlift</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.deadlift_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, deadlift_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Row</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.row_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, row_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">OHP</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.overhead_press_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, overhead_press_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Bench</span>
-                                <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    value={currentStrength.bench_kg || ''}
-                                    onChange={(e) => setCurrentStrength({ ...currentStrength, bench_kg: e.target.value ? parseInt(e.target.value) : undefined })}
-                                    placeholder="kg"
-                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
-                                />
+                        </div>
+
+                        {/* Bodyweight Section */}
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">Bodyweight (max reps)</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Pullups</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.pullup_count || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, pullup_count: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="#"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Pushups</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.pushup_count || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, pushup_count: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="#"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Dips</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.dip_count || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, dip_count: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="#"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Deadlift</span>
-                                <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    value={currentStrength.deadlift_kg || ''}
-                                    onChange={(e) => setCurrentStrength({ ...currentStrength, deadlift_kg: e.target.value ? parseInt(e.target.value) : undefined })}
-                                    placeholder="kg"
-                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
-                                />
+                        </div>
+
+                        {/* Dumbbell Section */}
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">Dumbbell (8-10 rep max, per hand)</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Press</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.dumbbell_press_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, dumbbell_press_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Row</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.dumbbell_row_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, dumbbell_row_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-14">Goblet</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.goblet_squat_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, goblet_squat_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-[var(--text-secondary)] w-16">Pullups</span>
-                                <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    value={currentStrength.pullup_count || ''}
-                                    onChange={(e) => setCurrentStrength({ ...currentStrength, pullup_count: e.target.value ? parseInt(e.target.value) : undefined })}
-                                    placeholder="#"
-                                    className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
-                                />
+                        </div>
+
+                        {/* Machine Section */}
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">Machine (8-10 rep max)</span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Leg Press</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.leg_press_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, leg_press_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-[var(--text-secondary)] w-16">Lat Pull</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={currentStrength.lat_pulldown_kg || ''}
+                                        onChange={(e) => setCurrentStrength({ ...currentStrength, lat_pulldown_kg: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        placeholder="kg"
+                                        className="flex-1 h-9 px-2 bg-[var(--surface-secondary)] rounded-lg text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-primary)] outline-none text-center"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

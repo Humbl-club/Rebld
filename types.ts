@@ -332,13 +332,28 @@ export interface BodyMetrics {
 }
 
 // Current Strength Levels (for starting weight calculations)
+// These benchmarks help AI estimate starting weights for all exercises
 export interface CurrentStrength {
+    // === COMPOUND LIFTS (Barbell) ===
     squat_kg?: number;          // Back squat 8-10RM
     bench_kg?: number;          // Bench press 8-10RM
     deadlift_kg?: number;       // Deadlift 8-10RM
     row_kg?: number;            // Barbell row 8-10RM
     overhead_press_kg?: number; // Overhead press 8-10RM
+
+    // === BODYWEIGHT ===
     pullup_count?: number;      // Max strict pullups
+    pushup_count?: number;      // Max pushups in one set
+    dip_count?: number;         // Max parallel bar dips
+
+    // === DUMBBELL (for those without barbells) ===
+    dumbbell_press_kg?: number; // Dumbbell bench press 8-10RM (per hand)
+    dumbbell_row_kg?: number;   // Single-arm DB row 8-10RM
+    goblet_squat_kg?: number;   // Goblet squat 8-10RM
+
+    // === MACHINE (for beginners) ===
+    leg_press_kg?: number;      // Leg press 8-10RM
+    lat_pulldown_kg?: number;   // Lat pulldown 8-10RM
 }
 
 // User Goals
