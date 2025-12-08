@@ -6,6 +6,23 @@ import {
   SpecificGoal,
   CurrentStrength,
 } from '@/types';
+import {
+  Gem,
+  Hexagon,
+  Zap,
+  Infinity,
+  Target,
+  ChevronLeft,
+  Dumbbell,
+  Home,
+  Building2,
+  Clock,
+  Calendar,
+  TrendingUp,
+  User,
+  Users,
+  Crown,
+} from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════
    SWIPEABLE ONBOARDING - Premium Card-Based Experience
@@ -74,68 +91,28 @@ const CARDS: CardConfig[] = [
   { id: 'review', title: "Ready to\nbuild your plan?", subtitle: 'Review & generate', required: true },
 ];
 
-// Option configurations - Using sophisticated SVG icons instead of emojis
-const GOAL_OPTIONS: { id: Goal; label: string; desc: string; iconType: 'aesthetic' | 'strength' | 'athletic' | 'health' | 'competition' }[] = [
-  { id: 'Aesthetic Physique', label: 'Aesthetic', desc: 'Build muscle, reduce body fat', iconType: 'aesthetic' },
-  { id: 'Strength & Power', label: 'Strength', desc: 'Increase 1RM and power', iconType: 'strength' },
-  { id: 'Athletic Performance', label: 'Athletic', desc: 'Sport-specific conditioning', iconType: 'athletic' },
-  { id: 'Health & Longevity', label: 'Health', desc: 'Sustainable fitness for life', iconType: 'health' },
-  { id: 'Competition Prep', label: 'Competition', desc: 'Prepare for a specific event', iconType: 'competition' },
+// Option configurations with Lucide icon components
+const GOAL_OPTIONS: { id: Goal; label: string; desc: string; icon: React.FC<{ size?: number; strokeWidth?: number; className?: string }> }[] = [
+  { id: 'Aesthetic Physique', label: 'Aesthetic', desc: 'Build muscle, reduce body fat', icon: Gem },
+  { id: 'Strength & Power', label: 'Strength', desc: 'Increase 1RM and power', icon: Hexagon },
+  { id: 'Athletic Performance', label: 'Athletic', desc: 'Sport-specific conditioning', icon: Zap },
+  { id: 'Health & Longevity', label: 'Health', desc: 'Sustainable fitness for life', icon: Infinity },
+  { id: 'Competition Prep', label: 'Competition', desc: 'Prepare for a specific event', icon: Target },
 ];
 
-// Sophisticated minimal icons for goals
-function GoalIcon({ type, selected }: { type: string; selected: boolean }) {
-  const strokeColor = selected ? 'currentColor' : 'var(--text-secondary)';
-  const strokeWidth = selected ? 2 : 1.5;
+// Equipment options with icons
+const EQUIPMENT_OPTIONS: { id: Equipment; label: string; desc: string; icon: React.FC<{ size?: number; strokeWidth?: number; className?: string }> }[] = [
+  { id: 'minimal', label: 'Minimal', desc: 'Bodyweight + basics', icon: User },
+  { id: 'home_gym', label: 'Home Gym', desc: 'Dumbbells, bench, rack', icon: Home },
+  { id: 'commercial_gym', label: 'Full Gym', desc: 'Complete equipment access', icon: Building2 },
+];
 
-  switch (type) {
-    case 'aesthetic':
-      // Diamond/gem shape - represents refinement and sculpting
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 3h12l4 6-10 13L2 9l4-6z" />
-          <path d="M11 3l1 6h9" />
-          <path d="M2 9h9l1-6" />
-          <path d="M12 22l-1-13" />
-          <path d="M12 22l1-13" />
-        </svg>
-      );
-    case 'strength':
-      // Hexagon with center - represents solid foundation and power
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      );
-    case 'athletic':
-      // Lightning bolt in circle - represents speed and explosiveness
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M13 2.05v5.95l3-1 -4 8v-6l-3 1 4-8z" />
-        </svg>
-      );
-    case 'health':
-      // Infinity loop - represents longevity and balance
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4z" />
-        </svg>
-      );
-    case 'competition':
-      // Target/bullseye - represents precision and goals
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
+// Experience options with icons
+const EXPERIENCE_OPTIONS_WITH_ICONS: { id: Experience; label: string; desc: string; icon: React.FC<{ size?: number; strokeWidth?: number; className?: string }> }[] = [
+  { id: 'Beginner', label: 'Beginner', desc: 'Less than 1 year training', icon: User },
+  { id: 'Intermediate', label: 'Intermediate', desc: '1-3 years consistent training', icon: Users },
+  { id: 'Advanced', label: 'Advanced', desc: '3+ years serious training', icon: Crown },
+];
 
 // Fitness level descriptions for the 1-10 scale
 const FITNESS_LEVEL_INFO: Record<number, { label: string; desc: string }> = {
@@ -151,23 +128,12 @@ const FITNESS_LEVEL_INFO: Record<number, { label: string; desc: string }> = {
   10: { label: 'Competition ready', desc: 'Peak form, professional-level prep' },
 };
 
-const EXPERIENCE_OPTIONS: { id: Experience; label: string; desc: string }[] = [
-  { id: 'Beginner', label: 'Beginner', desc: 'Less than 1 year training' },
-  { id: 'Intermediate', label: 'Intermediate', desc: '1-3 years consistent training' },
-  { id: 'Advanced', label: 'Advanced', desc: '3+ years serious training' },
-];
-
-const FREQUENCY_OPTIONS: { id: Frequency; label: string; desc: string }[] = [
-  { id: '2-3', label: '2-3 days', desc: 'Perfect for beginners' },
-  { id: '3-4', label: '3-4 days', desc: 'Balanced approach' },
-  { id: '4-5', label: '4-5 days', desc: 'Serious commitment' },
-  { id: '5+', label: '5+ days', desc: 'Athlete level' },
-];
-
-const EQUIPMENT_OPTIONS: { id: Equipment; label: string; desc: string }[] = [
-  { id: 'minimal', label: 'Minimal', desc: 'Bodyweight + basics' },
-  { id: 'home_gym', label: 'Home Gym', desc: 'Dumbbells, bench, rack' },
-  { id: 'commercial_gym', label: 'Full Gym', desc: 'Complete equipment access' },
+// Frequency options with icons
+const FREQUENCY_OPTIONS: { id: Frequency; label: string; desc: string; icon: React.FC<{ size?: number; strokeWidth?: number; className?: string }> }[] = [
+  { id: '2-3', label: '2-3 days', desc: 'Perfect for beginners', icon: Calendar },
+  { id: '3-4', label: '3-4 days', desc: 'Balanced approach', icon: Calendar },
+  { id: '4-5', label: '4-5 days', desc: 'Serious commitment', icon: Calendar },
+  { id: '5+', label: '5+ days', desc: 'Athlete level', icon: TrendingUp },
 ];
 
 const SESSION_OPTIONS: { id: SessionLength; label: string }[] = [
@@ -324,6 +290,7 @@ export default function SwipeableOnboarding({
           <div className="space-y-3">
             {GOAL_OPTIONS.map(option => {
               const isSelected = data.goal === option.id;
+              const IconComponent = option.icon;
               return (
                 <button
                   key={option.id}
@@ -338,12 +305,16 @@ export default function SwipeableOnboarding({
                 >
                   <div className="flex items-center gap-4">
                     <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center',
+                      'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
                       isSelected ? 'bg-white/20' : 'bg-[var(--surface-hover)]'
                     )}>
-                      <GoalIcon type={option.iconType} selected={isSelected} />
+                      <IconComponent
+                        size={22}
+                        strokeWidth={isSelected ? 2 : 1.5}
+                        className={isSelected ? 'text-white' : 'text-[var(--text-secondary)]'}
+                      />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className={cn(
                         'font-bold text-[16px]',
                         isSelected ? 'text-white' : 'text-[var(--text-primary)]'
@@ -367,117 +338,181 @@ export default function SwipeableOnboarding({
       case 'experience':
         return (
           <div className="space-y-3">
-            {EXPERIENCE_OPTIONS.map(option => (
-              <button
-                key={option.id}
-                onClick={() => selectOption('experience', option.id)}
-                className={cn(
-                  'w-full p-4 rounded-2xl text-left transition-all duration-200',
-                  'border-2 active:scale-[0.98]',
-                  data.experience === option.id
-                    ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
-                    : 'bg-[var(--surface-secondary)] border-transparent'
-                )}
-              >
-                <p className={cn(
-                  'font-bold text-[16px]',
-                  data.experience === option.id ? 'text-white' : 'text-[var(--text-primary)]'
-                )}>
-                  {option.label}
-                </p>
-                <p className={cn(
-                  'text-[13px]',
-                  data.experience === option.id ? 'text-white/80' : 'text-[var(--text-secondary)]'
-                )}>
-                  {option.desc}
-                </p>
-              </button>
-            ))}
+            {EXPERIENCE_OPTIONS_WITH_ICONS.map(option => {
+              const isSelected = data.experience === option.id;
+              const IconComponent = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => selectOption('experience', option.id)}
+                  className={cn(
+                    'w-full p-4 rounded-2xl text-left transition-all duration-200',
+                    'border-2 active:scale-[0.98]',
+                    isSelected
+                      ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
+                      : 'bg-[var(--surface-secondary)] border-transparent'
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                      isSelected ? 'bg-white/20' : 'bg-[var(--surface-hover)]'
+                    )}>
+                      <IconComponent
+                        size={22}
+                        strokeWidth={isSelected ? 2 : 1.5}
+                        className={isSelected ? 'text-white' : 'text-[var(--text-secondary)]'}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn(
+                        'font-bold text-[16px]',
+                        isSelected ? 'text-white' : 'text-[var(--text-primary)]'
+                      )}>
+                        {option.label}
+                      </p>
+                      <p className={cn(
+                        'text-[13px]',
+                        isSelected ? 'text-white/80' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {option.desc}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         );
 
       case 'frequency':
         return (
           <div className="space-y-3">
-            {FREQUENCY_OPTIONS.map(option => (
-              <button
-                key={option.id}
-                onClick={() => selectOption('frequency', option.id)}
-                className={cn(
-                  'w-full p-4 rounded-2xl text-left transition-all duration-200',
-                  'border-2 active:scale-[0.98]',
-                  data.frequency === option.id
-                    ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
-                    : 'bg-[var(--surface-secondary)] border-transparent'
-                )}
-              >
-                <p className={cn(
-                  'font-bold text-[16px]',
-                  data.frequency === option.id ? 'text-white' : 'text-[var(--text-primary)]'
-                )}>
-                  {option.label}
-                </p>
-                <p className={cn(
-                  'text-[13px]',
-                  data.frequency === option.id ? 'text-white/80' : 'text-[var(--text-secondary)]'
-                )}>
-                  {option.desc}
-                </p>
-              </button>
-            ))}
+            {FREQUENCY_OPTIONS.map(option => {
+              const isSelected = data.frequency === option.id;
+              const IconComponent = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => selectOption('frequency', option.id)}
+                  className={cn(
+                    'w-full p-4 rounded-2xl text-left transition-all duration-200',
+                    'border-2 active:scale-[0.98]',
+                    isSelected
+                      ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
+                      : 'bg-[var(--surface-secondary)] border-transparent'
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                      isSelected ? 'bg-white/20' : 'bg-[var(--surface-hover)]'
+                    )}>
+                      <IconComponent
+                        size={22}
+                        strokeWidth={isSelected ? 2 : 1.5}
+                        className={isSelected ? 'text-white' : 'text-[var(--text-secondary)]'}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn(
+                        'font-bold text-[16px]',
+                        isSelected ? 'text-white' : 'text-[var(--text-primary)]'
+                      )}>
+                        {option.label}
+                      </p>
+                      <p className={cn(
+                        'text-[13px]',
+                        isSelected ? 'text-white/80' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {option.desc}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         );
 
       case 'equipment':
         return (
           <div className="space-y-3">
-            {EQUIPMENT_OPTIONS.map(option => (
-              <button
-                key={option.id}
-                onClick={() => selectOption('equipment', option.id)}
-                className={cn(
-                  'w-full p-4 rounded-2xl text-left transition-all duration-200',
-                  'border-2 active:scale-[0.98]',
-                  data.equipment === option.id
-                    ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
-                    : 'bg-[var(--surface-secondary)] border-transparent'
-                )}
-              >
-                <p className={cn(
-                  'font-bold text-[16px]',
-                  data.equipment === option.id ? 'text-white' : 'text-[var(--text-primary)]'
-                )}>
-                  {option.label}
-                </p>
-                <p className={cn(
-                  'text-[13px]',
-                  data.equipment === option.id ? 'text-white/80' : 'text-[var(--text-secondary)]'
-                )}>
-                  {option.desc}
-                </p>
-              </button>
-            ))}
+            {EQUIPMENT_OPTIONS.map(option => {
+              const isSelected = data.equipment === option.id;
+              const IconComponent = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => selectOption('equipment', option.id)}
+                  className={cn(
+                    'w-full p-4 rounded-2xl text-left transition-all duration-200',
+                    'border-2 active:scale-[0.98]',
+                    isSelected
+                      ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
+                      : 'bg-[var(--surface-secondary)] border-transparent'
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                      isSelected ? 'bg-white/20' : 'bg-[var(--surface-hover)]'
+                    )}>
+                      <IconComponent
+                        size={22}
+                        strokeWidth={isSelected ? 2 : 1.5}
+                        className={isSelected ? 'text-white' : 'text-[var(--text-secondary)]'}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn(
+                        'font-bold text-[16px]',
+                        isSelected ? 'text-white' : 'text-[var(--text-primary)]'
+                      )}>
+                        {option.label}
+                      </p>
+                      <p className={cn(
+                        'text-[13px]',
+                        isSelected ? 'text-white/80' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {option.desc}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         );
 
       case 'sessionLength':
         return (
-          <div className="flex flex-wrap gap-3 justify-center">
-            {SESSION_OPTIONS.map(option => (
-              <button
-                key={option.id}
-                onClick={() => selectOption('sessionLength', option.id)}
-                className={cn(
-                  'px-6 py-4 rounded-2xl font-bold text-[16px] transition-all duration-200',
-                  'border-2 active:scale-[0.98] min-w-[100px]',
-                  data.sessionLength === option.id
-                    ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
-                    : 'bg-[var(--surface-secondary)] border-transparent text-[var(--text-primary)]'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {SESSION_OPTIONS.map(option => {
+              const isSelected = data.sessionLength === option.id;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => selectOption('sessionLength', option.id)}
+                  className={cn(
+                    'p-4 rounded-2xl transition-all duration-200',
+                    'border-2 active:scale-[0.98]',
+                    isSelected
+                      ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white'
+                      : 'bg-[var(--surface-secondary)] border-transparent text-[var(--text-primary)]'
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Clock
+                      size={20}
+                      strokeWidth={isSelected ? 2 : 1.5}
+                      className={isSelected ? 'text-white' : 'text-[var(--text-secondary)]'}
+                    />
+                    <span className="font-bold text-[16px]">{option.label}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         );
 
@@ -557,66 +592,64 @@ export default function SwipeableOnboarding({
   return (
     <div
       ref={containerRef}
-      className="min-h-[100dvh] bg-[var(--bg-primary)] flex flex-col"
+      className="min-h-[100dvh] h-[100dvh] bg-[var(--bg-primary)] flex flex-col overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Progress dots - Instagram story style */}
-      <div className="px-4 pt-[max(12px,env(safe-area-inset-top))] pb-2">
-        <div className="flex gap-1">
-          {visibleCards.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToIndex(index)}
-              className={cn(
-                'h-1 flex-1 rounded-full transition-all duration-300',
-                index < currentIndex
-                  ? 'bg-[var(--brand-primary)]'
-                  : index === currentIndex
-                  ? 'bg-[var(--brand-primary)]'
-                  : 'bg-[var(--border-strong)]'
-              )}
-            />
-          ))}
+      {/* Fixed header area - progress + back button */}
+      <div className="shrink-0 pt-[max(12px,env(safe-area-inset-top))]">
+        {/* Progress dots - Instagram story style */}
+        <div className="px-5 pb-2">
+          <div className="flex gap-1">
+            {visibleCards.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToIndex(index)}
+                className={cn(
+                  'h-[3px] flex-1 rounded-full transition-all duration-300',
+                  index < currentIndex
+                    ? 'bg-[var(--brand-primary)]'
+                    : index === currentIndex
+                    ? 'bg-[var(--brand-primary)]'
+                    : 'bg-[var(--border-strong)]'
+                )}
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Back button */}
-      <div className="px-4 py-2">
-        <button
-          onClick={goPrev}
-          className="flex items-center gap-2 text-[var(--text-secondary)] font-semibold text-[14px] min-h-[44px]"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-      </div>
+        {/* Back button */}
+        <div className="px-5 py-2">
+          <button
+            onClick={goPrev}
+            className="flex items-center gap-1.5 text-[var(--text-secondary)] font-semibold text-[14px] min-h-[44px] -ml-1"
+          >
+            <ChevronLeft size={22} strokeWidth={2} />
+            Back
+          </button>
+        </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
         {/* Title */}
-        <div className="mb-8">
-          <h1 className="text-[32px] font-black text-[var(--text-primary)] leading-tight whitespace-pre-line">
+        <div className="px-5 pb-4">
+          <h1 className="text-[28px] font-black text-[var(--text-primary)] leading-tight whitespace-pre-line">
             {currentCard?.title}
           </h1>
           {currentCard?.subtitle && (
-            <p className="mt-2 text-[15px] text-[var(--text-secondary)]">
+            <p className="mt-1.5 text-[14px] text-[var(--text-secondary)]">
               {currentCard.subtitle}
             </p>
           )}
         </div>
+      </div>
 
-        {/* Card content */}
-        <div className="flex-1">
-          {renderCardContent()}
-        </div>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto px-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+        {renderCardContent()}
 
         {/* Swipe hint */}
         {currentIndex > 0 && currentCard?.id !== 'review' && (
-          <p className="text-center text-[12px] text-[var(--text-tertiary)] mt-4">
+          <p className="text-center text-[12px] text-[var(--text-tertiary)] mt-6 pb-2">
             Swipe right to go back
           </p>
         )}
