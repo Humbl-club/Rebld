@@ -32,41 +32,41 @@ interface PeriodizationBadgeProps {
 const PHASE_CONFIG = {
   base: {
     label: 'BASE',
-    color: 'bg-blue-500',
-    textColor: 'text-blue-500',
-    bgLight: 'bg-blue-500/10',
+    color: 'bg-[var(--status-info-bg)]',
+    textColor: 'text-[var(--status-info-bg)]',
+    bgLight: 'bg-[var(--status-info-subtle)]',
     description: 'Building foundation',
     icon: '🏗️',
   },
   build: {
     label: 'BUILD',
-    color: 'bg-orange-500',
-    textColor: 'text-orange-500',
-    bgLight: 'bg-orange-500/10',
+    color: 'bg-[var(--status-warning-bg)]',
+    textColor: 'text-[var(--status-warning-bg)]',
+    bgLight: 'bg-[var(--status-warning-subtle)]',
     description: 'Progressive overload',
     icon: '💪',
   },
   peak: {
     label: 'PEAK',
-    color: 'bg-red-500',
-    textColor: 'text-red-500',
-    bgLight: 'bg-red-500/10',
+    color: 'bg-[var(--status-error-bg)]',
+    textColor: 'text-[var(--status-error-bg)]',
+    bgLight: 'bg-[var(--status-error-subtle)]',
     description: 'High intensity',
     icon: '🔥',
   },
   taper: {
     label: 'TAPER',
-    color: 'bg-green-500',
-    textColor: 'text-green-500',
-    bgLight: 'bg-green-500/10',
+    color: 'bg-[var(--status-success-bg)]',
+    textColor: 'text-[var(--status-success-bg)]',
+    bgLight: 'bg-[var(--status-success-subtle)]',
     description: 'Recovery & sharpness',
     icon: '🎯',
   },
   recovery: {
     label: 'RECOVERY',
-    color: 'bg-purple-500',
-    textColor: 'text-purple-500',
-    bgLight: 'bg-purple-500/10',
+    color: 'bg-[var(--workout-mobility)]',
+    textColor: 'text-[var(--workout-mobility)]',
+    bgLight: 'bg-[var(--workout-mobility-subtle)]',
     description: 'Active recovery',
     icon: '🧘',
   },
@@ -130,17 +130,17 @@ export default function PeriodizationBadge({
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <span className={cn(
-          "px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide",
+          "px-2 py-0.5 rounded-full text-[var(--text-xs)] font-bold uppercase tracking-wide",
           config.bgLight,
           config.textColor
         )}>
           {config.icon} {config.label}
         </span>
-        <span className="text-[12px] text-[var(--text-secondary)]">
+        <span className="text-[var(--text-xs)] text-[var(--text-secondary)]">
           Week {current_week}/{total_weeks}
         </span>
         {isDeloadWeek && (
-          <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-600 text-[10px] font-medium">
+          <span className="px-1.5 py-0.5 rounded bg-[var(--status-warning-subtle)] text-[var(--status-warning-bg)] text-[var(--text-2xs)] font-medium">
             DELOAD
           </span>
         )}
@@ -158,19 +158,19 @@ export default function PeriodizationBadge({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={cn(
-            "px-2.5 py-1 rounded-lg text-[12px] font-bold uppercase tracking-wide",
+            "px-2.5 py-1 rounded-lg text-[var(--text-xs)] font-bold uppercase tracking-wide",
             config.bgLight,
             config.textColor
           )}>
             {config.icon} {config.label} Phase
           </span>
           {isDeloadWeek && (
-            <span className="px-2 py-1 rounded-lg bg-yellow-500/20 text-yellow-600 text-[11px] font-semibold">
+            <span className="px-2 py-1 rounded-lg bg-[var(--status-warning-subtle)] text-[var(--status-warning-bg)] text-[var(--text-xs)] font-semibold">
               🔄 Deload Week
             </span>
           )}
         </div>
-        <span className="text-[14px] font-semibold text-[var(--text-primary)]">
+        <span className="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]">
           Week {current_week} of {total_weeks}
         </span>
       </div>
@@ -191,7 +191,7 @@ export default function PeriodizationBadge({
       </div>
 
       {/* Phase labels below progress bar */}
-      <div className="flex text-[10px] text-[var(--text-tertiary)] mb-3">
+      <div className="flex text-[var(--text-2xs)] text-[var(--text-tertiary)] mb-3">
         <div className="w-[35%] text-center">Base</div>
         <div className="w-[35%] text-center">Build</div>
         <div className="w-[15%] text-center">Peak</div>
@@ -200,10 +200,10 @@ export default function PeriodizationBadge({
 
       {/* Description and countdown */}
       <div className="flex items-center justify-between">
-        <p className="text-[13px] text-[var(--text-secondary)]">
+        <p className="text-[var(--text-sm)] text-[var(--text-secondary)]">
           {phase_description || config.description}
         </p>
-        <div className="flex items-center gap-3 text-[12px]">
+        <div className="flex items-center gap-3 text-[var(--text-xs)]">
           {daysUntilNextWeek !== null && daysUntilNextWeek > 0 && (
             <span className="text-[var(--text-tertiary)]">
               {daysUntilNextWeek}d to next week
@@ -212,8 +212,8 @@ export default function PeriodizationBadge({
           {daysUntilEvent !== null && daysUntilEvent > 0 && (
             <span className={cn(
               "font-medium",
-              daysUntilEvent <= 7 ? "text-red-500" :
-              daysUntilEvent <= 14 ? "text-orange-500" :
+              daysUntilEvent <= 7 ? "text-[var(--status-error-bg)]" :
+              daysUntilEvent <= 14 ? "text-[var(--status-warning-bg)]" :
               "text-[var(--text-secondary)]"
             )}>
               {daysUntilEvent}d to event
@@ -241,7 +241,7 @@ export function PeriodizationMini({
 
   return (
     <span className={cn(
-      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[var(--text-2xs)] font-semibold",
       config.bgLight,
       config.textColor,
       className

@@ -53,22 +53,22 @@ export default function BlockCompletionScreen({
 
       {/* Next Block Preview */}
       {nextBlock ? (
-        <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-5" style={{ boxShadow: 'var(--shadow-sm)' }}>
-          <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mb-1.5">
+        <div className="w-full bg-[var(--surface-primary)] border border-[var(--border-default)] rounded-xl p-4 mb-5 shadow-sm">
+          <p className="text-[var(--text-2xs)] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mb-1.5">
             {t('session.upNext')}
           </p>
           <h3 className="text-base font-bold text-[var(--text-primary)] mb-1.5">
             {nextBlock.title || t('session.nextBlockTitle')}
           </h3>
-          <p className="text-[12px] text-[var(--text-secondary)]">
+          <p className="text-[var(--text-xs)] text-[var(--text-secondary)]">
             {Array.isArray(nextBlock.exercises) ? nextBlock.exercises.length : 0} {t('session.exercises')}
             {nextBlock.type === 'superset' && ` · ${(nextBlock as any).rounds} ${t('session.rounds')}`}
             {nextBlock.type === 'amrap' && ` · ${(nextBlock as any).duration_minutes} ${t('session.minAmrap')}`}
           </p>
         </div>
       ) : (
-        <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-5" style={{ boxShadow: 'var(--shadow-sm)' }}>
-          <p className="text-[13px] text-[var(--text-secondary)] text-center">
+        <div className="w-full bg-[var(--surface-primary)] border border-[var(--border-default)] rounded-xl p-4 mb-5 shadow-sm">
+          <p className="text-[var(--text-sm)] text-[var(--text-secondary)] text-center">
             {t('session.finalBlock')}
           </p>
         </div>

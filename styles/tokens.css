@@ -85,6 +85,7 @@
   --font-display: 'Syne', 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Font Sizes (Mobile-first scale - iOS HIG compliant) */
+  --text-3xs: 8px;
   --text-2xs: 10px;
   --text-xs: 11px;
   --text-sm: 13px;

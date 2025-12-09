@@ -95,7 +95,7 @@ function TabItem({ icon, label, isActive, onClick }: TabItemProps) {
             <div className={`w-[22px] h-[22px] mb-0.5 transition-transform duration-200 ${isActive ? 'scale-105' : ''}`}>
                 {icon}
             </div>
-            <span className={`text-[8px] tracking-wider uppercase ${isActive ? 'font-semibold' : 'font-medium'}`}>
+            <span className={`text-[var(--text-3xs)] tracking-wider uppercase ${isActive ? 'font-semibold' : 'font-medium'}`}>
                 {label}
             </span>
         </button>
