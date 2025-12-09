@@ -79,10 +79,10 @@
      TYPOGRAPHY TOKENS
      ───────────────────────────────────────────────────────────── */
 
-  /* Font Families */
-  --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Font Families - Manrope for body, Syne for display */
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'SF Mono', ui-monospace, monospace;
-  --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: 'Syne', 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Font Sizes (Mobile-first scale - iOS HIG compliant) */
   --text-2xs: 10px;
@@ -103,6 +103,7 @@
   --weight-semibold: 600;
   --weight-bold: 700;
   --weight-heavy: 800;
+  --weight-black: 800;
 
   /* Line Heights */
   --leading-none: 1;
@@ -183,6 +184,7 @@
   --height-input: 50px;       /* Input fields */
   --height-input-sm: 40px;    /* Small input */
   --height-navbar: 49px;      /* iOS tab bar */
+  --height-tab-bar: 49px;     /* Alias for navbar height */
   --height-header: 44px;      /* Navigation bar */
   --height-navbar-total: calc(var(--height-navbar) + var(--safe-bottom));
 

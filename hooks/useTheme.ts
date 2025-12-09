@@ -23,6 +23,9 @@ export function useTheme() {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {}
     const root = document.documentElement;
+    // Set data-theme attribute for CSS variable switching
+    root.setAttribute('data-theme', theme);
+    // Also toggle class for any legacy selectors
     root.classList.toggle('theme-dark', theme === 'dark');
   }, [theme]);
 
