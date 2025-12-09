@@ -13,6 +13,11 @@
 @import './tokens.css';
 @import './premium.css';
 
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ─────────────────────────────────────────────────────────────
    LEGACY VARIABLE MAPPING (for backwards compatibility)
    Remove these after all components migrate to new tokens
