@@ -13,7 +13,8 @@
 @import './tokens.css';
 @import './premium.css';
 
-/* Tailwind CSS */
+/* Tailwind CSS - use legacy config file */
+@config "../tailwind.config.js";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
