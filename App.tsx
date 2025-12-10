@@ -4,7 +4,7 @@ import { useUser, useAuth } from '@clerk/clerk-react';
 import { useMutation } from 'convex/react';
 import { api } from './convex/_generated/api';
 import { Id } from './convex/_generated/dataModel';
-import Onboarding from './components/PlanImporter';
+import ZenOnboarding from './components/ZenOnboarding';
 import ZenSessionTracker from './components/ZenSessionTracker';
 import PreWorkoutScreen from './components/PreWorkoutScreen';
 import Chatbot from './components/Chatbot';
@@ -537,7 +537,7 @@ export default function App() {
     // Show onboarding only if no active plan exists
     // After plan creation, we navigate immediately, and Convex will update activePlan automatically
     if (!activePlan) {
-        return <Onboarding onPlanGenerated={handlePlanGenerated} />
+        return <ZenOnboarding onPlanGenerated={handlePlanGenerated} />
     }
 
     switch (currentPage) {
