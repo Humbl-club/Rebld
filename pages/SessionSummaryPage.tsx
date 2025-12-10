@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorkoutLog } from '../types';
-import VictoryScreen from '../components/VictoryScreen';
+import ZenVictoryScreen from '../components/ZenVictoryScreen';
 
 interface SessionSummaryPageProps {
   sessionLog: WorkoutLog;
@@ -8,5 +8,5 @@ interface SessionSummaryPageProps {
 }
 
 export default function SessionSummaryPage({ sessionLog, onDone }: SessionSummaryPageProps) {
-  return <VictoryScreen sessionLog={sessionLog} onDone={onDone} />;
+  return <ZenVictoryScreen sessionLog={sessionLog} onDone={onDone} />;
 }

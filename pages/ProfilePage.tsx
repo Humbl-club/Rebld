@@ -861,14 +861,14 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
               {showTrainingPrefs && (
                 <div className="px-[var(--space-4)] pb-[var(--space-4)] border-t border-[var(--border-default)] pt-[var(--space-4)] space-y-[var(--space-2-5)]">
                   <div>
-                    <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                    <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                       {t('profile.primaryGoal')}
                     </p>
-                    <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-[var(--text-primary)]">
+                    <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-white">
                       {userProfile.trainingPreferences.primary_goal}
                     </p>
                     {userProfile.trainingPreferences.goal_explanation && (
-                      <p className="text-[var(--text-2xs)] text-[var(--text-secondary)] mt-[var(--space-1)] italic">
+                      <p className="text-[var(--text-2xs)] text-white/60 mt-[var(--space-1)] italic">
                         "{userProfile.trainingPreferences.goal_explanation}"
                       </p>
                     )}
@@ -876,18 +876,18 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
                   <div className="grid grid-cols-2 gap-[var(--space-2)]">
                     <div>
-                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                         {t('profile.experience')}
                       </p>
-                      <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-[var(--text-primary)]">
+                      <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-white">
                         {userProfile.trainingPreferences.experience_level}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                         {t('profile.frequency')}
                       </p>
-                      <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-[var(--text-primary)]">
+                      <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-white">
                         {t('profile.daysPerWeek', { days: userProfile.trainingPreferences.training_frequency })}
                       </p>
                     </div>
@@ -895,10 +895,10 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
                   {userProfile.trainingPreferences.pain_points.length > 0 && (
                     <div>
-                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                         {t('profile.painPoints')}
                       </p>
-                      <p className="text-[var(--text-sm)] text-[var(--text-primary)]">
+                      <p className="text-[var(--text-sm)] text-white/90">
                         {userProfile.trainingPreferences.pain_points.join(', ')}
                       </p>
                     </div>
@@ -906,10 +906,10 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
                   {userProfile.trainingPreferences.sport && (
                     <div>
-                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                         {t('profile.sport')}
                       </p>
-                      <p className="text-[var(--text-sm)] text-[var(--text-primary)]">
+                      <p className="text-[var(--text-sm)] text-white/90">
                         {userProfile.trainingPreferences.sport}
                       </p>
                     </div>
@@ -917,16 +917,16 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
                   {userProfile.trainingPreferences.additional_notes && (
                     <div>
-                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-1)]">
+                      <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-1)]">
                         {t('profile.additionalNotes')}
                       </p>
-                      <p className="text-[var(--text-xs)] text-[var(--text-secondary)]">
+                      <p className="text-[var(--text-xs)] text-white/70">
                         {userProfile.trainingPreferences.additional_notes}
                       </p>
                     </div>
                   )}
 
-                  <p className="text-[var(--text-2xs)] text-[var(--text-tertiary)] mt-[var(--space-3)] pt-[var(--space-3)] border-t border-[var(--border-default)]">
+                  <p className="text-[var(--text-2xs)] text-white/40 mt-[var(--space-3)] pt-[var(--space-3)] border-t border-white/10">
                     {t('profile.lastUpdated', { date: new Date(userProfile.trainingPreferences.last_updated).toLocaleDateString() })}
                   </p>
                 </div>
@@ -983,11 +983,11 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
             </div>
           )}
 
-          {/* Combined Settings Section */}
+          {/* Combined Settings Section - Enhanced Contrast */}
           <div
             className={cn(
               'bg-[var(--surface-primary)]',
-              'border border-[var(--border-default)]',
+              'border border-[var(--border-strong)]',
               'rounded-[var(--radius-xl)]',
               'p-[var(--space-4)]',
               'shadow-[var(--shadow-sm)]'
@@ -999,7 +999,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
             {/* Plan Management */}
             <div className="mb-[var(--space-5)]">
-              <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-2)]">
+              <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-2)]">
                 Plan Management
               </p>
               <button
@@ -1013,6 +1013,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                   'text-[var(--text-on-brand)]',
                   'bg-[var(--brand-primary)]',
                   'hover:bg-[var(--brand-primary-hover)]',
+                  'active:scale-[0.98]',
                   'transition-all duration-[var(--duration-fast)]',
                   'shadow-[var(--shadow-md)]'
                 )}
@@ -1023,7 +1024,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
             {/* App Preferences */}
             <div>
-              <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-[var(--text-tertiary)] font-[var(--weight-bold)] mb-[var(--space-2)]">
+              <p className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-wider)] text-white/50 font-[var(--weight-bold)] mb-[var(--space-2)]">
                 Preferences
               </p>
               <div className="space-y-[var(--space-2)]">
@@ -1031,69 +1032,79 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                   className={cn(
                     'w-full',
                     'flex items-center justify-between',
-                    'px-[var(--space-3)] py-[var(--space-2-5)]',
+                    'px-[var(--space-3)] py-[var(--space-3)]',
                     'rounded-[var(--radius-lg)]',
-                    'bg-[var(--surface-secondary)]',
-                    'hover:bg-[var(--surface-hover)]',
+                    'bg-white/[0.06]',
+                    'border border-white/[0.08]',
+                    'hover:bg-white/[0.1]',
+                    'active:scale-[0.99]',
                     'transition-all duration-[var(--duration-fast)]'
                   )}
                 >
-                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-[var(--text-primary)]">
+                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-white/90">
                     {t('profile.notificationSettings')}
                   </span>
-                  <span className="text-[var(--text-tertiary)]">→</span>
+                  <span className="text-white/40 text-lg">›</span>
                 </button>
                 <button
                   className={cn(
                     'w-full',
                     'flex items-center justify-between',
-                    'px-[var(--space-3)] py-[var(--space-2-5)]',
+                    'px-[var(--space-3)] py-[var(--space-3)]',
                     'rounded-[var(--radius-lg)]',
-                    'bg-[var(--surface-secondary)]',
-                    'hover:bg-[var(--surface-hover)]',
+                    'bg-white/[0.06]',
+                    'border border-white/[0.08]',
+                    'hover:bg-white/[0.1]',
+                    'active:scale-[0.99]',
                     'transition-all duration-[var(--duration-fast)]'
                   )}
                 >
-                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-[var(--text-primary)]">
+                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-white/90">
                     {t('profile.units')}
                   </span>
-                  <span className="text-[var(--text-tertiary)]">→</span>
+                  <span className="text-white/40 text-lg">›</span>
                 </button>
                 <button
                   className={cn(
                     'w-full',
                     'flex items-center justify-between',
-                    'px-[var(--space-3)] py-[var(--space-2-5)]',
+                    'px-[var(--space-3)] py-[var(--space-3)]',
                     'rounded-[var(--radius-lg)]',
-                    'bg-[var(--surface-secondary)]',
-                    'hover:bg-[var(--surface-hover)]',
+                    'bg-white/[0.06]',
+                    'border border-white/[0.08]',
+                    'hover:bg-white/[0.1]',
+                    'active:scale-[0.99]',
                     'transition-all duration-[var(--duration-fast)]'
                   )}
                 >
-                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-[var(--text-primary)]">
+                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-white/90">
                     {t('profile.exportData')}
                   </span>
-                  <span className="text-[var(--text-tertiary)]">→</span>
+                  <span className="text-white/40 text-lg">›</span>
                 </button>
 
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className={cn(
-                    'w-full',
-                    'flex items-center justify-between',
-                    'px-[var(--space-3)] py-[var(--space-2-5)]',
-                    'rounded-[var(--radius-lg)]',
-                    'bg-[var(--surface-secondary)]',
-                    'hover:bg-[var(--status-error-bg)]/10',
-                    'transition-all duration-[var(--duration-fast)]',
-                    'group'
-                  )}
-                >
-                  <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-[var(--status-error)] group-hover:text-[var(--status-error-text)]">
-                    Delete Account
-                  </span>
-                  <span className="text-[var(--status-error)] opacity-60">→</span>
-                </button>
+                {/* Danger Zone Separator */}
+                <div className="pt-[var(--space-2)]">
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className={cn(
+                      'w-full',
+                      'flex items-center justify-between',
+                      'px-[var(--space-3)] py-[var(--space-3)]',
+                      'rounded-[var(--radius-lg)]',
+                      'bg-red-500/10',
+                      'border border-red-500/20',
+                      'hover:bg-red-500/20',
+                      'active:scale-[0.99]',
+                      'transition-all duration-[var(--duration-fast)]'
+                    )}
+                  >
+                    <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-red-400">
+                      Delete Account
+                    </span>
+                    <span className="text-red-400/60 text-lg">›</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
