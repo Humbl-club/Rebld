@@ -112,9 +112,6 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   const [startTime] = useState(Date.now());
   const [showResumePrompt, setShowResumePrompt] = useState(false);
 
-  // Refs
-  const openingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   // ═══════════════════════════════════════════════════════════════════════
   // PERSISTENCE & RESTORATION
   // ═══════════════════════════════════════════════════════════════════════
@@ -188,6 +185,8 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     // Beat 3: Logo appears (1.5s)
     // Beat 4: Begin button (hold)
 
+    const timers: NodeJS.Timeout[] = [];
+
     const timings = [
       { beat: 'name' as OpeningBeat, delay: 500 },
       { beat: 'logo' as OpeningBeat, delay: 2000 },
@@ -197,15 +196,14 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     timings.forEach(({ beat, delay }) => {
       const timer = setTimeout(() => {
         setOpeningBeat(beat);
-        if (beat === 'logo') haptic.medium();
       }, delay);
-      openingTimerRef.current = timer;
+      timers.push(timer);
     });
 
     return () => {
-      if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
+      timers.forEach(timer => clearTimeout(timer));
     };
-  }, [phase, showResumePrompt, user?.id, haptic]);
+  }, [phase, showResumePrompt, user?.id]);
 
   const handleBegin = useCallback(() => {
     haptic.heavy();
