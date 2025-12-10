@@ -1,33 +1,34 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WorkoutLog } from '../types';
+import { WorkoutLog, UserProfile } from '../types';
 import { useCountUp, useHaptic } from '../hooks/useAnimations';
+import { detectPR } from '../services/prService';
+import { cn } from '../lib/utils';
 
 /* ═══════════════════════════════════════════════════════════════
-   ZEN VICTORY SCREEN
+   VICTORY SCREEN - Athlete Intelligence Summary
 
-   A meditative, minimal workout complete experience.
-   Inspired by zen gardens, breathing exercises, and stillness.
+   Shows meaningful data after workout completion:
+   - PRs achieved this session
+   - Comparison to last similar session
+   - Periodization progress (for competition users)
+   - Volume, duration, sets completed
 
-   Design philosophy:
-   - No confetti, no fireworks - just calm accomplishment
-   - Breathing circle as the focal point
-   - Stats reveal slowly, like ripples in water
-   - Black and coral only - pure OLED aesthetic
+   No excessive animations or breathing - just data.
    ═══════════════════════════════════════════════════════════════ */
 
 interface ZenVictoryScreenProps {
   sessionLog: WorkoutLog;
   onDone: () => void;
+  allLogs?: WorkoutLog[];
+  userProfile?: UserProfile | null;
 }
 
-export default function ZenVictoryScreen({ sessionLog, onDone }: ZenVictoryScreenProps) {
+export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], userProfile }: ZenVictoryScreenProps) {
   const { t } = useTranslation();
   const haptic = useHaptic();
-  const [phase, setPhase] = useState<'breathing' | 'reveal' | 'complete'>('breathing');
-  const [breathCount, setBreathCount] = useState(0);
+  const [showContent, setShowContent] = useState(false);
   const [statsRevealed, setStatsRevealed] = useState(0);
-  const breathRef = useRef<HTMLDivElement>(null);
 
   // Calculate stats
   const exercises = Array.isArray(sessionLog.exercises) ? sessionLog.exercises : [];
@@ -45,273 +46,368 @@ export default function ZenVictoryScreen({ sessionLog, onDone }: ZenVictoryScree
     return sum + sets.length;
   }, 0);
 
-  // Animated counts (only when revealed)
-  const durationCount = useCountUp(
-    phase !== 'breathing' ? (sessionLog.durationMinutes || 0) : 0,
-    1500
-  );
-  const volumeCount = useCountUp(
-    phase !== 'breathing' ? Math.round(totalVolume) : 0,
-    2000
-  );
+  // Detect PRs from this session
+  const prsAchieved = useMemo(() => {
+    const prs: { exercise: string; weight: number; reps: number }[] = [];
 
-  // Breathing phase - 3 breath cycles then reveal
-  useEffect(() => {
-    haptic.heavy();
-
-    const breathInterval = setInterval(() => {
-      setBreathCount(prev => {
-        const next = prev + 1;
-        if (next >= 3) {
-          clearInterval(breathInterval);
-          setTimeout(() => {
-            haptic.success();
-            setPhase('reveal');
-          }, 500);
+    exercises.forEach(ex => {
+      const sets = Array.isArray(ex.sets) ? ex.sets : [];
+      sets.forEach((set: any) => {
+        if ('weight' in set && 'reps' in set) {
+          const prCheck = detectPR(ex.exercise_name, set.weight, set.reps, allLogs);
+          if (prCheck.isPR) {
+            // Only add unique PRs (highest for each exercise)
+            const existing = prs.find(p => p.exercise === ex.exercise_name);
+            const volume = set.weight * set.reps;
+            if (!existing || (existing.weight * existing.reps) < volume) {
+              if (existing) {
+                prs.splice(prs.indexOf(existing), 1);
+              }
+              prs.push({
+                exercise: ex.exercise_name,
+                weight: set.weight,
+                reps: set.reps,
+              });
+            }
+          }
         }
-        return next;
       });
-      haptic.light();
-    }, 4000); // 4 seconds per breath (2s in, 2s out)
+    });
 
-    return () => clearInterval(breathInterval);
-  }, []);
+    return prs;
+  }, [exercises, allLogs]);
 
-  // Stats reveal phase
+  // Find last similar session for comparison
+  const lastSimilarSession = useMemo(() => {
+    const focusLower = (sessionLog.focus || '').toLowerCase();
+    const similar = allLogs.find(log =>
+      log.date !== sessionLog.date &&
+      (log.focus || '').toLowerCase() === focusLower
+    );
+
+    if (!similar) return null;
+
+    const similarExercises = similar.exercises || [];
+    const similarVolume = similarExercises.reduce((sum, ex) => {
+      const sets = Array.isArray(ex.sets) ? ex.sets : [];
+      return sum + sets.reduce((setSum, set) => {
+        if ('weight' in set && 'reps' in set) {
+          return setSum + (Number(set.weight) * Number(set.reps));
+        }
+        return setSum;
+      }, 0);
+    }, 0);
+
+    return {
+      date: similar.date,
+      volume: similarVolume,
+      duration: similar.durationMinutes || 0,
+    };
+  }, [sessionLog, allLogs]);
+
+  // Calculate periodization progress
+  const periodization = useMemo(() => {
+    const specificGoal = userProfile?.trainingPreferences?.specific_goal;
+    if (!specificGoal?.target_date) return null;
+
+    const targetDate = new Date(specificGoal.target_date);
+    const today = new Date();
+    const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntil < 0) return null;
+
+    // Get week number (count workouts this week)
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const workoutsThisWeek = allLogs.filter(log => new Date(log.date) >= weekStart).length;
+
+    return {
+      eventName: specificGoal.event_name || specificGoal.event_type,
+      daysUntil,
+      workoutsThisWeek,
+    };
+  }, [userProfile, allLogs]);
+
+  // Animated counts
+  const durationCount = useCountUp(showContent ? (sessionLog.durationMinutes || 0) : 0, 1200);
+  const volumeCount = useCountUp(showContent ? Math.round(totalVolume) : 0, 1500);
+
+  // Quick reveal animation
   useEffect(() => {
-    if (phase !== 'reveal') return;
+    haptic.success();
 
-    const revealInterval = setInterval(() => {
+    // Show content immediately
+    const timer = setTimeout(() => setShowContent(true), 100);
+
+    // Reveal stats progressively
+    const statsTimer = setInterval(() => {
       setStatsRevealed(prev => {
-        if (prev >= 4) {
-          clearInterval(revealInterval);
-          setTimeout(() => setPhase('complete'), 800);
+        if (prev >= 5) {
+          clearInterval(statsTimer);
           return prev;
         }
-        haptic.light();
         return prev + 1;
       });
-    }, 600);
+    }, 200);
 
-    return () => clearInterval(revealInterval);
-  }, [phase]);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(statsTimer);
+    };
+  }, []);
 
   const handleDone = () => {
     haptic.medium();
     onDone();
   };
 
+  // Calculate volume change
+  const volumeChange = lastSimilarSession
+    ? ((totalVolume - lastSimilarSession.volume) / lastSimilarSession.volume * 100)
+    : null;
+
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Safe area padding */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex-1 flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-y-auto">
 
-        {/* Breathing Circle - Always visible, changes based on phase */}
-        <div className="relative mb-12">
-          {/* Outer ring - subtle pulse */}
+        {/* Header */}
+        <div className="px-6 pt-8 pb-6 text-center">
           <div
-            className="absolute inset-0 rounded-full border border-white/5"
-            style={{
-              width: '200px',
-              height: '200px',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              animation: phase === 'breathing' ? 'zenPulse 4s ease-in-out infinite' : 'none'
-            }}
-          />
+            className={cn(
+              "inline-flex items-center justify-center w-16 h-16 rounded-full mb-4",
+              "bg-gradient-to-br from-[#E07A5F] to-[#C45D45]",
+              "transition-all duration-500",
+              showContent ? "scale-100 opacity-100" : "scale-50 opacity-0"
+            )}
+          >
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12l5 5L19 7" />
+            </svg>
+          </div>
 
-          {/* Middle ring */}
-          <div
-            className="absolute inset-0 rounded-full border border-white/10"
+          <p
+            className="text-[#E07A5F] text-xs uppercase tracking-[0.3em] mb-2"
             style={{
-              width: '160px',
-              height: '160px',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              animation: phase === 'breathing' ? 'zenPulse 4s ease-in-out infinite 0.2s' : 'none'
-            }}
-          />
-
-          {/* Main breathing circle */}
-          <div
-            ref={breathRef}
-            className="relative rounded-full flex items-center justify-center"
-            style={{
-              width: phase === 'breathing' ? '120px' : '100px',
-              height: phase === 'breathing' ? '120px' : '100px',
-              background: phase === 'complete'
-                ? 'linear-gradient(135deg, #E07A5F 0%, #C45D45 100%)'
-                : 'transparent',
-              border: phase === 'complete' ? 'none' : '2px solid rgba(224, 122, 95, 0.4)',
-              animation: phase === 'breathing' ? 'zenBreath 4s ease-in-out infinite' : 'none',
-              transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              opacity: statsRevealed > 0 ? 1 : 0,
+              transition: 'opacity 0.3s ease-out'
             }}
           >
-            {/* Inner glow for breathing phase */}
-            {phase === 'breathing' && (
-              <div
-                className="absolute inset-2 rounded-full bg-[#E07A5F]/20"
-                style={{ animation: 'zenBreath 4s ease-in-out infinite' }}
-              />
-            )}
+            Complete
+          </p>
+          <h1
+            className="text-white text-2xl font-bold tracking-tight"
+            style={{
+              opacity: statsRevealed > 0 ? 1 : 0,
+              transform: statsRevealed > 0 ? 'translateY(0)' : 'translateY(10px)',
+              transition: 'all 0.4s ease-out'
+            }}
+          >
+            {sessionLog.focus || 'Workout'}
+          </h1>
+        </div>
 
-            {/* Checkmark for complete phase */}
-            {phase !== 'breathing' && (
-              <svg
-                className="w-10 h-10 text-white"
-                style={{
-                  opacity: phase === 'complete' ? 1 : 0.6,
-                  transform: phase === 'complete' ? 'scale(1)' : 'scale(0.8)',
-                  transition: 'all 0.5s ease-out'
-                }}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12l5 5L19 7" />
-              </svg>
-            )}
+        {/* Main Stats */}
+        <div
+          className="mx-6 p-4 rounded-2xl bg-white/5 mb-4"
+          style={{
+            opacity: statsRevealed > 1 ? 1 : 0,
+            transform: statsRevealed > 1 ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.4s ease-out'
+          }}
+        >
+          <div className="flex justify-between items-center">
+            <div className="text-center flex-1">
+              <p className="text-white text-3xl font-black tabular-nums">
+                {durationCount}
+              </p>
+              <p className="text-white/50 text-xs uppercase tracking-wider mt-1">min</p>
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div className="text-center flex-1">
+              <p className="text-white text-3xl font-black tabular-nums">
+                {volumeCount.toLocaleString()}
+              </p>
+              <p className="text-white/50 text-xs uppercase tracking-wider mt-1">kg</p>
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div className="text-center flex-1">
+              <p className="text-white text-3xl font-black tabular-nums">
+                {totalSets}
+              </p>
+              <p className="text-white/50 text-xs uppercase tracking-wider mt-1">sets</p>
+            </div>
           </div>
         </div>
 
-        {/* Text Section */}
-        <div className="text-center mb-12">
-          {phase === 'breathing' ? (
-            <>
-              <p className="text-white/30 text-xs uppercase tracking-[0.3em] mb-3">
-                {breathCount < 1 ? 'Breathe' : breathCount < 2 ? 'Feel' : 'Done'}
-              </p>
-              <h1 className="text-white text-2xl font-light tracking-tight">
-                {breathCount < 1 ? 'Take a moment' : breathCount < 2 ? 'You earned this' : 'Well done'}
-              </h1>
-            </>
-          ) : (
-            <>
-              <p
-                className="text-[#E07A5F] text-xs uppercase tracking-[0.3em] mb-3"
-                style={{
-                  opacity: statsRevealed > 0 ? 1 : 0,
-                  transform: statsRevealed > 0 ? 'translateY(0)' : 'translateY(10px)',
-                  transition: 'all 0.5s ease-out'
-                }}
-              >
-                Complete
-              </p>
-              <h1
-                className="text-white text-3xl font-bold tracking-tight"
-                style={{
-                  opacity: statsRevealed > 0 ? 1 : 0,
-                  transform: statsRevealed > 0 ? 'translateY(0)' : 'translateY(10px)',
-                  transition: 'all 0.5s ease-out 0.1s'
-                }}
-              >
-                {sessionLog.focus || 'Workout'}
-              </h1>
-            </>
-          )}
-        </div>
-
-        {/* Stats - Horizontal minimal layout */}
-        {phase !== 'breathing' && (
-          <div className="w-full max-w-sm">
-            {/* Main stats row */}
-            <div className="flex justify-between items-center mb-8 px-4">
-              {/* Duration */}
-              <div
-                className="text-center"
-                style={{
-                  opacity: statsRevealed > 1 ? 1 : 0,
-                  transform: statsRevealed > 1 ? 'translateY(0)' : 'translateY(20px)',
-                  transition: 'all 0.6s ease-out'
-                }}
-              >
-                <p className="text-white text-4xl font-black tabular-nums mb-1">
-                  {durationCount}
-                </p>
-                <p className="text-white/40 text-xs uppercase tracking-wider">min</p>
+        {/* PRs Section */}
+        {prsAchieved.length > 0 && (
+          <div
+            className="mx-6 mb-4"
+            style={{
+              opacity: statsRevealed > 2 ? 1 : 0,
+              transform: statsRevealed > 2 ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.4s ease-out'
+            }}
+          >
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🏆</span>
+                <h3 className="text-amber-400 font-bold text-sm uppercase tracking-wider">
+                  Personal Records
+                </h3>
               </div>
-
-              {/* Divider */}
-              <div
-                className="w-px h-12 bg-white/10"
-                style={{
-                  opacity: statsRevealed > 2 ? 1 : 0,
-                  transition: 'opacity 0.4s ease-out'
-                }}
-              />
-
-              {/* Volume */}
-              <div
-                className="text-center"
-                style={{
-                  opacity: statsRevealed > 2 ? 1 : 0,
-                  transform: statsRevealed > 2 ? 'translateY(0)' : 'translateY(20px)',
-                  transition: 'all 0.6s ease-out'
-                }}
-              >
-                <p className="text-white text-4xl font-black tabular-nums mb-1">
-                  {volumeCount.toLocaleString()}
-                </p>
-                <p className="text-white/40 text-xs uppercase tracking-wider">kg</p>
+              <div className="space-y-2">
+                {prsAchieved.map((pr, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <span className="text-white/80 text-sm truncate flex-1 mr-4">
+                      {pr.exercise}
+                    </span>
+                    <span className="text-amber-400 font-bold text-sm whitespace-nowrap">
+                      {pr.weight}kg × {pr.reps}
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              {/* Divider */}
-              <div
-                className="w-px h-12 bg-white/10"
-                style={{
-                  opacity: statsRevealed > 3 ? 1 : 0,
-                  transition: 'opacity 0.4s ease-out'
-                }}
-              />
-
-              {/* Exercises */}
-              <div
-                className="text-center"
-                style={{
-                  opacity: statsRevealed > 3 ? 1 : 0,
-                  transform: statsRevealed > 3 ? 'translateY(0)' : 'translateY(20px)',
-                  transition: 'all 0.6s ease-out'
-                }}
-              >
-                <p className="text-white text-4xl font-black tabular-nums mb-1">
-                  {exercises.length}
-                </p>
-                <p className="text-white/40 text-xs uppercase tracking-wider">exercises</p>
-              </div>
-            </div>
-
-            {/* Secondary stat */}
-            <div
-              className="text-center mb-8"
-              style={{
-                opacity: statsRevealed > 3 ? 1 : 0,
-                transform: statsRevealed > 3 ? 'translateY(0)' : 'translateY(10px)',
-                transition: 'all 0.6s ease-out 0.2s'
-              }}
-            >
-              <span className="text-white/30 text-sm">
-                {totalSets} sets completed
-              </span>
             </div>
           </div>
         )}
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Comparison to Last Session */}
+        {lastSimilarSession && volumeChange !== null && (
+          <div
+            className="mx-6 mb-4"
+            style={{
+              opacity: statsRevealed > 3 ? 1 : 0,
+              transform: statsRevealed > 3 ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.4s ease-out'
+            }}
+          >
+            <div className={cn(
+              "p-4 rounded-2xl border",
+              volumeChange >= 0
+                ? "bg-green-500/10 border-green-500/20"
+                : "bg-white/5 border-white/10"
+            )}>
+              <h3 className="text-white/50 font-medium text-xs uppercase tracking-wider mb-3">
+                vs Last {sessionLog.focus}
+              </h3>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Volume</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-bold">
+                      {totalVolume.toLocaleString()}kg
+                    </span>
+                    <span className={cn(
+                      "text-xs font-bold",
+                      volumeChange >= 0 ? "text-green-400" : "text-red-400"
+                    )}>
+                      {volumeChange >= 0 ? '↑' : '↓'} {Math.abs(volumeChange).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-white/60 text-xs mb-1">Previous</p>
+                  <span className="text-white/60">
+                    {lastSimilarSession.volume.toLocaleString()}kg
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Done button - appears after complete */}
+        {/* Periodization Progress */}
+        {periodization && (
+          <div
+            className="mx-6 mb-4"
+            style={{
+              opacity: statsRevealed > 4 ? 1 : 0,
+              transform: statsRevealed > 4 ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.4s ease-out'
+            }}
+          >
+            <div className="p-4 rounded-2xl bg-[#E07A5F]/10 border border-[#E07A5F]/20">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-[#E07A5F] font-bold text-xs uppercase tracking-wider">
+                  {periodization.eventName}
+                </h3>
+                <span className="text-white/60 text-xs">
+                  {periodization.workoutsThisWeek} workouts this week
+                </span>
+              </div>
+              <p className="text-white font-bold text-lg">
+                {periodization.daysUntil} days to go
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Exercise Summary */}
         <div
-          className="w-full max-w-sm px-6 pb-8"
+          className="mx-6 mb-4"
           style={{
-            opacity: phase === 'complete' ? 1 : 0,
-            transform: phase === 'complete' ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.5s ease-out',
-            pointerEvents: phase === 'complete' ? 'auto' : 'none'
+            opacity: statsRevealed > 4 ? 1 : 0,
+            transform: statsRevealed > 4 ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.4s ease-out 0.1s'
+          }}
+        >
+          <h3 className="text-white/50 font-medium text-xs uppercase tracking-wider mb-3 px-1">
+            Exercises Completed
+          </h3>
+          <div className="space-y-2">
+            {exercises.slice(0, 5).map((ex, i) => {
+              const sets = Array.isArray(ex.sets) ? ex.sets : [];
+              const hasPR = prsAchieved.some(pr => pr.exercise === ex.exercise_name);
+              const bestSet = sets.reduce((best: any, set: any) => {
+                if ('weight' in set && 'reps' in set) {
+                  const volume = (set.weight || 0) * (set.reps || 0);
+                  const bestVolume = (best?.weight || 0) * (best?.reps || 0);
+                  return volume > bestVolume ? set : best;
+                }
+                return best;
+              }, null);
+
+              return (
+                <div
+                  key={i}
+                  className="flex justify-between items-center p-3 rounded-xl bg-white/5"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-white/80 text-sm truncate">
+                      {ex.exercise_name}
+                    </span>
+                    {hasPR && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold flex-shrink-0">
+                        PR
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-white/50 text-sm whitespace-nowrap ml-2">
+                    {sets.length} sets
+                    {bestSet && ` · ${bestSet.weight}kg`}
+                  </span>
+                </div>
+              );
+            })}
+            {exercises.length > 5 && (
+              <p className="text-white/30 text-xs text-center mt-2">
+                +{exercises.length - 5} more exercises
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1 min-h-4" />
+
+        {/* Done button */}
+        <div
+          className="px-6 pb-8 pt-4"
+          style={{
+            opacity: statsRevealed > 4 ? 1 : 0,
+            transform: statsRevealed > 4 ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.5s ease-out 0.2s'
           }}
         >
           <button
@@ -320,38 +416,11 @@ export default function ZenVictoryScreen({ sessionLog, onDone }: ZenVictoryScree
           >
             {t('victory.done', 'Done')}
           </button>
-
-          {/* Subtle hint */}
-          <p className="text-center text-white/20 text-xs mt-4">
-            Your progress has been saved
+          <p className="text-center text-white/30 text-xs mt-3">
+            Progress saved automatically
           </p>
         </div>
       </div>
-
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes zenBreath {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.6;
-          }
-          50% {
-            transform: scale(1.15);
-            opacity: 1;
-          }
-        }
-
-        @keyframes zenPulse {
-          0%, 100% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 0.3;
-          }
-          50% {
-            transform: translate(-50%, -50%) scale(1.1);
-            opacity: 0.1;
-          }
-        }
-      `}</style>
     </div>
   );
 }

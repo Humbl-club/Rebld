@@ -508,6 +508,8 @@ export default function App() {
       return <SessionSummaryPage
                 sessionLog={sessionToSummarize}
                 onDone={() => setSessionToSummarize(null)}
+                allLogs={logs || []}
+                userProfile={userProfile}
              />;
     }
 
@@ -519,6 +521,7 @@ export default function App() {
             onFinish={handleFinishSession}
             onCancel={handleCancelSession}
             allLogs={logs || []}
+            userProfile={userProfile}
           />
         </ErrorBoundary>
       );

@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlanDay, LoggedSetSRW, LoggedSetDuration, WorkoutLog, LoggedExercise, PlanExercise, SupersetBlock, WorkoutBlock } from '../types';
+import { PlanDay, LoggedSetSRW, LoggedSetDuration, WorkoutLog, LoggedExercise, PlanExercise, SupersetBlock, WorkoutBlock, UserProfile } from '../types';
 import { useHaptic } from '../hooks/useAnimations';
 import { notify } from './layout/Toast';
 import { detectPR, shouldTrackPR } from '../services/prService';
 import { useSaveExerciseHistory } from '../services/exerciseHistoryService';
-import { useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { cn } from '../lib/utils';
 import { ariaAnnouncer } from '../services/ariaAnnouncer';
@@ -31,7 +31,31 @@ interface ZenSessionTrackerProps {
   onFinish: (log: { focus: string; exercises: LoggedExercise[]; durationMinutes: number }) => void;
   onCancel: () => void;
   allLogs: WorkoutLog[];
+  userProfile?: UserProfile | null;
 }
+
+// Tier badge colors
+const TIER_COLORS: Record<string, { bg: string; text: string }> = {
+  'S': { bg: 'bg-amber-500/20', text: 'text-amber-400' },
+  'A': { bg: 'bg-green-500/20', text: 'text-green-400' },
+  'B': { bg: 'bg-blue-500/20', text: 'text-blue-400' },
+  'C': { bg: 'bg-white/10', text: 'text-white/60' },
+};
+
+// Movement pattern display names
+const MOVEMENT_PATTERNS: Record<string, string> = {
+  'squat': 'Squat',
+  'hinge': 'Hinge',
+  'push_horizontal': 'Horizontal Push',
+  'push_vertical': 'Vertical Push',
+  'pull_horizontal': 'Horizontal Pull',
+  'pull_vertical': 'Vertical Pull',
+  'carry': 'Carry',
+  'core': 'Core',
+  'mobility': 'Mobility',
+  'plyometric': 'Plyo',
+  'cardio': 'Cardio',
+};
 
 // Cardio detection
 const CARDIO_KEYWORDS = ['cardio', 'treadmill', 'bike', 'cycling', 'rowing', 'elliptical', 'run', 'jog', 'swim', 'hiit', 'conditioning'];
@@ -55,7 +79,7 @@ function getTargetDuration(exercise: PlanExercise): number {
   return 30;
 }
 
-export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs }: ZenSessionTrackerProps) {
+export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs, userProfile }: ZenSessionTrackerProps) {
   const { t } = useTranslation();
   const haptic = useHaptic();
   const saveExerciseHistory = useSaveExerciseHistory();
@@ -95,6 +119,84 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
 
   // Get last performance for current exercise
   const lastPerformance = currentExercise ? getExerciseHistory(currentExercise.exercise_name) : null;
+
+  // Fetch exercise cache data for current exercise
+  const exerciseCacheData = useQuery(
+    api.queries.getCachedExercise,
+    currentExercise ? { exerciseName: currentExercise.exercise_name } : 'skip'
+  );
+
+  // Get user's pain points for injury warnings
+  const userPainPoints = useMemo(() => {
+    return userProfile?.trainingPreferences?.pain_points || [];
+  }, [userProfile]);
+
+  // Check if exercise has contraindication for user's pain points
+  const injuryWarning = useMemo(() => {
+    if (!exerciseCacheData || !userPainPoints.length) return null;
+
+    const contraindications = exerciseCacheData.injury_contraindications || [];
+    const painPointMap: Record<string, string[]> = {
+      'Knees': ['knee_pain', 'knee'],
+      'Lower Back': ['lower_back', 'back'],
+      'Shoulders': ['shoulder', 'shoulder_impingement'],
+      'Wrists': ['wrist'],
+      'Neck': ['neck'],
+      'Hips': ['hip'],
+      'Ankles': ['ankle'],
+    };
+
+    for (const painPoint of userPainPoints) {
+      const keys = painPointMap[painPoint] || [painPoint.toLowerCase().replace(/\s+/g, '_')];
+      const match = contraindications.find(c =>
+        keys.some(k => c.injury_type.toLowerCase().includes(k))
+      );
+      if (match) {
+        return {
+          painPoint,
+          severity: match.severity,
+          reason: match.reason,
+          modifications: match.safe_modifications,
+          alternatives: match.alternative_exercises,
+        };
+      }
+    }
+    return null;
+  }, [exerciseCacheData, userPainPoints]);
+
+  // Get exercise history from logs for this exercise
+  const exerciseHistoryFromLogs = useMemo(() => {
+    if (!currentExercise) return [];
+    const name = currentExercise.exercise_name.toLowerCase();
+
+    return allLogs
+      .filter(log => log.exercises?.some(ex =>
+        ex.exercise_name.toLowerCase() === name
+      ))
+      .map(log => {
+        const exercise = log.exercises?.find(ex =>
+          ex.exercise_name.toLowerCase() === name
+        );
+        const sets = exercise?.sets || [];
+        const bestSet = sets.reduce((best: any, set: any) => {
+          if ('weight' in set && 'reps' in set) {
+            const volume = (set.weight || 0) * (set.reps || 0);
+            const bestVolume = (best?.weight || 0) * (best?.reps || 0);
+            return volume > bestVolume ? set : best;
+          }
+          return best;
+        }, null);
+
+        return {
+          date: log.date,
+          weight: bestSet?.weight,
+          reps: bestSet?.reps,
+          totalSets: sets.length,
+        };
+      })
+      .filter(h => h.weight && h.reps)
+      .slice(0, 5); // Last 5 sessions
+  }, [currentExercise, allLogs]);
 
   // Pre-fill inputs when exercise changes
   useEffect(() => {
@@ -407,7 +509,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
 
         {/* Exercise Name */}
         <h1 className={cn(
-          "text-white text-center font-black leading-tight mb-3",
+          "text-white text-center font-black leading-tight mb-2",
           "transition-all duration-300",
           currentExercise.exercise_name.length > 25
             ? "text-2xl"
@@ -419,19 +521,80 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
           {currentExercise.exercise_name}
         </h1>
 
+        {/* Exercise meta: tier, movement pattern, muscles */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
+          {exerciseCacheData?.exercise_tier && (
+            <span className={cn(
+              "px-2 py-0.5 rounded text-xs font-bold uppercase",
+              TIER_COLORS[exerciseCacheData.exercise_tier]?.bg || 'bg-white/10',
+              TIER_COLORS[exerciseCacheData.exercise_tier]?.text || 'text-white/60'
+            )}>
+              {exerciseCacheData.exercise_tier}-Tier
+            </span>
+          )}
+          {exerciseCacheData?.movement_pattern && (
+            <span className="text-white/40 text-xs">
+              {MOVEMENT_PATTERNS[exerciseCacheData.movement_pattern] || exerciseCacheData.movement_pattern}
+            </span>
+          )}
+          {exerciseCacheData?.muscles_worked && exerciseCacheData.muscles_worked.length > 0 && (
+            <span className="text-white/30 text-xs">
+              · {exerciseCacheData.muscles_worked.slice(0, 2).join(', ')}
+            </span>
+          )}
+        </div>
+
+        {/* Injury Warning */}
+        {injuryWarning && (
+          <div className={cn(
+            "mb-4 px-4 py-3 rounded-xl border max-w-sm",
+            injuryWarning.severity === 'absolute'
+              ? "bg-red-500/10 border-red-500/30"
+              : injuryWarning.severity === 'caution'
+                ? "bg-amber-500/10 border-amber-500/30"
+                : "bg-blue-500/10 border-blue-500/30"
+          )}>
+            <div className="flex items-start gap-2">
+              <svg className={cn(
+                "w-4 h-4 mt-0.5 flex-shrink-0",
+                injuryWarning.severity === 'absolute' ? "text-red-400" :
+                  injuryWarning.severity === 'caution' ? "text-amber-400" : "text-blue-400"
+              )} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className={cn(
+                  "text-sm font-semibold",
+                  injuryWarning.severity === 'absolute' ? "text-red-400" :
+                    injuryWarning.severity === 'caution' ? "text-amber-400" : "text-blue-400"
+                )}>
+                  {injuryWarning.severity === 'absolute' ? 'Not recommended' :
+                    injuryWarning.severity === 'caution' ? 'Use caution' : 'Monitor'} ({injuryWarning.painPoint})
+                </p>
+                <p className="text-white/60 text-xs mt-0.5">{injuryWarning.reason}</p>
+                {injuryWarning.modifications?.length > 0 && (
+                  <p className="text-white/40 text-xs mt-1">
+                    Tip: {injuryWarning.modifications[0]}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Exercise Info Button */}
         <button
           onClick={() => {
             setShowExerciseInfo(true);
             haptic.light();
           }}
-          className="mb-6 flex items-center gap-1.5 text-white/40 text-sm font-medium active:text-white/60 transition-colors"
+          className="mb-4 flex items-center gap-1.5 text-white/40 text-sm font-medium active:text-white/60 transition-colors"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4M12 8h.01" />
           </svg>
-          <span>How to perform</span>
+          <span>Exercise details</span>
         </button>
 
         {/* Target metrics hint */}
@@ -663,7 +826,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             className="absolute bottom-0 left-0 right-0 bg-[#111] rounded-t-3xl max-h-[75vh] animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-[#111] pt-4 pb-3 px-6 border-b border-white/10 rounded-t-3xl">
+            <div className="sticky top-0 bg-[#111] pt-4 pb-3 px-6 border-b border-white/10 rounded-t-3xl z-10">
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
               <div className="flex justify-between items-center">
                 <h3 className="text-white font-bold text-lg">Exercises</h3>
@@ -685,8 +848,28 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   )}
 
                   {block.exercises.map((exercise, exIdx) => {
-                    const isCompleted = !!loggedData[exercise.exercise_name];
+                    const exerciseSets = loggedData[exercise.exercise_name] || [];
+                    const isCompleted = exerciseSets.length > 0;
                     const isCurrent = blockIdx === currentBlockIndex && exIdx === currentExerciseInBlock;
+
+                    // Find best set for this exercise
+                    const bestSet = exerciseSets.reduce((best: any, set: any) => {
+                      if ('weight' in set && 'reps' in set) {
+                        const volume = (set.weight || 0) * (set.reps || 0);
+                        const bestVolume = (best?.weight || 0) * (best?.reps || 0);
+                        return volume > bestVolume ? set : best;
+                      }
+                      return best;
+                    }, null);
+
+                    // Check if any set was a PR
+                    const hasPR = exerciseSets.some((set: any) => {
+                      if ('weight' in set && 'reps' in set) {
+                        const prCheck = detectPR(exercise.exercise_name, set.weight, set.reps, allLogs);
+                        return prCheck.isPR;
+                      }
+                      return false;
+                    });
 
                     return (
                       <button
@@ -718,15 +901,28 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "font-semibold truncate",
-                            isCurrent ? "text-white" : isCompleted ? "text-white/60" : "text-white/80"
-                          )}>
-                            {exercise.exercise_name}
-                          </p>
-                          <p className="text-white/40 text-xs mt-0.5">
-                            {exercise.metrics_template?.target_sets || 3} sets × {exercise.metrics_template?.target_reps || '8-12'} reps
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={cn(
+                              "font-semibold truncate",
+                              isCurrent ? "text-white" : isCompleted ? "text-white/60" : "text-white/80"
+                            )}>
+                              {exercise.exercise_name}
+                            </p>
+                            {hasPR && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                                PR
+                              </span>
+                            )}
+                          </div>
+                          {isCompleted && bestSet ? (
+                            <p className="text-green-400/70 text-xs mt-0.5">
+                              {exerciseSets.length} sets · Best: {bestSet.weight}kg × {bestSet.reps}
+                            </p>
+                          ) : (
+                            <p className="text-white/40 text-xs mt-0.5">
+                              {exercise.metrics_template?.target_sets || 3} sets × {exercise.metrics_template?.target_reps || '8-12'} reps
+                            </p>
+                          )}
                         </div>
 
                         {isCurrent && (
@@ -744,22 +940,41 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         </div>
       )}
 
-      {/* Exercise Info Modal */}
+      {/* Exercise Info Modal - Enhanced with full intelligence */}
       {showExerciseInfo && currentExercise && (
         <div className="fixed inset-0 z-50 animate-fade-in" onClick={() => setShowExerciseInfo(false)}>
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-h-[80vh] overflow-y-auto">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" />
+          <div className="absolute inset-0 overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
             <div
-              className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/10"
+              className="min-h-full p-4"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Header */}
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-white font-bold text-xl pr-4">
-                  {currentExercise.exercise_name}
-                </h3>
+                <div className="flex-1">
+                  <h3 className="text-white font-bold text-xl pr-4 mb-1">
+                    {currentExercise.exercise_name}
+                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {exerciseCacheData?.exercise_tier && (
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-xs font-bold",
+                        TIER_COLORS[exerciseCacheData.exercise_tier]?.bg,
+                        TIER_COLORS[exerciseCacheData.exercise_tier]?.text
+                      )}>
+                        {exerciseCacheData.exercise_tier}-Tier
+                      </span>
+                    )}
+                    {exerciseCacheData?.exercise_role && (
+                      <span className="text-white/40 text-xs capitalize">
+                        {exerciseCacheData.exercise_role}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowExerciseInfo(false)}
-                  className="text-white/40 active:text-white p-1"
+                  className="text-white/40 active:text-white p-2 -m-2"
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6L6 18M6 6l12 12" />
@@ -767,8 +982,8 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 </button>
               </div>
 
-              {/* Metrics */}
-              <div className="flex gap-4 mb-6">
+              {/* Target Metrics */}
+              <div className="flex gap-3 mb-6">
                 <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
                   <p className="text-white/40 text-xs uppercase mb-1">Sets</p>
                   <p className="text-white font-bold text-lg">
@@ -789,36 +1004,141 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 </div>
               </div>
 
-              {/* Instructions */}
+              {/* Muscles Worked */}
+              {exerciseCacheData?.muscles_worked && exerciseCacheData.muscles_worked.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-white/50 text-xs uppercase tracking-wider mb-2">Muscles Worked</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {exerciseCacheData.muscles_worked.map((muscle, i) => (
+                      <span
+                        key={i}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-xs font-medium",
+                          i === 0 ? "bg-[#E07A5F]/20 text-[#E07A5F]" : "bg-white/5 text-white/70"
+                        )}
+                      >
+                        {muscle}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Equipment */}
+              {exerciseCacheData?.equipment_required && exerciseCacheData.equipment_required.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-white/50 text-xs uppercase tracking-wider mb-2">Equipment</h4>
+                  <p className="text-white/70 text-sm">
+                    {exerciseCacheData.equipment_required.join(' · ')}
+                  </p>
+                </div>
+              )}
+
+              {/* Form Cue */}
+              {exerciseCacheData?.form_cue && (
+                <div className="mb-5 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <h4 className="text-green-400 text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Form Cue
+                  </h4>
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    {exerciseCacheData.form_cue}
+                  </p>
+                </div>
+              )}
+
+              {/* Common Mistake */}
+              {exerciseCacheData?.common_mistake && (
+                <div className="mb-5 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <h4 className="text-red-400 text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Common Mistake
+                  </h4>
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    {exerciseCacheData.common_mistake}
+                  </p>
+                </div>
+              )}
+
+              {/* Step by Step Instructions */}
+              {exerciseCacheData?.step_by_step && exerciseCacheData.step_by_step.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-white/50 text-xs uppercase tracking-wider mb-3">How to Perform</h4>
+                  <ol className="space-y-3">
+                    {exerciseCacheData.step_by_step.map((step, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#E07A5F]/20 text-[#E07A5F] text-xs font-bold flex items-center justify-center">
+                          {i + 1}
+                        </span>
+                        <span className="text-white/70 text-sm leading-relaxed pt-0.5">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Your History */}
+              {exerciseHistoryFromLogs.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-white/50 text-xs uppercase tracking-wider mb-3">Your History</h4>
+                  <div className="space-y-2">
+                    {exerciseHistoryFromLogs.map((entry, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex justify-between items-center p-3 rounded-xl",
+                          i === 0 ? "bg-[#E07A5F]/10 border border-[#E07A5F]/20" : "bg-white/5"
+                        )}
+                      >
+                        <div>
+                          <p className={cn(
+                            "font-bold text-sm",
+                            i === 0 ? "text-[#E07A5F]" : "text-white/80"
+                          )}>
+                            {entry.weight}kg × {entry.reps}
+                          </p>
+                          <p className="text-white/40 text-xs">{entry.totalSets} sets</p>
+                        </div>
+                        <p className="text-white/40 text-xs">
+                          {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Explanation */}
+              {exerciseCacheData?.explanation && (
+                <div className="mb-5">
+                  <h4 className="text-white/50 text-xs uppercase tracking-wider mb-2">About This Exercise</h4>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    {exerciseCacheData.explanation}
+                  </p>
+                </div>
+              )}
+
+              {/* Notes from plan */}
               {currentExercise.notes && (
-                <div className="mb-4">
-                  <h4 className="text-white/60 text-xs uppercase tracking-wider mb-2">Notes</h4>
+                <div className="mb-5 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <h4 className="text-blue-400 text-xs uppercase tracking-wider mb-2">Coach Notes</h4>
                   <p className="text-white/80 text-sm leading-relaxed">
                     {currentExercise.notes}
                   </p>
                 </div>
               )}
 
-              {/* Generic instructions for exercises without notes */}
-              {!currentExercise.notes && (
-                <div>
-                  <h4 className="text-white/60 text-xs uppercase tracking-wider mb-2">Tips</h4>
-                  <ul className="text-white/70 text-sm space-y-2">
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#E07A5F] mt-0.5">•</span>
-                      Control the movement throughout the full range of motion
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#E07A5F] mt-0.5">•</span>
-                      Focus on the muscle contraction, not just moving the weight
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#E07A5F] mt-0.5">•</span>
-                      Use a weight that challenges you while maintaining form
-                    </li>
-                  </ul>
-                </div>
-              )}
+              {/* Close button at bottom */}
+              <button
+                onClick={() => setShowExerciseInfo(false)}
+                className="w-full py-4 rounded-xl bg-white/10 text-white font-bold text-base active:bg-white/20 transition-colors mt-4"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>
