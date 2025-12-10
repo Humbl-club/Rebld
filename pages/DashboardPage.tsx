@@ -1,26 +1,32 @@
 import React, { useMemo } from 'react';
-import { WorkoutLog, WorkoutPlan } from '../types';
-import { DumbbellIcon } from '../components/icons';
+import { WorkoutLog, WorkoutPlan, PlanDay, DailyRoutine, WorkoutSession } from '../types';
+import { DumbbellIcon, FireIcon, CheckIcon } from '../components/icons';
 import { useUser } from '@clerk/clerk-react';
 import PerformanceAnalytics from '../components/PerformanceAnalytics';
 import useUserProfile from '../hooks/useUserProfile';
 import { cn } from '../lib/utils';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { PullToRefreshIndicator } from '../components/ui/PullToRefreshIndicator';
+import { useHaptic } from '../hooks/useAnimations';
 
 /* ═══════════════════════════════════════════════════════════════
-   DASHBOARD PAGE - Phase 9.4 Page Redesign
+   ATHLETE INTELLIGENCE DASHBOARD - Comprehensive Redesign
 
-   Analytics and progress dashboard.
-   Uses design tokens for consistent styling.
+   Features:
+   - Periodization progress for competition users
+   - PR counter for this week
+   - Key lifts with percentage progression
+   - Next session preview with one-tap start
+   - Weekly completion tracker
    ═══════════════════════════════════════════════════════════════ */
 
 interface DashboardPageProps {
   logs: WorkoutLog[];
   plan: WorkoutPlan;
+  onStartSession?: (session: PlanDay | DailyRoutine | WorkoutSession) => void;
 }
 
-// Helper functions for date calculations
+// Helper functions
 const isSameDay = (d1: Date, d2: Date) =>
   d1.getFullYear() === d2.getFullYear() &&
   d1.getMonth() === d2.getMonth() &&
@@ -29,169 +35,28 @@ const isSameDay = (d1: Date, d2: Date) =>
 const getDayStart = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-/* ───────────────────────────────────────────────────────────────
-   Stat Card Component
-   ─────────────────────────────────────────────────────────────── */
-
-const StatCard: React.FC<{
-  title: string;
-  value: string | number;
-  description: string;
-  accent?: boolean;
-}> = ({ title, value, description, accent = false }) => (
-  <div
-    className={cn(
-      'bg-[var(--surface-primary)]',
-      'border rounded-[var(--radius-xl)]',
-      'p-[var(--space-5)]',
-      'shadow-[var(--shadow-sm)]',
-      accent
-        ? 'border-[var(--brand-primary)] shadow-[var(--shadow-md)]'
-        : 'border-[var(--border-default)]'
-    )}
-  >
-    <p
-      className={cn(
-        'text-[var(--text-2xs)]',
-        'uppercase tracking-[var(--tracking-wider)]',
-        'font-[var(--weight-bold)]',
-        'text-[var(--text-tertiary)]',
-        'mb-[var(--space-2)]'
-      )}
-    >
-      {title}
-    </p>
-    <p
-      className={cn(
-        'text-[var(--text-3xl)]',
-        'font-[var(--weight-bold)]',
-        'mt-[var(--space-1)] mb-[var(--space-1)]',
-        accent ? 'text-[var(--brand-primary)]' : 'text-[var(--text-primary)]'
-      )}
-    >
-      {value}
-    </p>
-    <p
-      className={cn(
-        'text-[var(--text-sm)]',
-        'text-[var(--text-secondary)]'
-      )}
-    >
-      {description}
-    </p>
-  </div>
-);
-
-/* ───────────────────────────────────────────────────────────────
-   Weekly Volume Chart Component
-   ─────────────────────────────────────────────────────────────── */
-
-const WeeklyVolumeChart: React.FC<{ data: { day: string; volume: number }[] }> = ({ data }) => {
-  const chartData = Array.isArray(data) ? data : [];
-  const maxVolume = useMemo(() => {
-    if (chartData.length === 0) return 1;
-    return Math.max(...chartData.map((d) => d.volume), 1);
-  }, [chartData]);
-
-  return (
-    <div
-      className={cn(
-        'bg-[var(--surface-primary)]',
-        'border border-[var(--border-default)]',
-        'rounded-[var(--radius-xl)]',
-        'p-[var(--space-5)]',
-        'shadow-[var(--shadow-sm)]'
-      )}
-    >
-      <p
-        className={cn(
-          'text-[var(--text-2xs)]',
-          'uppercase tracking-[var(--tracking-wider)]',
-          'font-[var(--weight-bold)]',
-          'text-[var(--text-tertiary)]',
-          'mb-[var(--space-2)]'
-        )}
-      >
-        WEEKLY VOLUME
-      </p>
-      <h3
-        className={cn(
-          'text-[var(--text-xl)]',
-          'font-[var(--weight-bold)]',
-          'text-[var(--text-primary)]',
-          'mb-[var(--space-5)]'
-        )}
-      >
-        Training Load
-      </h3>
-      <div className="h-48 flex justify-between items-end gap-[var(--space-3)]">
-        {chartData.map(({ day, volume }, index) => (
-          <div
-            key={index}
-            className="flex-1 flex flex-col items-center justify-end h-full group"
-          >
-            <div
-              className={cn(
-                'w-full',
-                'bg-[var(--surface-secondary)]',
-                'rounded-t-[var(--radius-lg)]',
-                'transition-all duration-[var(--duration-normal)] ease-out',
-                'relative overflow-hidden'
-              )}
-              style={{ height: `${Math.max((volume / maxVolume) * 100, 2)}%` }}
-            >
-              <div
-                className={cn(
-                  'w-full h-full',
-                  'bg-[var(--brand-primary)]',
-                  'rounded-t-[var(--radius-lg)]'
-                )}
-              />
-            </div>
-            <p
-              className={cn(
-                'text-[var(--text-2xs)]',
-                'font-[var(--weight-semibold)]',
-                'text-[var(--text-tertiary)]',
-                'mt-[var(--space-2)]',
-                'uppercase'
-              )}
-            >
-              {day}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const KEY_LIFTS = ['squat', 'bench', 'deadlift', 'overhead press', 'ohp'];
 
-/* ═══════════════════════════════════════════════════════════════
-   Main Dashboard Component
-   ═══════════════════════════════════════════════════════════════ */
-
-export default function DashboardPage({ logs, plan }: DashboardPageProps) {
+export default function DashboardPage({ logs, plan, onStartSession }: DashboardPageProps) {
   const { user } = useUser();
   const { userProfile } = useUserProfile();
+  const haptic = useHaptic();
   const userId = user?.id || null;
-  const [activeTab, setActiveTab] = React.useState<'week' | 'alltime'>('week');
 
-  // Pull-to-refresh
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
-      // Data automatically refreshes via Convex real-time subscriptions
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   });
 
+  // Calculate all analytics
   const analytics = useMemo(() => {
     const safeLogs = Array.isArray(logs) ? logs : [];
     const sortedLogs = safeLogs
       .slice()
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const today = getDayStart(new Date());
+    const oneWeekAgo = new Date(today.getTime() - 6 * 86400000);
 
     // Calculate Streak
     let currentStreak = 0;
@@ -219,44 +84,53 @@ export default function DashboardPage({ logs, plan }: DashboardPageProps) {
       }
     }
 
-    // Calculate Weekly Volume & Chart Data
-    const weeklyVolumeData = [...Array(7)].map((_, i) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() - (6 - i));
-      return {
-        day: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
-        volume: 0,
-        date: getDayStart(date),
-      };
-    });
-
+    // Calculate Weekly Volume
     let totalWeeklyVolume = 0;
-    const oneWeekAgo = new Date(today.getTime() - 6 * 86400000);
-
     safeLogs.forEach((log) => {
       const logDate = getDayStart(new Date(log.date));
       if (logDate >= oneWeekAgo) {
-        let sessionVolume = 0;
         const exercises = Array.isArray(log.exercises) ? log.exercises : [];
         exercises.forEach((ex) => {
           const sets = Array.isArray(ex.sets) ? ex.sets : [];
           sets.forEach((set) => {
             if ('weight' in set && 'reps' in set) {
-              sessionVolume += Number(set.weight) * Number(set.reps);
+              totalWeeklyVolume += Number(set.weight) * Number(set.reps);
             }
           });
         });
-
-        totalWeeklyVolume += sessionVolume;
-        const dayIndex = weeklyVolumeData.findIndex((d) => isSameDay(d.date, logDate));
-        if (dayIndex !== -1) {
-          weeklyVolumeData[dayIndex].volume += sessionVolume;
-        }
       }
     });
 
-    // Calculate Key Lift Progression
-    const keyLiftProgress: { name: string; start: number; current: number }[] = [];
+    // Calculate PRs this week (simplified: count sessions with new max weights)
+    let weeklyPRs = 0;
+    const exerciseMaxes: Record<string, number> = {};
+
+    sortedLogs.forEach((log) => {
+      const logDate = getDayStart(new Date(log.date));
+      const exercises = Array.isArray(log.exercises) ? log.exercises : [];
+
+      exercises.forEach((ex) => {
+        const name = ex.exercise_name?.toLowerCase() || '';
+        const sets = Array.isArray(ex.sets) ? ex.sets : [];
+        const maxWeight = Math.max(
+          ...sets.map((s: any) => ('weight' in s ? Number(s.weight) : 0)),
+          0
+        );
+
+        if (maxWeight > 0) {
+          const prevMax = exerciseMaxes[name] || 0;
+          if (maxWeight > prevMax) {
+            if (logDate >= oneWeekAgo) {
+              weeklyPRs++;
+            }
+            exerciseMaxes[name] = maxWeight;
+          }
+        }
+      });
+    });
+
+    // Key Lift Progression with percentages
+    const keyLiftProgress: { name: string; start: number; current: number; percent: number }[] = [];
     KEY_LIFTS.forEach((liftName) => {
       const relevantLogs = sortedLogs
         .map((log) => {
@@ -273,247 +147,300 @@ export default function DashboardPage({ logs, plan }: DashboardPageProps) {
         const startWeight = getHeaviestSet(relevantLogs[0]!.exercise);
         const currentWeight = getHeaviestSet(relevantLogs[relevantLogs.length - 1]!.exercise);
 
-        if (currentWeight > startWeight) {
-          keyLiftProgress.push({ name: liftName, start: startWeight, current: currentWeight });
+        if (startWeight > 0) {
+          const percent = startWeight > 0 ? ((currentWeight - startWeight) / startWeight) * 100 : 0;
+          keyLiftProgress.push({
+            name: liftName.replace('overhead press', 'OHP').replace('ohp', 'OHP'),
+            start: startWeight,
+            current: currentWeight,
+            percent: Math.round(percent * 10) / 10
+          });
         }
       }
+    });
+
+    // Weekly completion tracker
+    const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const mondayOffset = (today.getDay() + 6) % 7;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - mondayOffset);
+
+    const completedDays = weekDays.map((_, i) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + i);
+      return safeLogs.some(log => isSameDay(getDayStart(new Date(log.date)), dayDate));
     });
 
     return {
       totalWorkouts: safeLogs.length,
       currentStreak,
       totalWeeklyVolume: Math.round(totalWeeklyVolume),
-      weeklyVolumeData,
+      weeklyPRs,
       keyLiftProgress,
+      completedDays,
+      weekDays,
     };
   }, [logs]);
 
+  // Get next session from plan
+  const nextSession = useMemo(() => {
+    if (!plan?.weeklyPlan) return null;
+
+    const today = new Date();
+    const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=Mon, 6=Sun
+
+    // Try to find today's or next workout
+    for (let i = 0; i < 7; i++) {
+      const dayIndex = (todayIndex + i) % 7;
+      const dayPlan = plan.weeklyPlan[dayIndex];
+
+      if (dayPlan) {
+        // Check if it's not a rest day
+        const blocks = 'blocks' in dayPlan ? dayPlan.blocks : [];
+        const exercises = blocks?.flatMap(b => b.exercises || []) || [];
+
+        if (exercises.length > 0) {
+          const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+          return {
+            day: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayNames[dayIndex],
+            focus: ('focus' in dayPlan ? dayPlan.focus : '') || 'Workout',
+            exerciseCount: exercises.length,
+            duration: ('estimated_duration_minutes' in dayPlan ? dayPlan.estimated_duration_minutes : null) || Math.round(exercises.length * 4),
+            session: dayPlan,
+          };
+        }
+      }
+    }
+    return null;
+  }, [plan]);
+
+  // Get periodization info
+  const periodization = useMemo(() => {
+    const specificGoal = userProfile?.trainingPreferences?.specific_goal;
+    if (!specificGoal?.target_date) return null;
+
+    const targetDate = new Date(specificGoal.target_date);
+    const now = new Date();
+    const totalWeeks = Math.ceil((targetDate.getTime() - now.getTime()) / (7 * 24 * 60 * 60 * 1000));
+
+    if (totalWeeks <= 0) return null;
+
+    // Calculate current phase
+    const base = Math.floor(totalWeeks * 0.35);
+    const build = Math.floor(totalWeeks * 0.35);
+    const peak = Math.floor(totalWeeks * 0.15);
+
+    // Determine which phase we're in based on weeks remaining
+    let currentPhase = 'BASE';
+    let phaseColor = 'bg-blue-500';
+    const weeksIntoProgram = Math.max(0, Math.ceil((now.getTime() - new Date().getTime()) / (7 * 24 * 60 * 60 * 1000)));
+
+    if (totalWeeks <= peak) {
+      currentPhase = 'TAPER';
+      phaseColor = 'bg-green-500';
+    } else if (totalWeeks <= peak + Math.floor(totalWeeks * 0.15)) {
+      currentPhase = 'PEAK';
+      phaseColor = 'bg-orange-500';
+    } else if (totalWeeks <= peak + Math.floor(totalWeeks * 0.15) + build) {
+      currentPhase = 'BUILD';
+      phaseColor = 'bg-yellow-500';
+    }
+
+    const daysUntil = Math.ceil((targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+    return {
+      eventType: specificGoal.event_type || 'Event',
+      eventName: specificGoal.event_name,
+      targetDate: specificGoal.target_date,
+      totalWeeks,
+      currentPhase,
+      phaseColor,
+      daysUntil,
+      progress: Math.min(100, Math.max(0, 100 - (totalWeeks / 16) * 100)), // Assuming 16-week max
+    };
+  }, [userProfile]);
+
+  const handleStartSession = () => {
+    if (nextSession?.session && onStartSession) {
+      haptic.heavy();
+      onStartSession(nextSession.session);
+    }
+  };
+
   return (
-    <div
-      className={cn(
-        'w-full max-w-2xl mx-auto',
-        'px-[var(--space-5)]',
-        'pt-[env(safe-area-inset-top)]', // Tight to Dynamic Island
-        'pb-[calc(var(--height-tab-bar)+var(--space-6)+env(safe-area-inset-bottom))]',
-        'animate-fade-in',
-        'flex-1'
-      )}
-    >
-      {/* Pull-to-refresh indicator */}
+    <div className="w-full max-w-2xl mx-auto px-5 pt-[env(safe-area-inset-top)] pb-[calc(80px+env(safe-area-inset-bottom))] animate-fade-in">
       <PullToRefreshIndicator distance={pullDistance} isRefreshing={isRefreshing} isTriggered={pullDistance >= 80} />
 
-      {/* Header */}
-      <header className="mb-[var(--space-8)]">
-        <p
-          className={cn(
-            'text-[var(--text-2xs)]',
-            'uppercase tracking-[var(--tracking-wider)]',
-            'text-[var(--text-tertiary)]',
-            'font-[var(--weight-semibold)]',
-            'mb-[var(--space-2)]'
-          )}
-        >
-          YOUR PROGRESS
-        </p>
-        <h1
-          className={cn(
-            'text-[var(--text-2xl)]',
-            'font-[var(--weight-bold)]',
-            'text-[var(--text-primary)]',
-            'leading-tight'
-          )}
-        >
-          Dashboard
-        </h1>
-      </header>
+      {/* Periodization Progress (for competition users) */}
+      {periodization && (
+        <div className="mb-6 p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-white/50 text-xs uppercase tracking-wider">
+                {periodization.eventType.toUpperCase()}
+              </p>
+              <p className="text-white font-bold text-lg">
+                {periodization.currentPhase} Phase
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[#E07A5F] font-black text-2xl tabular-nums">
+                {periodization.daysUntil}
+              </p>
+              <p className="text-white/50 text-xs">days left</p>
+            </div>
+          </div>
 
-      <main className="space-y-[var(--space-5)] pb-[var(--space-4)]">
-        {/* Tab Navigation */}
-        <div className="flex gap-2 p-1 bg-[var(--surface-secondary)] rounded-xl">
-          <button
-            onClick={() => setActiveTab('week')}
-            className={cn(
-              'flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all',
-              activeTab === 'week'
-                ? 'bg-[var(--brand-primary)] text-white shadow-md'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            )}
-          >
-            This Week
-          </button>
-          <button
-            onClick={() => setActiveTab('alltime')}
-            className={cn(
-              'flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all',
-              activeTab === 'alltime'
-                ? 'bg-[var(--brand-primary)] text-white shadow-md'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            )}
-          >
-            All Time
-          </button>
-        </div>
-
-        {/* This Week Tab */}
-        {activeTab === 'week' && (
-          <div className="space-y-[var(--space-5)] animate-fade-in">
-            {/* Weekly Volume Chart */}
-            <WeeklyVolumeChart data={analytics.weeklyVolumeData} />
-
-            {/* Volume Total */}
-            <StatCard
-              title="This Week"
-              value={`${analytics.totalWeeklyVolume.toLocaleString()}`}
-              description="lbs total volume"
-              accent={true}
+          {/* Progress bar */}
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all', periodization.phaseColor)}
+              style={{ width: `${periodization.progress}%` }}
             />
           </div>
-        )}
 
-        {/* All Time Tab */}
-        {activeTab === 'alltime' && (
-          <div className="space-y-[var(--space-5)] animate-fade-in">
-            {/* Key Stats Grid */}
-            <div className="grid grid-cols-2 gap-[var(--space-4)]">
-              <StatCard
-                title="Workouts"
-                value={analytics.totalWorkouts}
-                description="Completed"
-                accent={true}
-              />
-              <StatCard
-                title="Streak"
-                value={analytics.currentStreak}
-                description="Days in a row"
-              />
-            </div>
+          <p className="text-white/40 text-xs mt-2">
+            {periodization.totalWeeks} weeks until {periodization.eventName || 'event'}
+          </p>
+        </div>
+      )}
 
-            {/* Key Lift Progression */}
-            {analytics.keyLiftProgress.length > 0 && (
-              <div
-                className={cn(
-                  'bg-[var(--surface-primary)]',
-                  'border border-[var(--border-default)]',
-                  'rounded-[var(--radius-xl)]',
-                  'p-[var(--space-5)]',
-                  'shadow-[var(--shadow-sm)]'
-                )}
-              >
-                <p
-                  className={cn(
-                    'text-[var(--text-2xs)]',
-                    'uppercase tracking-[var(--tracking-wider)]',
-                    'font-[var(--weight-bold)]',
-                    'text-[var(--text-tertiary)]',
-                    'mb-[var(--space-2)]'
-                  )}
-                >
-                  STRENGTH GAINS
-                </p>
-                <h3
-                  className={cn(
-                    'text-[var(--text-xl)]',
-                    'font-[var(--weight-bold)]',
-                    'text-[var(--text-primary)]',
-                    'mb-[var(--space-5)]'
-                  )}
-                >
-                  Key Lifts
-                </h3>
-                <div className="space-y-[var(--space-3)]">
-                  {analytics.keyLiftProgress.map((lift) => (
-                    <div
-                      key={lift.name}
-                      className={cn(
-                        'flex justify-between items-center',
-                        'bg-[var(--surface-secondary)]',
-                        'p-[var(--space-4)]',
-                        'rounded-[var(--radius-xl)]'
-                      )}
-                    >
-                      <p
-                        className={cn(
-                          'font-[var(--weight-semibold)]',
-                          'capitalize',
-                          'text-[var(--text-base)]',
-                          'text-[var(--text-primary)]'
-                        )}
-                      >
-                        {lift.name}
-                      </p>
-                      <p
-                        className={cn(
-                          'font-mono',
-                          'font-[var(--weight-bold)]',
-                          'text-[var(--text-base)]',
-                          'text-[var(--brand-primary)]'
-                        )}
-                      >
-                        {lift.start} → {lift.current} kg
-                      </p>
-                    </div>
-                  ))}
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* Streak */}
+        <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 text-center">
+          <p className="text-white font-black text-3xl tabular-nums">
+            {analytics.currentStreak}
+          </p>
+          <p className="text-white/50 text-xs uppercase tracking-wider mt-1">Streak</p>
+        </div>
+
+        {/* Weekly Volume */}
+        <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 text-center">
+          <p className="text-white font-black text-3xl tabular-nums">
+            {analytics.totalWeeklyVolume >= 1000
+              ? `${(analytics.totalWeeklyVolume / 1000).toFixed(1)}k`
+              : analytics.totalWeeklyVolume}
+          </p>
+          <p className="text-white/50 text-xs uppercase tracking-wider mt-1">kg/week</p>
+        </div>
+
+        {/* PRs */}
+        <div className="p-4 rounded-xl bg-[#E07A5F]/20 border border-[#E07A5F]/30 text-center">
+          <p className="text-[#E07A5F] font-black text-3xl tabular-nums">
+            {analytics.weeklyPRs}
+          </p>
+          <p className="text-[#E07A5F]/70 text-xs uppercase tracking-wider mt-1">PRs</p>
+        </div>
+      </div>
+
+      {/* Key Lifts */}
+      {analytics.keyLiftProgress.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+          <p className="text-white/50 text-xs uppercase tracking-wider mb-4">Key Lifts</p>
+
+          <div className="space-y-4">
+            {analytics.keyLiftProgress.slice(0, 4).map((lift) => (
+              <div key={lift.name}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-semibold capitalize">{lift.name}</span>
+                  <span className="text-white/90 font-mono text-sm">
+                    {lift.start}kg → <span className="text-[#E07A5F] font-bold">{lift.current}kg</span>
+                  </span>
                 </div>
+                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-[#E07A5F] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(10, (lift.current / (lift.start * 1.5)) * 100))}%` }}
+                  />
+                </div>
+                {lift.percent > 0 && (
+                  <p className="text-green-400 text-xs mt-1 text-right">↑ {lift.percent}%</p>
+                )}
               </div>
-            )}
-
-            {/* Performance Analytics for Sport-Specific Training */}
-            {userId && userProfile?.trainingPreferences?.sport_specific && (
-              <PerformanceAnalytics
-                userId={userId}
-                sport={userProfile.trainingPreferences.sport_specific}
-              />
-            )}
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Empty State */}
-        {analytics.totalWorkouts < 2 && (
-          <div
-            className={cn(
-              'text-center',
-              'py-[var(--space-8)]',
-              'flex flex-col items-center justify-center',
-              'bg-[var(--surface-primary)]',
-              'border border-[var(--border-default)]',
-              'rounded-[var(--radius-xl)]',
-              'shadow-[var(--shadow-sm)]'
-            )}
-          >
-            <div
-              className={cn(
-                'w-16 h-16',
-                'bg-[var(--surface-secondary)]',
-                'rounded-[var(--radius-xl)]',
-                'flex items-center justify-center',
-                'mb-[var(--space-4)]'
-              )}
-            >
-              <DumbbellIcon className="h-8 w-8 text-[var(--text-tertiary)]" />
+      {/* This Week */}
+      <div className="mb-6 p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+        <p className="text-white/50 text-xs uppercase tracking-wider mb-4">This Week</p>
+
+        <div className="flex justify-between items-center">
+          {analytics.weekDays.map((day, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className={cn(
+                'w-9 h-9 rounded-full flex items-center justify-center mb-1 transition-all',
+                analytics.completedDays[i]
+                  ? 'bg-[#E07A5F] text-white'
+                  : 'bg-white/10 text-white/40'
+              )}>
+                {analytics.completedDays[i] ? (
+                  <CheckIcon className="w-4 h-4" />
+                ) : (
+                  <span className="text-xs font-bold">{day}</span>
+                )}
+              </div>
+              <span className="text-white/30 text-[10px]">{day}</span>
             </div>
-            <h3
-              className={cn(
-                'text-[var(--text-xl)]',
-                'font-[var(--weight-bold)]',
-                'text-[var(--text-primary)]'
-              )}
-            >
-              Start Training
-            </h3>
-            <p
-              className={cn(
-                'mt-[var(--space-2)]',
-                'text-[var(--text-sm)]',
-                'text-[var(--text-secondary)]',
-                'max-w-xs',
-                'px-[var(--space-4)]'
-              )}
-            >
-              Log a few workouts to see your progress analytics.
-            </p>
+          ))}
+        </div>
+
+        <p className="text-white/40 text-xs mt-3 text-center">
+          {analytics.completedDays.filter(Boolean).length}/7 workouts completed
+        </p>
+      </div>
+
+      {/* Next Session */}
+      {nextSession && onStartSession && (
+        <button
+          onClick={handleStartSession}
+          className="w-full p-5 rounded-2xl bg-[#E07A5F] text-left active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-white/70 text-xs uppercase tracking-wider mb-1">
+                {nextSession.day}
+              </p>
+              <p className="text-white font-bold text-lg">
+                {nextSession.focus}
+              </p>
+              <p className="text-white/70 text-sm mt-1">
+                {nextSession.exerciseCount} exercises · ~{nextSession.duration} min
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
           </div>
-        )}
-      </main>
+        </button>
+      )}
+
+      {/* Performance Analytics for Sport-Specific Training */}
+      {userId && userProfile?.trainingPreferences?.sport_specific && (
+        <div className="mt-6">
+          <PerformanceAnalytics
+            userId={userId}
+            sport={userProfile.trainingPreferences.sport_specific}
+          />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {analytics.totalWorkouts < 2 && !nextSession && (
+        <div className="text-center py-12 px-6 bg-white/[0.04] border border-white/10 rounded-2xl">
+          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <DumbbellIcon className="h-8 w-8 text-white/40" />
+          </div>
+          <h3 className="text-white font-bold text-xl">Start Training</h3>
+          <p className="mt-2 text-white/50 text-sm">
+            Log a few workouts to see your progress analytics.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
