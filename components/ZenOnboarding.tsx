@@ -909,7 +909,7 @@ function QuestionCard({ headline, subtext, children }: QuestionCardProps) {
   );
 }
 
-interface SelectionCardProps {
+interface SelectionCardProps extends React.HTMLAttributes<HTMLButtonElement> {
   selected: boolean;
   onClick: () => void;
   label: string;
@@ -944,7 +944,7 @@ function SelectionCard({ selected, onClick, label, description }: SelectionCardP
   );
 }
 
-interface NumberCardProps {
+interface NumberCardProps extends React.HTMLAttributes<HTMLButtonElement> {
   selected: boolean;
   onClick: () => void;
   value: string;
@@ -981,7 +981,7 @@ function NumberCard({ selected, onClick, value, unit }: NumberCardProps) {
   );
 }
 
-interface PillButtonProps {
+interface PillButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
   selected: boolean;
   onClick: () => void;
   label: string;
