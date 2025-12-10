@@ -144,6 +144,7 @@ export interface PlanDay {
   day_of_week: number; // 1=Mon, 7=Sun
   focus: string;
   notes?: string;
+  estimated_duration?: number; // minutes
   // Standard single-session structure
   blocks?: WorkoutBlock[];
   // NEW: 2x/day session structure (use sessions OR blocks, not both)
@@ -164,21 +165,21 @@ export interface Periodization {
 }
 
 export interface DailyRoutine {
-    focus: string;
-    notes?: string;
-    exercises: PlanExercise[]; // Kept simple for now, can be upgraded to blocks later if needed
+  focus: string;
+  notes?: string;
+  exercises: PlanExercise[]; // Kept simple for now, can be upgraded to blocks later if needed
 }
 
 export interface WorkoutPlan {
-    id?: string;
-    _id?: string; // Convex document ID
-    name: string;
-    weeklyPlan: PlanDay[];
-    dailyRoutine?: DailyRoutine;
-    createdAt?: string; // ISO date string
+  id?: string;
+  _id?: string; // Convex document ID
+  name: string;
+  weeklyPlan: PlanDay[];
+  dailyRoutine?: DailyRoutine;
+  createdAt?: string; // ISO date string
 
-    // NEW: Periodization for goal-based training
-    periodization?: Periodization;
+  // NEW: Periodization for goal-based training
+  periodization?: Periodization;
 }
 
 // Logged Data Types
@@ -205,195 +206,195 @@ export interface LoggedSetSDR {
 }
 
 export interface LoggedExercise {
-    exercise_name: string;
-    sets: (LoggedSetSRW | LoggedSetDuration)[];
+  exercise_name: string;
+  sets: (LoggedSetSRW | LoggedSetDuration)[];
 }
 
 export interface WorkoutLog {
-    id?: string; // ID is assigned by Convex, so optional on creation
-    date: string; // ISO date string
-    focus: string;
-    exercises: LoggedExercise[];
-    durationMinutes?: number;
+  id?: string; // ID is assigned by Convex, so optional on creation
+  date: string; // ISO date string
+  focus: string;
+  exercises: LoggedExercise[];
+  durationMinutes?: number;
 }
 
 
 // Chatbot types
 export interface ChatMessage {
-    role: 'user' | 'model';
-    text: string;
-    functionCall?: any;
+  role: 'user' | 'model';
+  text: string;
+  functionCall?: any;
 }
 
 // Cardio Preferences (for training types that include cardio)
 export interface CardioPreferences {
-    preferred_types: string[]; // ["running", "cycling", "rowing", "swimming", "elliptical", "stair_climber"]
-    favorite_exercise?: string; // Primary cardio choice
-    cardio_duration_minutes?: number; // Default cardio session length
-    outdoor_preferred?: boolean; // Prefers outdoor activities
+  preferred_types: string[]; // ["running", "cycling", "rowing", "swimming", "elliptical", "stair_climber"]
+  favorite_exercise?: string; // Primary cardio choice
+  cardio_duration_minutes?: number; // Default cardio session length
+  outdoor_preferred?: boolean; // Prefers outdoor activities
 }
 
 // Training Split (1x or 2x daily)
 export interface TrainingSplit {
-    sessions_per_day: '1' | '2';
-    training_type: 'strength_only' | 'strength_plus_cardio' | 'combined' | 'cardio_focused';
-    cardio_preferences?: CardioPreferences;
+  sessions_per_day: '1' | '2';
+  training_type: 'strength_only' | 'strength_plus_cardio' | 'combined' | 'cardio_focused';
+  cardio_preferences?: CardioPreferences;
 }
 
 // Specific Goal with target date (e.g., Hyrox April 2025)
 export interface SpecificGoal {
-    event_type?: string | null; // "hyrox", "marathon", "powerlifting_meet"
-    event_name?: string | null; // "Hyrox Hamburg"
-    target_date?: string | null; // ISO date
-    current_readiness?: number | null; // 1-10 scale
-    description?: string | null; // Free-form goal description
+  event_type?: string | null; // "hyrox", "marathon", "powerlifting_meet"
+  event_name?: string | null; // "Hyrox Hamburg"
+  target_date?: string | null; // ISO date
+  current_readiness?: number | null; // 1-10 scale
+  description?: string | null; // Free-form goal description
 }
 
 // Supplement tracking
 export interface Supplement {
-    name: string;
-    timing: 'morning' | 'pre_workout' | 'post_workout' | 'evening' | 'with_meals';
-    dosage?: string | null;
-    active: boolean;
+  name: string;
+  timing: 'morning' | 'pre_workout' | 'post_workout' | 'evening' | 'with_meals';
+  dosage?: string | null;
+  active: boolean;
 }
 
 // Training Preferences (from onboarding)
 export interface TrainingPreferences {
-    primary_goal: string; // "Aesthetic Physique", "Strength & Power", etc.
-    goal_explanation?: string | null; // User's own words about their goal
-    experience_level: string; // "Beginner", "Intermediate", "Advanced"
-    training_frequency: string; // "2-3", "3-4", "4-5", "5+"
-    pain_points: string[]; // ["Knees", "Lower Back", etc.]
-    sport?: string | null; // Sport-specific training
-    sport_specific?: string | null; // Elite sport-specific protocols
-    additional_notes?: string | null; // Free-form notes
-    last_updated: string; // ISO date string
-    // Profile fields
-    age?: number; // User's age for recovery/programming adjustments
-    sex?: 'male' | 'female' | 'other';
-    equipment?: 'minimal' | 'home_gym' | 'commercial_gym';
-    preferred_session_length?: '30' | '45' | '60' | '75';
-    athletic_level?: 'low' | 'moderate' | 'high';
-    training_age_years?: number;
-    body_type?: 'lean' | 'average' | 'muscular';
-    comfort_flags?: string[];
-    // Current strength levels for starting weight calculations
-    current_strength?: CurrentStrength;
-    // NEW: Training split for 1x/2x daily
-    training_split?: TrainingSplit;
-    // NEW: Specific goal with target date
-    specific_goal?: SpecificGoal;
+  primary_goal: string; // "Aesthetic Physique", "Strength & Power", etc.
+  goal_explanation?: string | null; // User's own words about their goal
+  experience_level: string; // "Beginner", "Intermediate", "Advanced"
+  training_frequency: string; // "2-3", "3-4", "4-5", "5+"
+  pain_points: string[]; // ["Knees", "Lower Back", etc.]
+  sport?: string | null; // Sport-specific training
+  sport_specific?: string | null; // Elite sport-specific protocols
+  additional_notes?: string | null; // Free-form notes
+  last_updated: string; // ISO date string
+  // Profile fields
+  age?: number; // User's age for recovery/programming adjustments
+  sex?: 'male' | 'female' | 'other';
+  equipment?: 'minimal' | 'home_gym' | 'commercial_gym';
+  preferred_session_length?: '30' | '45' | '60' | '75';
+  athletic_level?: 'low' | 'moderate' | 'high';
+  training_age_years?: number;
+  body_type?: 'lean' | 'average' | 'muscular';
+  comfort_flags?: string[];
+  // Current strength levels for starting weight calculations
+  current_strength?: CurrentStrength;
+  // NEW: Training split for 1x/2x daily
+  training_split?: TrainingSplit;
+  // NEW: Specific goal with target date
+  specific_goal?: SpecificGoal;
 }
 
 // Strength profile for weight suggestions
 export interface StrengthProfile {
-    squat_kg?: number;
-    bench_kg?: number;
-    deadlift_kg?: number;
-    row_kg?: number;
-    overhead_press_kg?: number;
-    pullup_count?: number;
-    last_updated: string; // ISO date string
+  squat_kg?: number;
+  bench_kg?: number;
+  deadlift_kg?: number;
+  row_kg?: number;
+  overhead_press_kg?: number;
+  pullup_count?: number;
+  last_updated: string; // ISO date string
 }
 
 // User Profile types
 export interface UserProfile {
-    userCode?: string; // Unique permanent code for buddy connections (REBLD-ABC123)
-    lastProgressionApplied?: string; // ISO date string
-    bodyMetrics?: BodyMetrics;
-    goals?: UserGoal[];
-    trainingPreferences?: TrainingPreferences;
-    strengthProfile?: StrengthProfile; // For AI weight suggestions
-    apiUsage?: {
-        tier: 'free' | 'premium';
-        plansGenerated: number;
-        chatMessagesSent: number;
-        plansParsed: number;
-        periodStart: string; // ISO date
-        periodEnd: string; // ISO date
-        lastReset?: string | null;
-    };
+  userCode?: string; // Unique permanent code for buddy connections (REBLD-ABC123)
+  lastProgressionApplied?: string; // ISO date string
+  bodyMetrics?: BodyMetrics;
+  goals?: UserGoal[];
+  trainingPreferences?: TrainingPreferences;
+  strengthProfile?: StrengthProfile; // For AI weight suggestions
+  apiUsage?: {
+    tier: 'free' | 'premium';
+    plansGenerated: number;
+    chatMessagesSent: number;
+    plansParsed: number;
+    periodStart: string; // ISO date
+    periodEnd: string; // ISO date
+    lastReset?: string | null;
+  };
 }
 
 // Body Metrics
 export interface BodyMetrics {
-    weight?: number; // in lbs or kg
-    height?: number; // in cm or ft
-    heightUnit?: 'cm' | 'ft';
-    bodyFatPercentage?: number;
-    measurements?: {
-        chest?: number;
-        waist?: number;
-        hips?: number;
-        biceps?: number;
-        thighs?: number;
-    };
-    lastUpdated?: string; // ISO date string
+  weight?: number; // in lbs or kg
+  height?: number; // in cm or ft
+  heightUnit?: 'cm' | 'ft';
+  bodyFatPercentage?: number;
+  measurements?: {
+    chest?: number;
+    waist?: number;
+    hips?: number;
+    biceps?: number;
+    thighs?: number;
+  };
+  lastUpdated?: string; // ISO date string
 }
 
 // Current Strength Levels (for starting weight calculations)
 // These benchmarks help AI estimate starting weights for all exercises
 export interface CurrentStrength {
-    // === COMPOUND LIFTS (Barbell) ===
-    squat_kg?: number;          // Back squat 8-10RM
-    bench_kg?: number;          // Bench press 8-10RM
-    deadlift_kg?: number;       // Deadlift 8-10RM
-    row_kg?: number;            // Barbell row 8-10RM
-    overhead_press_kg?: number; // Overhead press 8-10RM
+  // === COMPOUND LIFTS (Barbell) ===
+  squat_kg?: number;          // Back squat 8-10RM
+  bench_kg?: number;          // Bench press 8-10RM
+  deadlift_kg?: number;       // Deadlift 8-10RM
+  row_kg?: number;            // Barbell row 8-10RM
+  overhead_press_kg?: number; // Overhead press 8-10RM
 
-    // === BODYWEIGHT ===
-    pullup_count?: number;      // Max strict pullups
-    pushup_count?: number;      // Max pushups in one set
-    dip_count?: number;         // Max parallel bar dips
+  // === BODYWEIGHT ===
+  pullup_count?: number;      // Max strict pullups
+  pushup_count?: number;      // Max pushups in one set
+  dip_count?: number;         // Max parallel bar dips
 
-    // === DUMBBELL (for those without barbells) ===
-    dumbbell_press_kg?: number; // Dumbbell bench press 8-10RM (per hand)
-    dumbbell_row_kg?: number;   // Single-arm DB row 8-10RM
-    goblet_squat_kg?: number;   // Goblet squat 8-10RM
+  // === DUMBBELL (for those without barbells) ===
+  dumbbell_press_kg?: number; // Dumbbell bench press 8-10RM (per hand)
+  dumbbell_row_kg?: number;   // Single-arm DB row 8-10RM
+  goblet_squat_kg?: number;   // Goblet squat 8-10RM
 
-    // === MACHINE (for beginners) ===
-    leg_press_kg?: number;      // Leg press 8-10RM
-    lat_pulldown_kg?: number;   // Lat pulldown 8-10RM
+  // === MACHINE (for beginners) ===
+  leg_press_kg?: number;      // Leg press 8-10RM
+  lat_pulldown_kg?: number;   // Lat pulldown 8-10RM
 }
 
 // User Goals
 export interface UserGoal {
-    id?: string;
-    type: 'workout_count' | 'weight_loss' | 'strength_gain' | 'custom';
-    title: string; // e.g., "Complete 30 workouts"
-    target: number; // e.g., 30
-    current: number; // e.g., 18
-    deadline?: string; // ISO date string
-    createdAt?: string; // ISO date string
+  id?: string;
+  type: 'workout_count' | 'weight_loss' | 'strength_gain' | 'custom';
+  title: string; // e.g., "Complete 30 workouts"
+  target: number; // e.g., 30
+  current: number; // e.g., 18
+  deadline?: string; // ISO date string
+  createdAt?: string; // ISO date string
 }
 
 // Personal Records
 export interface PersonalRecord {
-    exercise_name: string;
+  exercise_name: string;
+  weight: number;
+  reps: number;
+  date: string; // ISO date string
+  previousBest?: {
     weight: number;
     reps: number;
     date: string; // ISO date string
-    previousBest?: {
-        weight: number;
-        reps: number;
-        date: string; // ISO date string
-    };
+  };
 }
 
 // Progress Photos
 export interface ProgressPhoto {
-    _id: string;
-    userId: string;
-    photoUrl: string;
-    photoType: 'front' | 'side' | 'back';
-    date: string; // ISO date string
-    aiAnalysis?: {
-        bodyFatEstimate: number;
-        muscleChanges: string;
-        improvements: string[];
-        suggestions: string[];
-        confidence: number;
-    };
-    comparedTo: string | null; // ID of previous photo
-    createdAt: string; // ISO date string
+  _id: string;
+  userId: string;
+  photoUrl: string;
+  photoType: 'front' | 'side' | 'back';
+  date: string; // ISO date string
+  aiAnalysis?: {
+    bodyFatEstimate: number;
+    muscleChanges: string;
+    improvements: string[];
+    suggestions: string[];
+    confidence: number;
+  };
+  comparedTo: string | null; // ID of previous photo
+  createdAt: string; // ISO date string
 }

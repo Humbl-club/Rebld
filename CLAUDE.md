@@ -51,7 +51,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🚨 ABSOLUTE RULE #1: Single Source of Truth
 
-**MASTER.md is the ONLY documentation file that should EVER be updated.**
+**The MASTER_DOCUMENTATION files are the ONLY documentation files that should EVER be updated.**
+
+**Documentation is split into two parts:**
+- **MASTER_DOCUMENTATION_CORE.md** - Architecture, Setup, Data Model
+- **MASTER_DOCUMENTATION_REFERENCE.md** - AI Integration, Security, Design System, Features, Business Model, Workflow, Recent Changes, Troubleshooting, Roadmap
 
 **THIS IS NON-NEGOTIABLE. VIOLATIONS WILL CAUSE DOCUMENTATION CHAOS.**
 
@@ -59,11 +63,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **AFTER ANY CHANGE (feature, fix, optimization, schema change, new file), YOU MUST:**
 
-1. **UPDATE MASTER.md IMMEDIATELY**
-   - Find the relevant section in MASTER.md
+1. **UPDATE THE APPROPRIATE MASTER_DOCUMENTATION FILE IMMEDIATELY**
+   - **CORE.md** for: Architecture changes, Setup changes, Data model changes
+   - **REFERENCE.md** for: Everything else (AI, Security, Features, Recent Changes, etc.)
    - Add/update information with specifics and code examples
-   - Update [11. Pending Tasks] if work is incomplete
-   - Add entry to [14. Recent Changes] with date and detailed summary
+   - Update Pending Tasks section if work is incomplete
+   - Add entry to Recent Changes section with date and detailed summary
    - Update diagrams/architecture if structure changed
    - Keep all code examples accurate
 
@@ -87,7 +92,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - convex/BACKEND_IMPROVEMENTS.md (reference documentation)
    - convex/IMPLEMENTATION_SUMMARY.md (reference documentation)
 
-### What Requires MASTER.md Update
+### What Requires MASTER_DOCUMENTATION Update
 
 **EVERYTHING significant:**
 - New features or components
@@ -106,11 +111,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Enforcement
 
-**If you create a new .md file or fail to update MASTER.md:**
+**If you create a new .md file or fail to update MASTER_DOCUMENTATION files:**
 - You have violated the single source of truth rule
 - Documentation becomes fragmented
 - Future developers will be confused
-- You must immediately delete the file and update MASTER.md instead
+- You must immediately delete the file and update the appropriate MASTER_DOCUMENTATION file instead
 
 **This rule applies to ALL AI assistants, ALL developers, ALL contexts.**
 
@@ -168,8 +173,9 @@ When reviewing or implementing code:
 
 ## Quick Reference for AI Assistants
 
-### File to Update
-- ✅ **MASTER.md** - Update this after EVERY significant change
+### Files to Update
+- ✅ **MASTER_DOCUMENTATION_CORE.md** - For architecture, setup, data model changes
+- ✅ **MASTER_DOCUMENTATION_REFERENCE.md** - For everything else (features, AI, security, recent changes, etc.)
 
 ### Files That Are Read-Only
 - ❌ CLAUDE.md (this file)
@@ -178,7 +184,7 @@ When reviewing or implementing code:
 
 ### New .md Files
 - ❌ **NEVER CREATE NEW .md FILES**
-- ✅ Update MASTER.md instead
+- ✅ Update the appropriate MASTER_DOCUMENTATION file instead
 
 ---
 
@@ -275,7 +281,9 @@ export const getExercise = query({
 
 ## Documentation Rules Summary
 
-1. ✅ **UPDATE MASTER.md** after every significant change
+1. ✅ **UPDATE MASTER_DOCUMENTATION files** after every significant change
+   - CORE.md for architecture/setup/data model
+   - REFERENCE.md for features/AI/security/changes/etc.
 2. ❌ **NEVER CREATE** new .md files
 3. ❌ **NEVER UPDATE** read-only reference files (unless instructed)
 4. 📝 **ADD TO PENDING TASKS** if work is incomplete
@@ -283,4 +291,6 @@ export const getExercise = query({
 
 ---
 
-**For complete documentation, see MASTER.md (the single source of truth)**
+**For complete documentation:**
+- **[MASTER_DOCUMENTATION_CORE.md](./MASTER_DOCUMENTATION_CORE.md)** - Architecture, Setup, Data Model
+- **[MASTER_DOCUMENTATION_REFERENCE.md](./MASTER_DOCUMENTATION_REFERENCE.md)** - Features, AI, Security, and everything else
