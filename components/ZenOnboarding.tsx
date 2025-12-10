@@ -12,19 +12,20 @@ import { cn } from '../lib/utils';
 import { CheckIcon } from './icons';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ZEN ONBOARDING - COMPLETE VERSION
+   INTELLIGENT ONBOARDING - Full Redesign
 
-   Includes ALL required fields:
-   - Goal, Experience, Frequency (required)
-   - Equipment, Session Length (required)
-   - Age, Sex (optional but important for AI)
-   - Training Split (1x/2x daily, training type)
-   - Cardio Preferences (type, duration)
-   - Competition/Event Goal (conditional)
-   - Pain Points (optional)
-   - Current Strength (optional)
+   NEW: Shows users what the AI will do with their data
+   NEW: Integrated plan import (paste or upload)
+   NEW: Sport selector dropdown with periodization preview
+   NEW: Premium typography and information-dense design
 
-   Design: Cinematic opening → Full-screen questions → Day-by-day building animation
+   Features:
+   - Two clear paths: Build My Plan / Import My Plan
+   - Goal explanations show AI capabilities
+   - Competition prep shows 4-phase periodization preview
+   - Generation screen shows real AI actions
+   - Premium typography throughout
+
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ZenOnboardingProps {
@@ -71,6 +72,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   // Convex
   const incrementPlanUsageMutation = useMutation(api.mutations.incrementPlanUsage);
   const generatePlanAction = useAction(api.ai.generateWorkoutPlan);
+  const parsePlanAction = useAction(api.ai.parseWorkoutPlan);
 
   // Persistence
   const {
@@ -127,6 +129,12 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   const [error, setError] = useState<string | null>(null);
   const [generatedPlan, setGeneratedPlan] = useState<Omit<WorkoutPlan, 'id'> | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Plan import state
+  const [importText, setImportText] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseProgress, setParseProgress] = useState(0);
+  const [generationSteps, setGenerationSteps] = useState<{ step: string; done: boolean }[]>([]);
 
   // Tracking
   const [startTime] = useState(Date.now());
@@ -498,55 +506,96 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     const userName = user?.firstName || 'Athlete';
 
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center px-8">
-        <div className={cn(
-          'transition-all duration-1000 ease-out',
-          openingBeat === 'dark' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
-        )}>
-          {(openingBeat === 'name' || openingBeat === 'logo' || openingBeat === 'begin') && (
-            <p className="text-white/60 text-lg font-medium tracking-wide mb-3 text-center">
-              Welcome back,
-            </p>
-          )}
-          <h1 className={cn(
-            'text-white font-black text-center transition-all duration-700',
-            openingBeat === 'name' ? 'text-5xl' : 'text-4xl'
+      <div className="fixed inset-0 bg-black flex flex-col">
+        {/* Top section with greeting */}
+        <div className="pt-[max(4rem,env(safe-area-inset-top))] px-8">
+          <div className={cn(
+            'transition-all duration-1000 ease-out',
+            openingBeat === 'dark' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
           )}>
-            {userName}
-          </h1>
-        </div>
-
-        <div className={cn(
-          'mt-16 transition-all duration-700 ease-out',
-          (openingBeat === 'logo' || openingBeat === 'begin') ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-        )}>
-          <div className="flex items-center justify-center">
-            <span className="text-white font-black text-6xl tracking-tighter">RE</span>
-            <span className="text-[#E07A5F] font-black text-6xl tracking-tighter">BLD</span>
+            {(openingBeat === 'name' || openingBeat === 'logo' || openingBeat === 'begin') && (
+              <p className="text-white/50 text-sm font-medium tracking-wider uppercase mb-2">
+                Welcome{userName !== 'Athlete' ? ` back, ${userName}` : ''}
+              </p>
+            )}
           </div>
-          <p className="text-white/40 text-center mt-2 text-sm tracking-[0.3em] uppercase">
-            Transform
-          </p>
+
+          {/* Logo */}
+          <div className={cn(
+            'transition-all duration-700 ease-out mt-2',
+            (openingBeat === 'logo' || openingBeat === 'begin') ? 'opacity-100' : 'opacity-0'
+          )}>
+            <div className="flex items-center">
+              <span className="text-white font-black text-5xl tracking-tighter">RE</span>
+              <span className="text-[#E07A5F] font-black text-5xl tracking-tighter">BLD</span>
+            </div>
+          </div>
         </div>
 
+        {/* Center section - Main choices */}
         <div className={cn(
-          'absolute bottom-0 left-0 right-0 px-8 pb-[max(3rem,env(safe-area-inset-bottom))]',
+          'flex-1 flex flex-col justify-center px-8',
           'transition-all duration-500 ease-out',
           openingBeat === 'begin' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         )}>
+          <h2 className="text-white/90 text-2xl font-bold mb-8">
+            Build Your<br />Training Plan
+          </h2>
+
+          {/* Option 1: AI Build */}
           <button
             onClick={handleBegin}
-            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#E07A5F] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(224,122,95,0.3)]"
+            className="w-full p-5 rounded-2xl bg-[#E07A5F] text-left active:scale-[0.98] transition-transform mb-4 shadow-[0_0_40px_rgba(224,122,95,0.2)]"
           >
-            Begin
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-white font-bold text-lg">CREATE MY PLAN</p>
+                <p className="text-white/70 text-sm mt-1">
+                  AI builds your personalized program
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <span className="px-2 py-1 rounded-md bg-white/20 text-white/90 text-xs font-medium">Periodization</span>
+              <span className="px-2 py-1 rounded-md bg-white/20 text-white/90 text-xs font-medium">Sport-specific</span>
+              <span className="px-2 py-1 rounded-md bg-white/20 text-white/90 text-xs font-medium">Smart weights</span>
+            </div>
           </button>
+
+          {/* Option 2: Import */}
           <button
             onClick={handleImportOwn}
-            className="w-full mt-4 py-3 text-white/40 text-sm font-medium"
+            className="w-full p-5 rounded-2xl bg-white/[0.06] border border-white/10 text-left active:scale-[0.98] transition-transform"
           >
-            I have my own plan
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-white font-bold text-lg">IMPORT MY PLAN</p>
+                <p className="text-white/50 text-sm mt-1">
+                  Paste or upload your existing program
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M17 8l-5-5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <span className="px-2 py-1 rounded-md bg-white/10 text-white/60 text-xs font-medium">Any format</span>
+              <span className="px-2 py-1 rounded-md bg-white/10 text-white/60 text-xs font-medium">AI parsing</span>
+            </div>
           </button>
         </div>
+
+        {/* Bottom safe area */}
+        <div className="pb-[max(2rem,env(safe-area-inset-bottom))]" />
       </div>
     );
   };
@@ -592,21 +641,22 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     switch (currentQuestion) {
       case 'goal':
         return (
-          <QuestionCard headline="What's Your Drive?" subtext="This shapes everything we build for you">
+          <QuestionCard headline="Your Goal" subtext="We'll optimize your entire program for this">
             <div className="space-y-3 mt-6">
               {[
-                { id: 'Aesthetic Physique' as Goal, label: 'AESTHETIC', desc: 'Build muscle · Reduce body fat' },
-                { id: 'Strength & Power' as Goal, label: 'STRENGTH', desc: 'Increase 1RM · Raw power' },
-                { id: 'Athletic Performance' as Goal, label: 'ATHLETIC', desc: 'Sport-specific conditioning' },
-                { id: 'Health & Longevity' as Goal, label: 'HEALTH', desc: 'Sustainable · Long-term fitness' },
-                { id: 'Competition Prep' as Goal, label: 'COMPETITION', desc: 'Peak for an event' },
+                { id: 'Aesthetic Physique' as Goal, label: 'AESTHETIC', desc: 'Hypertrophy focus with strategic cardio', aiNote: '→ Volume-based training, muscle isolation' },
+                { id: 'Strength & Power' as Goal, label: 'STRENGTH & POWER', desc: 'Progressive overload, compound-focused', aiNote: '→ Heavy compounds, deload weeks built in' },
+                { id: 'Athletic Performance' as Goal, label: 'ATHLETIC', desc: 'Sport-specific conditioning', aiNote: '→ We\'ll ask about your sport next' },
+                { id: 'Health & Longevity' as Goal, label: 'HEALTH & LONGEVITY', desc: 'Sustainable, balanced approach', aiNote: '→ Full-body, mobility, injury prevention' },
+                { id: 'Competition Prep' as Goal, label: 'COMPETITION PREP', desc: 'Periodized peaking for your event', aiNote: '→ 4-phase periodization: base → build → peak → taper' },
               ].map(option => (
-                <SelectionCard
+                <GoalCard
                   key={option.id}
                   selected={goal === option.id}
                   onClick={() => selectAndAdvance(() => setGoal(option.id))}
                   label={option.label}
                   description={option.desc}
+                  aiNote={option.aiNote}
                 />
               ))}
             </div>
@@ -888,33 +938,53 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
         );
 
       case 'specificGoal':
+        // Calculate weeks until event
+        const weeksUntilEvent = specificGoal?.target_date
+          ? Math.ceil((new Date(specificGoal.target_date).getTime() - Date.now()) / (7 * 24 * 60 * 60 * 1000))
+          : null;
+
+        // Calculate phases (35% base, 35% build, 15% peak, 15% taper)
+        const getPhases = (totalWeeks: number) => {
+          const base = Math.max(1, Math.floor(totalWeeks * 0.35));
+          const build = Math.max(1, Math.floor(totalWeeks * 0.35));
+          const peak = Math.max(1, Math.floor(totalWeeks * 0.15));
+          const taper = Math.max(1, totalWeeks - base - build - peak);
+          return { base, build, peak, taper };
+        };
+
+        const phases = weeksUntilEvent && weeksUntilEvent > 0 ? getPhases(weeksUntilEvent) : null;
+
         return (
-          <QuestionCard headline="Your Event" subtext="We'll periodize your program">
+          <QuestionCard headline="Your Event" subtext="We'll create a periodized program to peak on time">
             <div className="space-y-6 mt-6">
               {/* Event Type */}
               <div>
-                <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Event Type</p>
+                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Event Type</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'hyrox', label: 'Hyrox' },
-                    { id: 'marathon', label: 'Marathon' },
-                    { id: 'half_marathon', label: 'Half' },
-                    { id: 'triathlon', label: 'Triathlon' },
-                    { id: 'powerlifting', label: 'Powerlifting' },
-                    { id: 'bodybuilding', label: 'Bodybuilding' },
-                    { id: 'crossfit', label: 'CrossFit' },
-                    { id: 'spartan', label: 'Spartan' },
-                    { id: 'custom', label: 'Other' },
+                    { id: 'hyrox', label: 'Hyrox', emoji: '🏃' },
+                    { id: 'marathon', label: 'Marathon', emoji: '🏅' },
+                    { id: 'half_marathon', label: 'Half', emoji: '🏅' },
+                    { id: 'triathlon', label: 'Triathlon', emoji: '🏊' },
+                    { id: 'powerlifting', label: 'Powerlifting', emoji: '🏋️' },
+                    { id: 'bodybuilding', label: 'Bodybuilding', emoji: '💪' },
+                    { id: 'crossfit', label: 'CrossFit', emoji: '⚡' },
+                    { id: 'spartan', label: 'Spartan', emoji: '🏔️' },
+                    { id: 'custom', label: 'Other', emoji: '🎯' },
                   ].map(option => (
                     <button
                       key={option.id}
-                      onClick={() => setSpecificGoal(prev => ({ ...prev, event_type: option.id } as SpecificGoal))}
+                      onClick={() => {
+                        haptic.light();
+                        setSpecificGoal(prev => ({ ...prev, event_type: option.id } as SpecificGoal));
+                      }}
                       className={cn(
                         'p-3 rounded-xl text-center transition-all border-2',
                         specificGoal?.event_type === option.id ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10'
                       )}
                     >
-                      <span className={cn('text-xs font-bold', specificGoal?.event_type === option.id ? 'text-white' : 'text-white/70')}>
+                      <span className="text-lg mb-1 block">{option.emoji}</span>
+                      <span className={cn('text-[10px] font-bold', specificGoal?.event_type === option.id ? 'text-white' : 'text-white/70')}>
                         {option.label}
                       </span>
                     </button>
@@ -925,7 +995,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
               {/* Target Date */}
               {specificGoal?.event_type && (
                 <div>
-                  <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Target Date</p>
+                  <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Target Date</p>
                   <input
                     type="date"
                     value={specificGoal?.target_date || ''}
@@ -933,6 +1003,48 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full h-12 px-4 bg-white/10 border border-white/20 rounded-xl text-white focus:border-[#E07A5F] outline-none"
                   />
+                </div>
+              )}
+
+              {/* Periodization Preview */}
+              {phases && weeksUntilEvent && weeksUntilEvent > 0 && (
+                <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-white font-bold text-sm">Your Training Phases</p>
+                    <p className="text-[#E07A5F] font-bold text-sm">{weeksUntilEvent} weeks</p>
+                  </div>
+
+                  {/* Phase bars */}
+                  <div className="flex h-2 rounded-full overflow-hidden mb-4">
+                    <div style={{ width: `${(phases.base / weeksUntilEvent) * 100}%` }} className="bg-blue-500" />
+                    <div style={{ width: `${(phases.build / weeksUntilEvent) * 100}%` }} className="bg-yellow-500" />
+                    <div style={{ width: `${(phases.peak / weeksUntilEvent) * 100}%` }} className="bg-orange-500" />
+                    <div style={{ width: `${(phases.taper / weeksUntilEvent) * 100}%` }} className="bg-green-500" />
+                  </div>
+
+                  {/* Phase details */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="text-white/70">Base ({phases.base}w)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="text-white/70">Build ({phases.build}w)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                      <span className="text-white/70">Peak ({phases.peak}w)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-white/70">Taper ({phases.taper}w)</span>
+                    </div>
+                  </div>
+
+                  <p className="text-white/40 text-[10px] mt-3">
+                    Deload weeks automatically scheduled every 4 weeks
+                  </p>
                 </div>
               )}
             </div>
@@ -1190,15 +1302,137 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   // RENDER: CUSTOM IMPORT
   // ═══════════════════════════════════════════════════════════════════════
 
+  // Plan import handler
+  const handleParsePlan = async () => {
+    if (!importText.trim()) {
+      setError('Please paste your workout plan');
+      return;
+    }
+
+    setIsParsing(true);
+    setError(null);
+    setParseProgress(0);
+
+    try {
+      // Progress simulation
+      const progressInterval = setInterval(() => {
+        setParseProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      const result = await parsePlanAction({
+        userId: user?.id,
+        planText: importText,
+      });
+
+      clearInterval(progressInterval);
+      setParseProgress(100);
+
+      if (result && result.weeklyPlan) {
+        const plan: Omit<WorkoutPlan, 'id'> = {
+          ...result,
+          name: 'Imported Program'
+        };
+        setGeneratedPlan(plan);
+
+        setTimeout(() => {
+          setPhase('reveal');
+          haptic.heavy();
+        }, 500);
+      } else {
+        throw new Error('Could not parse your plan');
+      }
+    } catch (e: any) {
+      console.error('Parse failed:', e);
+      setError(e?.message || 'Failed to parse plan. Try a different format.');
+      setIsParsing(false);
+    }
+  };
+
   const renderCustom = () => (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center px-8">
-      <p className="text-white/60 text-center mb-8">Custom plan import coming soon</p>
-      <button
-        onClick={() => setPhase('opening')}
-        className="px-6 py-3 rounded-xl bg-white/10 text-white font-medium"
-      >
-        Go Back
-      </button>
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header */}
+      <div className="pt-[max(1rem,env(safe-area-inset-top))] px-6">
+        <button
+          onClick={() => { setPhase('opening'); setImportText(''); setError(null); }}
+          className="flex items-center gap-2 text-white/60 py-2 -ml-2 px-2 active:text-white transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          <span className="text-sm font-medium">Back</span>
+        </button>
+      </div>
+
+      <div className="flex-1 flex flex-col px-6 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+        <h1 className="text-white font-black text-3xl leading-tight">Import Your Plan</h1>
+        <p className="text-white/50 text-sm mt-2 mb-6">
+          Paste your workout program below. Our AI will convert it into a trackable format.
+        </p>
+
+        {/* Text area */}
+        <textarea
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          placeholder={`Example:
+
+Day 1 - Upper
+Bench Press 4x8-10
+Rows 4x8-10
+OHP 3x10-12
+Pulldowns 3x10-12
+
+Day 2 - Lower
+Squats 4x6-8
+RDL 3x10-12
+Leg Press 3x12-15
+...`}
+          className="flex-1 w-full p-4 bg-white/[0.06] border border-white/10 rounded-xl text-white text-sm resize-none focus:border-[#E07A5F] outline-none placeholder:text-white/30"
+          disabled={isParsing}
+        />
+
+        {/* Supported formats */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Text</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Markdown</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Coach notes</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Spreadsheet copy</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Any format</span>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mt-4 p-3 rounded-xl bg-red-500/20 border border-red-500/40">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Progress */}
+        {isParsing && (
+          <div className="mt-4">
+            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#E07A5F] transition-all duration-300"
+                style={{ width: `${parseProgress}%` }}
+              />
+            </div>
+            <p className="text-white/50 text-xs mt-2">Analyzing your program...</p>
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          onClick={handleParsePlan}
+          disabled={isParsing || !importText.trim()}
+          className={cn(
+            'w-full h-14 mt-6 rounded-xl font-bold text-base uppercase tracking-wider transition-all',
+            isParsing || !importText.trim()
+              ? 'bg-white/10 text-white/30'
+              : 'bg-[#E07A5F] text-white active:scale-[0.98]'
+          )}
+        >
+          {isParsing ? 'Parsing...' : 'Import Plan'}
+        </button>
+      </div>
     </div>
   );
 
@@ -1328,6 +1562,31 @@ function ContinueButton({ onClick, label = 'Continue' }: { onClick: () => void; 
       className="w-full h-14 mt-8 rounded-xl font-bold text-base uppercase tracking-wider bg-[#E07A5F] text-white active:scale-[0.98] transition-transform"
     >
       {label}
+    </button>
+  );
+}
+
+// Goal card with AI explanation
+interface GoalCardProps extends React.HTMLAttributes<HTMLButtonElement> {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+  description: string;
+  aiNote: string;
+}
+
+function GoalCard({ selected, onClick, label, description, aiNote }: GoalCardProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full p-4 rounded-xl text-left transition-all duration-150 active:scale-[0.98] border-2',
+        selected ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10 active:border-white/30'
+      )}
+    >
+      <p className={cn('font-bold text-sm tracking-wider', selected ? 'text-white' : 'text-white/90')}>{label}</p>
+      <p className={cn('text-sm mt-0.5', selected ? 'text-white/70' : 'text-white/50')}>{description}</p>
+      <p className={cn('text-xs mt-2 italic', selected ? 'text-white/60' : 'text-white/30')}>{aiNote}</p>
     </button>
   );
 }
