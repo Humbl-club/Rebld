@@ -11,15 +11,19 @@ import { cn } from '../lib/utils';
 import { ariaAnnouncer } from '../services/ariaAnnouncer';
 import { validateWeight, validateReps } from '../lib/validationConstants';
 import { useSessionState } from './session/useSessionState';
+import { CheckIcon, ChevronUpIcon, ChevronDownIcon } from './icons';
 
 /* ═══════════════════════════════════════════════════════════════
-   ZEN SESSION TRACKER - Premium Minimal Training UI
+   ZEN SESSION TRACKER - Complete Training UI
 
-   Philosophy: Like a music player, not a form
-   - One exercise, full screen, nothing else
-   - Tap to input, swipe to navigate
-   - Ambient progress, visual momentum
-   - The reward is the flow itself
+   Features:
+   - Full exercise list drawer (swipe up)
+   - Exercise info/instructions popup
+   - Current exercise hero display
+   - Set dots for progress
+   - Rest timer with skip
+   - PR detection and celebration
+   - Cardio timer mode
    ═══════════════════════════════════════════════════════════════ */
 
 interface ZenSessionTrackerProps {
@@ -78,18 +82,16 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
   const [inputReps, setInputReps] = useState('');
   const [showPR, setShowPR] = useState(false);
   const [completedSetFlash, setCompletedSetFlash] = useState(false);
-  const [swipeOffset, setSwipeOffset] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
+
+  // New UI states
+  const [showExerciseList, setShowExerciseList] = useState(false);
+  const [showExerciseInfo, setShowExerciseInfo] = useState(false);
 
   // Timer state for cardio
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerElapsed, setTimerElapsed] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Swipe gesture refs
-  const touchStartY = useRef(0);
-  const touchStartX = useRef(0);
-  const isDragging = useRef(false);
 
   // Get last performance for current exercise
   const lastPerformance = currentExercise ? getExerciseHistory(currentExercise.exercise_name) : null;
@@ -118,6 +120,11 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [timerRunning]);
+
+  // Calculate completed exercises count
+  const completedCount = useMemo(() => {
+    return Object.keys(loggedData).length;
+  }, [loggedData]);
 
   // Handle completing a set
   const handleCompleteSet = useCallback(() => {
@@ -208,14 +215,11 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
     const totalRounds = isSuperset ? (currentBlock as SupersetBlock).rounds : targetSets;
 
     if (isSuperset) {
-      // Superset logic
       const isLastInRound = currentExerciseInBlock === currentBlock.exercises.length - 1;
       if (isLastInRound) {
         if (currentRound >= totalRounds) {
-          // Block complete
           moveToNextBlock();
         } else {
-          // Next round
           const restTime = currentExercise.metrics_template?.rest_period_s || 90;
           if (restTime > 0) {
             setRestDuration(restTime);
@@ -228,7 +232,6 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         setCurrentExerciseInBlock(prev => prev + 1);
       }
     } else {
-      // Single exercise logic
       if (currentRound >= totalRounds) {
         moveToNextBlock();
       } else {
@@ -250,7 +253,6 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       setCurrentExerciseInBlock(0);
       setCurrentRound(1);
     } else {
-      // Workout complete
       handleFinishWorkout();
     }
   }, [currentBlockIndex, workoutBlocks.length, haptic]);
@@ -279,34 +281,14 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
     }, 300);
   }, [elapsedTimeMs, loggedData, session, onFinish, haptic]);
 
-  // Touch handlers for swipe gestures
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (showInput || isResting) return;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartX.current = e.touches[0].clientX;
-    isDragging.current = true;
-  }, [showInput, isResting]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current || showInput || isResting) return;
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    // Only track upward swipes for completion
-    if (deltaY < 0) {
-      setSwipeOffset(Math.min(0, deltaY * 0.5));
-    }
-  }, [showInput, isResting]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-
-    // If swiped up enough, open input
-    if (swipeOffset < -50 && !isTimeBased(currentExercise)) {
-      setShowInput(true);
-      haptic.light();
-    }
-    setSwipeOffset(0);
-  }, [swipeOffset, currentExercise, haptic]);
+  // Navigate to specific exercise
+  const navigateToExercise = useCallback((blockIdx: number, exerciseIdx: number) => {
+    setCurrentBlockIndex(blockIdx);
+    setCurrentExerciseInBlock(exerciseIdx);
+    setCurrentRound(1);
+    setShowExerciseList(false);
+    haptic.medium();
+  }, [haptic]);
 
   // Format time display
   const formatTime = (seconds: number) => {
@@ -325,10 +307,10 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
   // Safety check
   if (!currentExercise || workoutBlocks.length === 0) {
     return (
-      <div className="h-screen w-full bg-black flex items-center justify-center">
+      <div className="min-h-screen w-full bg-black flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-white/60 text-lg mb-4">No exercises found</p>
-          <button onClick={onCancel} className="text-[var(--brand-primary)] font-bold">
+          <button onClick={onCancel} className="text-[#E07A5F] font-bold text-lg">
             Go Back
           </button>
         </div>
@@ -345,55 +327,77 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
   return (
     <div
       className={cn(
-        "h-screen w-full bg-black overflow-hidden relative",
+        "min-h-screen w-full bg-black overflow-hidden relative",
         "transition-opacity duration-300",
         isExiting && "opacity-0"
       )}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Ambient Progress Bar - top edge */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-white/10">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 z-20">
         <div
-          className="h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-hover)] transition-all duration-500"
+          className="h-full bg-gradient-to-r from-[#E07A5F] to-[#E07A5F]/80 transition-all duration-500"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
 
-      {/* Header - minimal */}
-      <div className="absolute top-0 left-0 right-0 pt-[calc(env(safe-area-inset-top)+12px)] px-5 flex justify-between items-center z-10">
+      {/* Header */}
+      <header className="absolute top-0 left-0 right-0 pt-[calc(env(safe-area-inset-top)+16px)] px-5 flex justify-between items-center z-20">
         <button
           onClick={onCancel}
-          className="text-white/40 text-sm font-medium active:text-white/60"
+          className="text-white/60 text-sm font-semibold active:text-white transition-colors py-2 px-1"
         >
           Exit
         </button>
-        <span className="text-white/40 text-sm font-mono tabular-nums">
-          {formatElapsed(elapsedTimeMs)}
-        </span>
-      </div>
 
-      {/* Main Content - centered */}
-      <div
+        <div className="flex items-center gap-3">
+          <span className="text-white font-mono text-base tabular-nums">
+            {formatElapsed(elapsedTimeMs)}
+          </span>
+        </div>
+      </header>
+
+      {/* Exercise Counter Pill - shows progress */}
+      <button
+        onClick={() => {
+          setShowExerciseList(true);
+          haptic.light();
+        }}
         className={cn(
-          "h-full flex flex-col items-center justify-center px-8",
-          "transition-transform duration-200"
+          "absolute top-[calc(env(safe-area-inset-top)+60px)] left-1/2 -translate-x-1/2 z-20",
+          "flex items-center gap-2 px-4 py-2 rounded-full",
+          "bg-white/10 backdrop-blur-md border border-white/20",
+          "active:scale-95 transition-transform"
         )}
-        style={{ transform: `translateY(${swipeOffset}px)` }}
       >
-        {/* Set indicator - tiny, above exercise */}
-        {!isCardio && (
+        <span className="text-white font-bold text-sm">
+          {currentExerciseGlobalIndex + 1} / {allExercises.length}
+        </span>
+        <ChevronDownIcon className="w-4 h-4 text-white/60" />
+      </button>
+
+      {/* Main Content */}
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-32">
+        {/* Block label if superset */}
+        {isSuperset && (
+          <div className="mb-4 px-4 py-1.5 rounded-full bg-[#E07A5F]/20 border border-[#E07A5F]/40">
+            <span className="text-[#E07A5F] text-xs font-bold uppercase tracking-wider">
+              Superset · Round {currentRound}/{totalRounds}
+            </span>
+          </div>
+        )}
+
+        {/* Set dots - not for cardio */}
+        {!isCardio && !isSuperset && (
           <div className="flex gap-2 mb-6">
             {Array.from({ length: totalRounds }).map((_, i) => (
               <div
                 key={i}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300",
+                  "w-3 h-3 rounded-full transition-all duration-300",
                   i < currentRound - 1
-                    ? "bg-[var(--brand-primary)]"
+                    ? "bg-[#E07A5F]"
                     : i === currentRound - 1
-                      ? "bg-white scale-125"
+                      ? "bg-white ring-2 ring-white/30 scale-110"
                       : "bg-white/20"
                 )}
               />
@@ -401,28 +405,61 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
           </div>
         )}
 
-        {/* Exercise Name - MASSIVE */}
+        {/* Exercise Name */}
         <h1 className={cn(
-          "text-white text-center font-black leading-tight mb-4",
+          "text-white text-center font-black leading-tight mb-3",
           "transition-all duration-300",
-          currentExercise.exercise_name.length > 20 ? "text-3xl" : "text-4xl",
+          currentExercise.exercise_name.length > 25
+            ? "text-2xl"
+            : currentExercise.exercise_name.length > 15
+              ? "text-3xl"
+              : "text-4xl",
           completedSetFlash && "scale-95 opacity-80"
         )}>
           {currentExercise.exercise_name}
         </h1>
 
+        {/* Exercise Info Button */}
+        <button
+          onClick={() => {
+            setShowExerciseInfo(true);
+            haptic.light();
+          }}
+          className="mb-6 flex items-center gap-1.5 text-white/40 text-sm font-medium active:text-white/60 transition-colors"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+          <span>How to perform</span>
+        </button>
+
+        {/* Target metrics hint */}
+        {!isCardio && currentExercise.metrics_template && (
+          <div className="mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+            <p className="text-white/50 text-sm text-center">
+              Target: {currentExercise.metrics_template.target_sets} sets × {currentExercise.metrics_template.target_reps} reps
+              {currentExercise.metrics_template.rest_period_s && (
+                <span className="text-white/30"> · {currentExercise.metrics_template.rest_period_s}s rest</span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Last performance hint */}
         {lastPerformance && !isCardio && (
-          <p className="text-white/30 text-sm font-medium mb-8">
-            Last: {lastPerformance.weight}kg × {lastPerformance.reps}
-          </p>
+          <div className="mb-8 flex items-center gap-2">
+            <span className="text-white/30 text-sm">Last:</span>
+            <span className="text-white/60 text-sm font-semibold">
+              {lastPerformance.weight}kg × {lastPerformance.reps} reps
+            </span>
+          </div>
         )}
 
         {/* Cardio: Timer */}
         {isCardio && (
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative w-48 h-48 mb-6">
-              {/* Timer ring */}
+          <div className="flex flex-col items-center">
+            <div className="relative w-52 h-52 mb-6">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle
                   cx="50" cy="50" r="45"
@@ -433,7 +470,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 <circle
                   cx="50" cy="50" r="45"
                   fill="none"
-                  stroke="var(--brand-primary)"
+                  stroke="#E07A5F"
                   strokeWidth="4"
                   strokeLinecap="round"
                   style={{
@@ -443,15 +480,16 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   }}
                 />
               </svg>
-              {/* Timer text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-white text-5xl font-black tabular-nums">
-                  {formatTime(timerRunning ? targetDuration - timerElapsed : targetDuration)}
+                  {formatTime(timerRunning ? Math.max(0, targetDuration - timerElapsed) : targetDuration)}
+                </span>
+                <span className="text-white/40 text-xs uppercase tracking-wider mt-1">
+                  {timerRunning ? 'remaining' : 'target'}
                 </span>
               </div>
             </div>
 
-            {/* Timer controls */}
             <button
               onClick={() => {
                 if (timerRunning) {
@@ -464,12 +502,12 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 }
               }}
               className={cn(
-                "px-12 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95",
+                "w-40 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95",
                 timerElapsed >= targetDuration
                   ? "bg-green-500 text-white"
                   : timerRunning
                     ? "bg-red-500/80 text-white"
-                    : "bg-[var(--brand-primary)] text-white"
+                    : "bg-[#E07A5F] text-white"
               )}
             >
               {timerElapsed >= targetDuration ? 'Complete' : timerRunning ? 'Stop' : 'Start'}
@@ -477,7 +515,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
           </div>
         )}
 
-        {/* Strength: Tap to log prompt */}
+        {/* Strength: Log button */}
         {!isCardio && !showInput && (
           <button
             onClick={() => {
@@ -485,48 +523,50 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
               haptic.light();
             }}
             className={cn(
-              "mt-4 px-8 py-4 rounded-2xl",
-              "bg-white/10 backdrop-blur-sm",
-              "border border-white/20",
-              "text-white font-semibold text-lg",
-              "active:scale-95 active:bg-white/20",
-              "transition-all duration-200"
+              "w-full max-w-xs py-5 rounded-2xl",
+              "bg-[#E07A5F] text-white",
+              "font-bold text-lg",
+              "active:scale-95 transition-all",
+              "shadow-[0_0_30px_rgba(224,122,95,0.3)]"
             )}
           >
-            Tap to log set {currentRound}
+            Log Set {currentRound}
           </button>
         )}
 
-        {/* Skip option - subtle */}
+        {/* Skip option */}
         <button
           onClick={handleSkipExercise}
-          className="mt-8 text-white/20 text-sm font-medium active:text-white/40"
+          className="mt-6 text-white/30 text-sm font-medium active:text-white/50 transition-colors py-2"
         >
           Skip exercise
         </button>
       </div>
 
-      {/* Input Overlay - slides up from bottom */}
+      {/* Input Overlay */}
       {showInput && (
-        <div
-          className={cn(
-            "absolute inset-0 z-30",
-            "bg-black/95 backdrop-blur-xl",
-            "flex flex-col",
-            "animate-fade-in"
-          )}
-        >
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <p className="text-white/50 text-sm uppercase tracking-widest mb-2">
+        <div className="fixed inset-0 z-40 bg-black/98 flex flex-col animate-fade-in">
+          <div className="pt-[calc(env(safe-area-inset-top)+16px)] px-5 flex justify-between items-center">
+            <button
+              onClick={() => setShowInput(false)}
+              className="text-white/60 text-sm font-semibold active:text-white"
+            >
+              Cancel
+            </button>
+            <span className="text-white/40 text-sm uppercase tracking-wider">
               Set {currentRound} of {totalRounds}
-            </p>
-            <h2 className="text-white text-2xl font-bold mb-10 text-center">
+            </span>
+            <div className="w-12" />
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center px-6">
+            <h2 className="text-white text-xl font-bold mb-10 text-center">
               {currentExercise.exercise_name}
             </h2>
 
             {/* Weight input */}
-            <div className="w-full max-w-xs mb-6">
-              <label className="text-white/40 text-xs uppercase tracking-wider mb-2 block">
+            <div className="w-full max-w-sm mb-6">
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block text-center">
                 Weight
               </label>
               <div className="relative">
@@ -539,11 +579,11 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   autoFocus
                   className={cn(
                     "w-full h-20 px-6 pr-16",
-                    "bg-white/5 border-2 border-white/10",
+                    "bg-white/5 border-2 border-white/20",
                     "rounded-2xl",
-                    "text-white text-4xl font-black text-center",
+                    "text-white text-5xl font-black text-center",
                     "placeholder:text-white/20",
-                    "focus:border-[var(--brand-primary)] focus:outline-none",
+                    "focus:border-[#E07A5F] focus:outline-none",
                     "transition-colors"
                   )}
                 />
@@ -551,7 +591,6 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   kg
                 </span>
               </div>
-              {/* Quick adjust */}
               <div className="flex gap-2 mt-3 justify-center">
                 {[-5, -2.5, +2.5, +5].map(delta => (
                   <button
@@ -565,8 +604,8 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                       "px-4 py-2 rounded-xl text-sm font-bold",
                       "transition-all active:scale-90",
                       delta < 0
-                        ? "bg-red-500/20 text-red-400"
-                        : "bg-green-500/20 text-green-400"
+                        ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                        : "bg-green-500/20 text-green-400 border border-green-500/30"
                     )}
                   >
                     {delta > 0 ? '+' : ''}{delta}
@@ -576,8 +615,8 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             </div>
 
             {/* Reps input */}
-            <div className="w-full max-w-xs mb-10">
-              <label className="text-white/40 text-xs uppercase tracking-wider mb-2 block">
+            <div className="w-full max-w-sm mb-10">
+              <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block text-center">
                 Reps
               </label>
               <input
@@ -588,37 +627,198 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 placeholder="0"
                 className={cn(
                   "w-full h-20 px-6",
-                  "bg-white/5 border-2 border-white/10",
+                  "bg-white/5 border-2 border-white/20",
                   "rounded-2xl",
-                  "text-white text-4xl font-black text-center",
+                  "text-white text-5xl font-black text-center",
                   "placeholder:text-white/20",
-                  "focus:border-[var(--brand-primary)] focus:outline-none",
+                  "focus:border-[#E07A5F] focus:outline-none",
                   "transition-colors"
                 )}
               />
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-4 w-full max-w-xs">
-              <button
-                onClick={() => setShowInput(false)}
-                className="flex-1 py-4 rounded-2xl bg-white/10 text-white font-semibold active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCompleteSet}
-                disabled={!inputWeight || !inputReps}
-                className={cn(
-                  "flex-[2] py-4 rounded-2xl font-bold text-lg",
-                  "transition-all active:scale-95",
-                  inputWeight && inputReps
-                    ? "bg-[var(--brand-primary)] text-white"
-                    : "bg-white/5 text-white/30"
-                )}
-              >
-                Log Set
-              </button>
+            {/* Log button */}
+            <button
+              onClick={handleCompleteSet}
+              disabled={!inputWeight || !inputReps}
+              className={cn(
+                "w-full max-w-sm py-5 rounded-2xl font-bold text-lg",
+                "transition-all active:scale-95",
+                inputWeight && inputReps
+                  ? "bg-[#E07A5F] text-white shadow-[0_0_30px_rgba(224,122,95,0.3)]"
+                  : "bg-white/10 text-white/30"
+              )}
+            >
+              Log Set
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Exercise List Drawer */}
+      {showExerciseList && (
+        <div className="fixed inset-0 z-50 animate-fade-in" onClick={() => setShowExerciseList(false)}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-[#111] rounded-t-3xl max-h-[75vh] animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-[#111] pt-4 pb-3 px-6 border-b border-white/10 rounded-t-3xl">
+              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+              <div className="flex justify-between items-center">
+                <h3 className="text-white font-bold text-lg">Exercises</h3>
+                <span className="text-white/40 text-sm">
+                  {completedCount}/{allExercises.length} done
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto pb-[max(2rem,env(safe-area-inset-bottom))] px-4">
+              {workoutBlocks.map((block, blockIdx) => (
+                <div key={blockIdx} className="py-3">
+                  {block.type === 'superset' && (
+                    <div className="px-2 py-1 mb-2">
+                      <span className="text-[#E07A5F] text-xs font-bold uppercase tracking-wider">
+                        Superset · {(block as SupersetBlock).rounds} rounds
+                      </span>
+                    </div>
+                  )}
+
+                  {block.exercises.map((exercise, exIdx) => {
+                    const isCompleted = !!loggedData[exercise.exercise_name];
+                    const isCurrent = blockIdx === currentBlockIndex && exIdx === currentExerciseInBlock;
+
+                    return (
+                      <button
+                        key={exIdx}
+                        onClick={() => navigateToExercise(blockIdx, exIdx)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-4 rounded-xl mb-2 text-left transition-all active:scale-[0.98]",
+                          isCurrent
+                            ? "bg-[#E07A5F]/20 border border-[#E07A5F]/40"
+                            : isCompleted
+                              ? "bg-white/5 border border-white/10"
+                              : "bg-white/5 border border-transparent"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                          isCompleted ? "bg-green-500/20" : isCurrent ? "bg-[#E07A5F]/30" : "bg-white/10"
+                        )}>
+                          {isCompleted ? (
+                            <CheckIcon className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <span className={cn(
+                              "text-sm font-bold",
+                              isCurrent ? "text-[#E07A5F]" : "text-white/40"
+                            )}>
+                              {blockIdx * 10 + exIdx + 1}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "font-semibold truncate",
+                            isCurrent ? "text-white" : isCompleted ? "text-white/60" : "text-white/80"
+                          )}>
+                            {exercise.exercise_name}
+                          </p>
+                          <p className="text-white/40 text-xs mt-0.5">
+                            {exercise.metrics_template?.target_sets || 3} sets × {exercise.metrics_template?.target_reps || '8-12'} reps
+                          </p>
+                        </div>
+
+                        {isCurrent && (
+                          <span className="px-2 py-1 rounded-full bg-[#E07A5F] text-white text-xs font-bold">
+                            NOW
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exercise Info Modal */}
+      {showExerciseInfo && currentExercise && (
+        <div className="fixed inset-0 z-50 animate-fade-in" onClick={() => setShowExerciseInfo(false)}>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-h-[80vh] overflow-y-auto">
+            <div
+              className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-white font-bold text-xl pr-4">
+                  {currentExercise.exercise_name}
+                </h3>
+                <button
+                  onClick={() => setShowExerciseInfo(false)}
+                  className="text-white/40 active:text-white p-1"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Metrics */}
+              <div className="flex gap-4 mb-6">
+                <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
+                  <p className="text-white/40 text-xs uppercase mb-1">Sets</p>
+                  <p className="text-white font-bold text-lg">
+                    {currentExercise.metrics_template?.target_sets || 3}
+                  </p>
+                </div>
+                <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
+                  <p className="text-white/40 text-xs uppercase mb-1">Reps</p>
+                  <p className="text-white font-bold text-lg">
+                    {currentExercise.metrics_template?.target_reps || '8-12'}
+                  </p>
+                </div>
+                <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
+                  <p className="text-white/40 text-xs uppercase mb-1">Rest</p>
+                  <p className="text-white font-bold text-lg">
+                    {currentExercise.metrics_template?.rest_period_s || 90}s
+                  </p>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              {currentExercise.notes && (
+                <div className="mb-4">
+                  <h4 className="text-white/60 text-xs uppercase tracking-wider mb-2">Notes</h4>
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    {currentExercise.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Generic instructions for exercises without notes */}
+              {!currentExercise.notes && (
+                <div>
+                  <h4 className="text-white/60 text-xs uppercase tracking-wider mb-2">Tips</h4>
+                  <ul className="text-white/70 text-sm space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#E07A5F] mt-0.5">•</span>
+                      Control the movement throughout the full range of motion
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#E07A5F] mt-0.5">•</span>
+                      Focus on the muscle contraction, not just moving the weight
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#E07A5F] mt-0.5">•</span>
+                      Use a weight that challenges you while maintaining form
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -626,7 +826,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
 
       {/* Rest Timer Overlay */}
       {isResting && (
-        <div className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center">
+        <div className="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center">
           <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Rest</p>
           <RestCountdown
             duration={restDuration}
@@ -639,18 +839,27 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         </div>
       )}
 
-      {/* PR Flash - full screen golden glow */}
+      {/* PR Flash */}
       {showPR && (
-        <div className="absolute inset-0 z-50 pointer-events-none animate-fade-in">
+        <div className="fixed inset-0 z-50 pointer-events-none animate-fade-in">
           <div className="absolute inset-0 bg-gradient-to-b from-amber-500/30 via-transparent to-transparent" />
           <div className="h-full flex items-center justify-center">
             <div className="text-center animate-bounce-subtle">
-              <p className="text-amber-400 text-6xl font-black mb-2">PR</p>
-              <p className="text-white/60 text-lg">Personal Record!</p>
+              <p className="text-amber-400 text-7xl font-black mb-2">PR</p>
+              <p className="text-white/70 text-lg font-medium">Personal Record!</p>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes bounce-subtle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+        .animate-bounce-subtle { animation: bounce-subtle 0.5s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
@@ -678,19 +887,17 @@ function RestCountdown({
     return () => clearTimeout(timer);
   }, [remaining, onComplete, haptic]);
 
-  // Haptic at 3, 2, 1
   useEffect(() => {
     if (remaining <= 3 && remaining > 0) {
       haptic.light();
     }
   }, [remaining, haptic]);
 
-  const progress = 1 - remaining / duration;
+  const progressPct = 1 - remaining / duration;
 
   return (
     <div className="flex flex-col items-center">
-      {/* Circular countdown */}
-      <div className="relative w-56 h-56 mb-8">
+      <div className="relative w-60 h-60 mb-8">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
           <circle
             cx="50" cy="50" r="45"
@@ -701,18 +908,18 @@ function RestCountdown({
           <circle
             cx="50" cy="50" r="45"
             fill="none"
-            stroke="var(--brand-primary)"
+            stroke="#E07A5F"
             strokeWidth="3"
             strokeLinecap="round"
             style={{
               strokeDasharray: 2 * Math.PI * 45,
-              strokeDashoffset: 2 * Math.PI * 45 * progress,
+              strokeDashoffset: 2 * Math.PI * 45 * progressPct,
               transition: 'stroke-dashoffset 1s linear'
             }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white text-7xl font-black tabular-nums">
+          <span className="text-white text-8xl font-black tabular-nums">
             {remaining}
           </span>
         </div>
@@ -720,7 +927,7 @@ function RestCountdown({
 
       <button
         onClick={onSkip}
-        className="text-white/30 text-sm font-medium active:text-white/50"
+        className="text-white/40 text-sm font-medium active:text-white/60 py-2 px-4"
       >
         Skip rest
       </button>
