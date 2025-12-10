@@ -5,8 +5,6 @@ type Page = 'home' | 'goals' | 'buddies' | 'plan' | 'profile';
 interface NavbarProps {
     currentPage: Page;
     onNavigate: (page: Page) => void;
-    onToggleTheme?: () => void;
-    theme?: 'light' | 'dark';
 }
 
 // Refined icon components with elegant thin strokes
@@ -74,7 +72,6 @@ interface TabItemProps {
     label: string;
     isActive: boolean;
     onClick: () => void;
-    key?: React.Key;
 }
 
 function TabItem({ icon, label, isActive, onClick }: TabItemProps) {
@@ -83,19 +80,19 @@ function TabItem({ icon, label, isActive, onClick }: TabItemProps) {
             onClick={onClick}
             className={`
                 flex flex-col items-center justify-center
-                min-w-[56px] py-2.5 px-1.5 rounded-xl
+                min-w-[52px] py-2 px-1.5 rounded-xl
                 transition-all duration-200 ease-out
                 ${isActive
-                    ? 'text-[var(--accent)] bg-[var(--accent)]/10'
-                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] active:scale-95'
+                    ? 'text-[var(--brand-primary)]'
+                    : 'text-[var(--text-tertiary)] active:text-[var(--text-secondary)] active:scale-95'
                 }
             `}
             aria-current={isActive ? 'page' : undefined}
         >
-            <div className={`w-[22px] h-[22px] mb-0.5 transition-transform duration-200 ${isActive ? 'scale-105' : ''}`}>
+            <div className={`w-[22px] h-[22px] mb-0.5 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
                 {icon}
             </div>
-            <span className={`text-[var(--text-3xs)] tracking-wider uppercase ${isActive ? 'font-semibold' : 'font-medium'}`}>
+            <span className={`text-[9px] tracking-wider uppercase font-medium ${isActive ? 'font-semibold text-[var(--brand-primary)]' : ''}`}>
                 {label}
             </span>
         </button>
@@ -104,45 +101,45 @@ function TabItem({ icon, label, isActive, onClick }: TabItemProps) {
 
 export default function Navbar({ currentPage, onNavigate }: NavbarProps) {
     const tabs: { id: Page; icon: React.ReactNode; label: string }[] = [
-        { id: 'home', icon: <DashboardIcon className="w-full h-full" />, label: 'Dashboard' },
+        { id: 'home', icon: <DashboardIcon className="w-full h-full" />, label: 'Home' },
         { id: 'goals', icon: <ProgressIcon className="w-full h-full" />, label: 'Progress' },
-        { id: 'buddies', icon: <CommunityIcon className="w-full h-full" />, label: 'Community' },
-        { id: 'plan', icon: <ScheduleIcon className="w-full h-full" />, label: 'Schedule' },
-        { id: 'profile', icon: <AccountIcon className="w-full h-full" />, label: 'Account' },
+        { id: 'buddies', icon: <CommunityIcon className="w-full h-full" />, label: 'Buddies' },
+        { id: 'plan', icon: <ScheduleIcon className="w-full h-full" />, label: 'Plan' },
+        { id: 'profile', icon: <AccountIcon className="w-full h-full" />, label: 'Profile' },
     ];
 
     return (
         <nav
-            className="fixed bottom-0 left-0 right-0 z-20 px-3 pb-[env(safe-area-inset-bottom)]"
+            className="fixed bottom-0 left-0 right-0 z-20 px-4 pb-[env(safe-area-inset-bottom)]"
             role="navigation"
             aria-label="Main navigation"
         >
-            {/* Floating pill navbar - optimized for iPhone (375-430px) */}
+            {/* Floating pill navbar */}
             <div
                 className="
-                    mx-auto
-                    bg-[var(--surface)]/95 backdrop-blur-2xl
-                    border border-[var(--border)]/40
-                    rounded-[20px]
-                    px-1 py-1
+                    mx-auto mb-2
+                    bg-[var(--bg-secondary)]/90 backdrop-blur-xl
+                    border border-[var(--border-default)]/50
+                    rounded-2xl
+                    px-2 py-1.5
                 "
                 style={{
-                    maxWidth: '380px',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+                    maxWidth: '360px',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05) inset',
                 }}
             >
                 <div className="flex items-center justify-around">
-                    {tabs.map((tab) => {
-                        const tabProps: TabItemProps = {
-                            icon: tab.icon,
-                            label: tab.label,
-                            isActive: currentPage === tab.id,
-                            onClick: () => onNavigate(tab.id),
-                        };
-                        return <TabItem key={tab.id} {...tabProps} />;
-                    })}
+                    {tabs.map((tab) => (
+                        <TabItem
+                            key={tab.id}
+                            icon={tab.icon}
+                            label={tab.label}
+                            isActive={currentPage === tab.id}
+                            onClick={() => onNavigate(tab.id)}
+                        />
+                    ))}
                 </div>
             </div>
         </nav>

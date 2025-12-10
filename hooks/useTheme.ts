@@ -1,37 +1,23 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 
-type ThemeMode = 'light' | 'dark';
-
-const STORAGE_KEY = 'rebld:theme:v1';
-
+/**
+ * REBLD uses dark theme only - no light mode
+ * This hook ensures dark theme is always set
+ */
 export function useTheme() {
-  const [theme, setTheme] = useState<ThemeMode>('light');
+  const theme = 'dark' as const;
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-      if (stored === 'dark' || stored === 'light') {
-        setTheme(stored);
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        setTheme('dark');
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {}
     const root = document.documentElement;
-    // Set data-theme attribute for CSS variable switching
-    root.setAttribute('data-theme', theme);
-    // Also toggle class for any legacy selectors
-    root.classList.toggle('theme-dark', theme === 'dark');
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    // Always set dark theme
+    root.setAttribute('data-theme', 'dark');
+    root.classList.add('theme-dark');
+    root.classList.remove('theme-light');
   }, []);
+
+  // toggleTheme is a no-op since we're dark only
+  const toggleTheme = () => {};
+  const setTheme = () => {};
 
   return { theme, setTheme, toggleTheme };
 }

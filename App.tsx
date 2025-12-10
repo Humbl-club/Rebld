@@ -586,7 +586,7 @@ export default function App() {
       case 'profile':
         return (
           <ErrorBoundary componentName="ProfilePage">
-            <ProfilePage logs={logs || []} userProfile={userProfile} onUpdateProfile={updateUserProfile} onCreateNewPlan={handleCreateNewPlan} theme={theme} onToggleTheme={toggleTheme} />
+            <ProfilePage logs={logs || []} userProfile={userProfile} onUpdateProfile={updateUserProfile} onCreateNewPlan={handleCreateNewPlan} />
           </ErrorBoundary>
         );
       default:
@@ -754,17 +754,40 @@ export default function App() {
                     <Navbar
                         currentPage={currentPage}
                         onNavigate={setCurrentPage}
-                        onToggleTheme={toggleTheme}
-                        theme={theme}
                     />
-                    {/* Floating Chat Button - positioned above floating navbar */}
+                    {/* Floating Chat Button - semi-transparent, above navbar, toggle expand/retract */}
                     <button
-                        onClick={() => setIsChatOpen(true)}
-                        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 w-11 h-11 bg-[var(--accent)] text-white rounded-[14px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--background-primary)] focus:ring-[var(--accent)] transition-all hover:opacity-90 active:scale-95 z-30"
-                        style={{ boxShadow: '0 3px 16px rgba(0,0,0,0.12)' }}
-                        aria-label="Open AI Assistant"
+                        onClick={() => setIsChatOpen(!isChatOpen)}
+                        className={`
+                            fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4
+                            w-11 h-11 rounded-[14px]
+                            flex items-center justify-center
+                            focus:outline-none focus:ring-2 focus:ring-offset-2
+                            focus:ring-offset-[var(--background-primary)] focus:ring-[var(--accent)]
+                            transition-all duration-200 active:scale-95 z-30
+                            ${isChatOpen
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'bg-[var(--bg-secondary)]/70 text-[var(--text-primary)] backdrop-blur-xl border border-[var(--border-default)]/50'
+                            }
+                        `}
+                        style={{
+                            boxShadow: isChatOpen
+                                ? '0 3px 16px rgba(0,0,0,0.2)'
+                                : '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset',
+                            WebkitBackdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
+                            backdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
+                        }}
+                        aria-label={isChatOpen ? "Close AI Assistant" : "Open AI Assistant"}
+                        aria-expanded={isChatOpen}
                     >
-                        <ZapIcon className="h-[18px] w-[18px]" />
+                        {isChatOpen ? (
+                            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        ) : (
+                            <ZapIcon className="h-[18px] w-[18px]" />
+                        )}
                     </button>
                 </>
             )}

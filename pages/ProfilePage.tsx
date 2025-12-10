@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkoutLog, UserProfile, BodyMetrics } from '../types';
-import { UserIcon, SignOutIcon, ScaleIcon, BookCheckIcon, CogIcon, UsersIcon, TrophyIcon, SunIcon, MoonIcon } from '../components/icons';
+import { UserIcon, SignOutIcon, ScaleIcon, BookCheckIcon, CogIcon, UsersIcon, TrophyIcon } from '../components/icons';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { notify } from '../components/layout/Toast';
 import InjuryProfile from '../components/InjuryProfile';
@@ -35,8 +35,6 @@ interface ProfilePageProps {
   userProfile: UserProfile | null;
   onUpdateProfile: (data: Partial<UserProfile>) => void;
   onCreateNewPlan?: () => void;
-  theme?: 'light' | 'dark';
-  onToggleTheme?: () => void;
 }
 
 const MetricCard: React.FC<{
@@ -79,7 +77,7 @@ const MetricCard: React.FC<{
   </button>
 );
 
-export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCreateNewPlan, theme, onToggleTheme }: ProfilePageProps) {
+export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCreateNewPlan }: ProfilePageProps) {
   const { t } = useTranslation();
   const [isEditingMetrics, setIsEditingMetrics] = useState(false);
   const [isPhotoCaptureOpen, setIsPhotoCaptureOpen] = useState(false);
@@ -1029,64 +1027,6 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                 Preferences
               </p>
               <div className="space-y-[var(--space-2)]">
-                {/* Theme Toggle */}
-                {onToggleTheme && (
-                  <button
-                    onClick={onToggleTheme}
-                    className={cn(
-                      'w-full',
-                      'flex items-center justify-between',
-                      'px-[var(--space-3)] py-[var(--space-2-5)]',
-                      'rounded-[var(--radius-lg)]',
-                      'bg-[var(--surface-secondary)]',
-                      'hover:bg-[var(--surface-hover)]',
-                      'transition-all duration-[var(--duration-fast)]',
-                      'group'
-                    )}
-                  >
-                    <div className="flex items-center gap-[var(--space-3)]">
-                      <div
-                        className={cn(
-                          'w-8 h-8',
-                          'rounded-[var(--radius-lg)]',
-                          'bg-gradient-to-br from-[var(--brand-primary-subtle)] to-[var(--brand-primary)]/10',
-                          'flex items-center justify-center'
-                        )}
-                      >
-                        {theme === 'dark' ? (
-                          <MoonIcon className="w-4 h-4 text-[var(--brand-primary)]" />
-                        ) : (
-                          <SunIcon className="w-4 h-4 text-[var(--brand-primary)]" />
-                        )}
-                      </div>
-                      <span className="text-[var(--text-sm)] font-[var(--weight-medium)] text-[var(--text-primary)]">
-                        {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                      </span>
-                    </div>
-                    {/* Toggle switch visual */}
-                    <div
-                      className={cn(
-                        'w-11 h-6',
-                        'rounded-full',
-                        'relative',
-                        'transition-all duration-[var(--duration-normal)]',
-                        theme === 'dark' ? 'bg-[var(--brand-primary)]' : 'bg-[var(--border-strong)]'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'absolute top-1',
-                          'w-4 h-4',
-                          'rounded-full',
-                          'bg-white',
-                          'shadow-[var(--shadow-sm)]',
-                          'transition-all duration-[var(--duration-normal)]',
-                          theme === 'dark' ? 'left-6' : 'left-1'
-                        )}
-                      />
-                    </div>
-                  </button>
-                )}
                 <button
                   className={cn(
                     'w-full',
