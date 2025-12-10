@@ -241,9 +241,9 @@ const WorkoutCard: React.FC<{
             <CardHeader className={cn("p-[var(--space-4)] sm:p-[var(--space-5)] relative z-10")}>
                 <div className="flex justify-between items-start gap-[var(--space-3)]">
                     <div className="flex-1 min-w-0 space-y-[var(--space-2)]">
-                        {/* Label row */}
+                        {/* Label row - brighter subtitle */}
                         <div className="flex items-center gap-[var(--space-2)] flex-wrap">
-                            <span className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-widest)] text-[var(--text-tertiary)] font-[var(--weight-bold)]">
+                            <span className="text-[var(--text-2xs)] uppercase tracking-[var(--tracking-widest)] text-white/70 font-[var(--weight-bold)]">
                                 {title}
                             </span>
                             {isPrimary && (
@@ -257,41 +257,49 @@ const WorkoutCard: React.FC<{
                             )}
                         </div>
 
-                        {/* Title */}
-                        <h3 className="text-[var(--text-lg)] font-[var(--weight-bold)] text-[var(--text-primary)] leading-[var(--leading-tight)]">
+                        {/* Title - high contrast white */}
+                        <h3 className="text-[var(--text-lg)] font-[var(--weight-extrabold)] text-white leading-[var(--leading-tight)]">
                             {(session as any).focus || (session as any).session_name || 'Workout'}
                         </h3>
 
-                        {/* Metrics row */}
+                        {/* Metrics row - brighter for readability */}
                         <div className="flex items-center gap-[var(--space-2)] flex-wrap text-[var(--text-xs)] text-[var(--text-secondary)]">
-                            <span className="flex items-center gap-[var(--space-1)]">
-                                <ClockIcon className="w-3.5 h-3.5" />
+                            <span className="flex items-center gap-[var(--space-1)] text-white/80">
+                                <ClockIcon className="w-3.5 h-3.5 text-white/60" />
                                 ~{estimatedDuration} min
                             </span>
-                            <span className="w-1 h-1 rounded-full bg-[var(--border-strong)]" />
-                            <span className="flex items-center gap-[var(--space-1)]">
-                                <DumbbellIcon className="w-3.5 h-3.5" />
+                            <span className="w-1 h-1 rounded-full bg-white/30" />
+                            <span className="flex items-center gap-[var(--space-1)] text-white/80">
+                                <DumbbellIcon className="w-3.5 h-3.5 text-white/60" />
                                 {exercises.length} exercises
                             </span>
                         </div>
                     </div>
 
-                    {/* Expand button */}
+                    {/* Expand button - prominent and visible */}
                     {hasWorkout && (
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
                             className={cn(
-                                "p-[var(--space-2)]",
-                                "min-w-[var(--height-touch-min)] min-h-[var(--height-touch-min)]",
-                                "flex items-center justify-center",
+                                "px-[var(--space-3)] py-[var(--space-2)]",
+                                "min-h-[var(--height-touch-min)]",
+                                "flex items-center gap-[var(--space-1-5)]",
                                 "rounded-[var(--radius-lg)]",
-                                "bg-[var(--surface-secondary)]",
+                                "border",
+                                isExpanded
+                                    ? "bg-[var(--brand-primary-subtle)] border-[var(--brand-primary)]/30 text-[var(--brand-primary)]"
+                                    : "bg-[var(--surface-tertiary)] border-[var(--border-strong)] text-white",
                                 "hover:bg-[var(--brand-primary-subtle)]",
+                                "hover:border-[var(--brand-primary)]/50",
                                 "hover:text-[var(--brand-primary)]",
-                                "transition-all duration-[var(--duration-fast)]"
+                                "transition-all duration-[var(--duration-fast)]",
+                                "active:scale-95"
                             )}
                             aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         >
+                            <span className="text-[10px] font-[var(--weight-bold)] uppercase tracking-wider">
+                                {isExpanded ? 'Hide' : 'View'}
+                            </span>
                             <ChevronDownIcon className={cn(
                                 "w-4 h-4 transition-transform duration-[var(--duration-fast)]",
                                 isExpanded && "rotate-180"
@@ -417,32 +425,41 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
                 "min-h-[var(--height-button)]",
                 "py-[var(--space-2-5)]",
                 "rounded-[var(--radius-xl)]",
-                "font-[var(--weight-semibold)] text-[var(--text-sm)]",
+                "font-[var(--weight-bold)] text-[var(--text-sm)]",
                 "transition-all duration-[var(--duration-fast)] ease-[var(--ease-default)]",
                 "border",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2",
                 "active:scale-[0.96]",
 
-                // Selected state
+                // Selected state - glowing highlight
                 isSelected && [
                     "border-[var(--brand-primary)]",
                     "bg-[var(--brand-primary-subtle)]",
                     "text-[var(--brand-primary)]",
-                    "shadow-[var(--shadow-md)]",
+                    "shadow-[0_0_20px_rgba(224,122,95,0.4)]",
                 ],
 
-                // Today (not selected)
+                // Today (not selected) - pure white text
                 isToday && !isSelected && [
-                    "border-[var(--brand-primary)]/40",
-                    "bg-[var(--surface-primary)]",
-                    "text-[var(--text-primary)]",
+                    "border-[var(--brand-primary)]/50",
+                    "bg-[var(--surface-secondary)]",
+                    "text-white",
                 ],
 
-                // Future day (not selected, not today)
-                !isSelected && !isToday && !isPast && [
+                // Future day with workout - bright white text
+                !isSelected && !isToday && !isPast && hasExercises && [
+                    "border-[var(--border-strong)]",
+                    "bg-[var(--surface-primary)]",
+                    "text-white",
+                    "hover:border-[var(--brand-primary)]/50",
+                    "hover:bg-[var(--surface-secondary)]",
+                ],
+
+                // Future day without workout - muted
+                !isSelected && !isToday && !isPast && !hasExercises && [
                     "border-[var(--border-default)]",
                     "bg-[var(--surface-primary)]",
-                    "text-[var(--text-secondary)]",
+                    "text-[var(--text-tertiary)]",
                     "hover:border-[var(--border-strong)]",
                     "hover:bg-[var(--surface-secondary)]",
                 ],
@@ -452,41 +469,41 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
                     "border-[var(--border-subtle)]",
                     "bg-[var(--surface-primary)]",
                     "text-[var(--text-tertiary)]",
-                    "opacity-60 hover:opacity-80",
+                    "opacity-50 hover:opacity-70",
                 ]
             )}
         >
             <div className="text-center">
-                {/* Day abbreviation */}
+                {/* Day abbreviation - ALWAYS visible, high contrast */}
                 <div className={cn(
-                    "text-[var(--text-2xs)] font-[var(--weight-bold)] uppercase tracking-[var(--tracking-wider)] mb-[var(--space-1)]",
-                    isSelected ? "opacity-100" : "opacity-70"
+                    "text-[11px] font-[var(--weight-extrabold)] uppercase tracking-[0.08em] mb-[var(--space-1)]",
+                    isSelected ? "text-[var(--brand-primary)]" : hasExercises && !isPast ? "text-white" : ""
                 )}>
                     {shortDay}
                 </div>
 
-                {/* Workout indicator dot */}
+                {/* Workout indicator - larger, glowing when has workout */}
                 <div className={cn(
-                    "w-2 h-2 rounded-full mx-auto transition-all duration-[var(--duration-fast)]",
+                    "w-2.5 h-2.5 rounded-full mx-auto transition-all duration-[var(--duration-fast)]",
                     hasExercises
                         ? isSelected
-                            ? "bg-[var(--brand-primary)] shadow-[var(--shadow-glow-brand)]"
-                            : "bg-[var(--brand-primary)]"
-                        : "bg-[var(--border-default)]"
+                            ? "bg-[var(--brand-primary)] shadow-[0_0_12px_rgba(224,122,95,0.6)]"
+                            : "bg-[var(--brand-primary)] shadow-[0_0_8px_rgba(224,122,95,0.4)]"
+                        : "bg-[var(--border-default)] w-1.5 h-1.5"
                 )} />
             </div>
 
-            {/* Today badge */}
+            {/* Today badge - more prominent */}
             {isToday && !isSelected && (
                 <div className={cn(
-                    "absolute -top-1 left-1/2 -translate-x-1/2",
-                    "px-[var(--space-1-5)] py-[var(--space-0-5)]",
+                    "absolute -top-1.5 left-1/2 -translate-x-1/2",
+                    "px-[var(--space-2)] py-[var(--space-0-5)]",
                     "rounded-full",
                     "bg-[var(--brand-primary)]",
-                    "text-[var(--text-on-brand)]",
-                    "text-[7px] font-[var(--weight-bold)]",
-                    "uppercase tracking-[var(--tracking-wide)]",
-                    "shadow-[var(--shadow-sm)]"
+                    "text-white",
+                    "text-[8px] font-[var(--weight-extrabold)]",
+                    "uppercase tracking-[0.05em]",
+                    "shadow-[0_2px_8px_rgba(224,122,95,0.5)]"
                 )}>
                     Today
                 </div>
@@ -622,8 +639,8 @@ export default function HomePage({ plan, onStartSession, onOpenChat, userProfile
                             <span className="text-[var(--text-primary)]">RE</span>
                             <span className="text-[var(--brand-primary)]">BLD</span>
                         </div>
-                        {/* Date */}
-                        <p className="text-[var(--text-xs)] font-[var(--weight-medium)] text-[var(--text-tertiary)]">
+                        {/* Date - brighter, more prominent */}
+                        <p className="text-[var(--text-xs)] font-[var(--weight-semibold)] text-white/80">
                             {new Date().toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 month: 'short',
@@ -631,8 +648,8 @@ export default function HomePage({ plan, onStartSession, onOpenChat, userProfile
                             })}
                         </p>
                     </div>
-                    {/* Greeting */}
-                    <p className="text-[var(--text-sm)] font-[var(--weight-semibold)] text-[var(--text-secondary)]">
+                    {/* Greeting - bright white */}
+                    <p className="text-[var(--text-sm)] font-[var(--weight-bold)] text-white">
                         {getGreeting()}
                     </p>
                 </div>

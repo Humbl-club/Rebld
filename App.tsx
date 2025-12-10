@@ -5,12 +5,12 @@ import { useMutation } from 'convex/react';
 import { api } from './convex/_generated/api';
 import { Id } from './convex/_generated/dataModel';
 import Onboarding from './components/PlanImporter';
-import SessionTracker from './components/SessionTracker';
+import ZenSessionTracker from './components/ZenSessionTracker';
 import PreWorkoutScreen from './components/PreWorkoutScreen';
 import Chatbot from './components/Chatbot';
 import Navbar from './components/layout/Navbar';
 import { ZapIcon } from './components/icons';
-import HomePage from './pages/HomePage';
+import ZenHomePage from './pages/ZenHomePage';
 import PlanPage from './pages/PlanPage';
 import ProfilePage from './pages/ProfilePage';
 import GoalTrackingPage from './pages/GoalTrackingPage';
@@ -254,7 +254,7 @@ export default function App() {
   });
 
   const handleStartSession = useCallback((session: SessionType) => {
-    // Normalize different session types into a PlanDay so SessionTracker can handle it
+    // Normalize different session types into a PlanDay so ZenSessionTracker can handle it
     let normalizedSession: PlanDay;
     const today = new Date();
     const dow = today.getDay() === 0 ? 7 : today.getDay();
@@ -513,14 +513,12 @@ export default function App() {
 
     if (activeSession) {
       return (
-        <ErrorBoundary componentName="SessionTracker">
-          <SessionTracker
+        <ErrorBoundary componentName="ZenSessionTracker">
+          <ZenSessionTracker
             session={activeSession}
             onFinish={handleFinishSession}
             onCancel={handleCancelSession}
             allLogs={logs || []}
-            onOpenChatWithMessage={handleOpenChatWithMessage}
-            strengthProfile={userProfile?.strengthProfile}
           />
         </ErrorBoundary>
       );
@@ -545,13 +543,12 @@ export default function App() {
     switch (currentPage) {
       case 'home':
         return (
-          <ErrorBoundary componentName="HomePage">
-            <HomePage
+          <ErrorBoundary componentName="ZenHomePage">
+            <ZenHomePage
               plan={activePlan}
               onStartSession={handleStartSession}
               onOpenChat={() => setIsChatOpen(true)}
               userProfile={userProfile}
-              onRefreshPlan={handleRefreshPlan}
             />
           </ErrorBoundary>
         );
@@ -591,8 +588,8 @@ export default function App() {
         );
       default:
         return (
-          <ErrorBoundary componentName="HomePage">
-            <HomePage
+          <ErrorBoundary componentName="ZenHomePage">
+            <ZenHomePage
               plan={activePlan}
               onStartSession={handleStartSession}
               onOpenChat={() => setIsChatOpen(true)}
