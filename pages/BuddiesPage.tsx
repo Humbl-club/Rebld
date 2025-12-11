@@ -327,33 +327,37 @@ export default function BuddiesPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-[var(--space-2)]">
+                    <div className="flex items-center gap-[var(--space-1)]">
                       <button
                         onClick={() =>
                           setSelectedBuddy(selectedBuddy === buddy.buddyId ? null : buddy.buddyId)
                         }
                         className={cn(
-                          'p-[var(--space-2)]',
+                          'min-w-[44px] min-h-[44px]',
+                          'flex items-center justify-center',
                           'rounded-[var(--radius-lg)]',
                           'bg-[var(--surface-primary)]',
                           'hover:bg-[var(--brand-primary-subtle)]',
-                          'transition-all duration-[var(--duration-fast)]'
+                          'transition-all duration-[var(--duration-fast)]',
+                          'active:scale-95'
                         )}
                       >
-                        <SettingsIcon className="w-4 h-4 text-[var(--text-secondary)]" />
+                        <SettingsIcon className="w-5 h-5 text-[var(--text-secondary)]" />
                       </button>
                       <button
                         onClick={() => handleRemoveBuddy(buddy.buddyId)}
                         className={cn(
-                          'p-[var(--space-2)]',
+                          'min-w-[44px] min-h-[44px]',
+                          'flex items-center justify-center',
                           'rounded-[var(--radius-lg)]',
                           'bg-[var(--status-error-bg)]/10',
                           'hover:bg-[var(--status-error-bg)]',
                           'hover:text-[var(--text-on-brand)]',
-                          'transition-all duration-[var(--duration-fast)]'
+                          'transition-all duration-[var(--duration-fast)]',
+                          'active:scale-95'
                         )}
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        <TrashIcon className="w-5 h-5" />
                       </button>
                     </div>
                   </div>

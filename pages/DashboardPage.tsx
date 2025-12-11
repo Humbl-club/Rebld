@@ -299,7 +299,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
             />
           </div>
 
-          <p className="text-white/40 text-xs mt-2">
+          <p className="text-white/50 text-xs mt-2">
             {periodization.totalWeeks} weeks until {periodization.eventName || 'event'}
           </p>
         </div>
@@ -374,7 +374,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
                 'w-9 h-9 rounded-full flex items-center justify-center mb-1 transition-all',
                 analytics.completedDays[i]
                   ? 'bg-[#E07A5F] text-white'
-                  : 'bg-white/10 text-white/40'
+                  : 'bg-white/10 text-white/50'
               )}>
                 {analytics.completedDays[i] ? (
                   <CheckIcon className="w-4 h-4" />
@@ -382,12 +382,12 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
                   <span className="text-xs font-bold">{day}</span>
                 )}
               </div>
-              <span className="text-white/30 text-[10px]">{day}</span>
+              <span className="text-white/50 text-[10px]">{day}</span>
             </div>
           ))}
         </div>
 
-        <p className="text-white/40 text-xs mt-3 text-center">
+        <p className="text-white/50 text-xs mt-3 text-center">
           {analytics.completedDays.filter(Boolean).length}/7 workouts completed
         </p>
       </div>
@@ -433,7 +433,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
       {analytics.totalWorkouts < 2 && !nextSession && (
         <div className="text-center py-12 px-6 bg-white/[0.04] border border-white/10 rounded-2xl">
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <DumbbellIcon className="h-8 w-8 text-white/40" />
+            <DumbbellIcon className="h-8 w-8 text-white/50" />
           </div>
           <h3 className="text-white font-bold text-xl">Start Training</h3>
           <p className="mt-2 text-white/50 text-sm">

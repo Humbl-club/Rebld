@@ -533,12 +533,12 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             </span>
           )}
           {exerciseCacheData?.movement_pattern && (
-            <span className="text-white/40 text-xs">
+            <span className="text-white/50 text-xs">
               {MOVEMENT_PATTERNS[exerciseCacheData.movement_pattern] || exerciseCacheData.movement_pattern}
             </span>
           )}
           {exerciseCacheData?.muscles_worked && exerciseCacheData.muscles_worked.length > 0 && (
-            <span className="text-white/30 text-xs">
+            <span className="text-white/50 text-xs">
               · {exerciseCacheData.muscles_worked.slice(0, 2).join(', ')}
             </span>
           )}
@@ -573,7 +573,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 </p>
                 <p className="text-white/60 text-xs mt-0.5">{injuryWarning.reason}</p>
                 {injuryWarning.modifications?.length > 0 && (
-                  <p className="text-white/40 text-xs mt-1">
+                  <p className="text-white/50 text-xs mt-1">
                     Tip: {injuryWarning.modifications[0]}
                   </p>
                 )}
@@ -588,7 +588,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             setShowExerciseInfo(true);
             haptic.light();
           }}
-          className="mb-4 flex items-center gap-1.5 text-white/40 text-sm font-medium active:text-white/60 transition-colors"
+          className="mb-4 flex items-center gap-1.5 text-white/50 text-sm font-medium active:text-white/70 transition-colors min-h-[44px]"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
@@ -603,7 +603,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             <p className="text-white/50 text-sm text-center">
               Target: {currentExercise.metrics_template.target_sets} sets × {currentExercise.metrics_template.target_reps} reps
               {currentExercise.metrics_template.rest_period_s && (
-                <span className="text-white/30"> · {currentExercise.metrics_template.rest_period_s}s rest</span>
+                <span className="text-white/50"> · {currentExercise.metrics_template.rest_period_s}s rest</span>
               )}
             </p>
           </div>
@@ -612,7 +612,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         {/* Last performance hint */}
         {lastPerformance && !isCardio && (
           <div className="mb-8 flex items-center gap-2">
-            <span className="text-white/30 text-sm">Last:</span>
+            <span className="text-white/50 text-sm">Last:</span>
             <span className="text-white/60 text-sm font-semibold">
               {lastPerformance.weight}kg × {lastPerformance.reps} reps
             </span>
@@ -647,7 +647,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 <span className="text-white text-5xl font-black tabular-nums">
                   {formatTime(timerRunning ? Math.max(0, targetDuration - timerElapsed) : targetDuration)}
                 </span>
-                <span className="text-white/40 text-xs uppercase tracking-wider mt-1">
+                <span className="text-white/50 text-xs uppercase tracking-wider mt-1">
                   {timerRunning ? 'remaining' : 'target'}
                 </span>
               </div>
@@ -700,7 +700,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         {/* Skip option */}
         <button
           onClick={handleSkipExercise}
-          className="mt-6 text-white/30 text-sm font-medium active:text-white/50 transition-colors py-2"
+          className="mt-6 text-white/50 text-sm font-medium active:text-white/70 transition-colors min-h-[44px] py-2"
         >
           Skip exercise
         </button>
@@ -716,7 +716,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             >
               Cancel
             </button>
-            <span className="text-white/40 text-sm uppercase tracking-wider">
+            <span className="text-white/50 text-sm uppercase tracking-wider">
               Set {currentRound} of {totalRounds}
             </span>
             <div className="w-12" />
@@ -745,12 +745,12 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                     "bg-white/5 border-2 border-white/20",
                     "rounded-2xl",
                     "text-white text-5xl font-black text-center",
-                    "placeholder:text-white/20",
+                    "placeholder:text-white/50",
                     "focus:border-[#E07A5F] focus:outline-none",
                     "transition-colors"
                   )}
                 />
-                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 text-xl font-bold">
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-white/50 text-xl font-bold">
                   kg
                 </span>
               </div>
@@ -809,7 +809,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 "transition-all active:scale-95",
                 inputWeight && inputReps
                   ? "bg-[#E07A5F] text-white shadow-[0_0_30px_rgba(224,122,95,0.3)]"
-                  : "bg-white/10 text-white/30"
+                  : "bg-white/10 text-white/50"
               )}
             >
               Log Set
@@ -830,7 +830,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
               <div className="flex justify-between items-center">
                 <h3 className="text-white font-bold text-lg">Exercises</h3>
-                <span className="text-white/40 text-sm">
+                <span className="text-white/50 text-sm">
                   {completedCount}/{allExercises.length} done
                 </span>
               </div>
@@ -893,7 +893,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                           ) : (
                             <span className={cn(
                               "text-sm font-bold",
-                              isCurrent ? "text-[#E07A5F]" : "text-white/40"
+                              isCurrent ? "text-[#E07A5F]" : "text-white/50"
                             )}>
                               {blockIdx * 10 + exIdx + 1}
                             </span>
@@ -919,7 +919,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                               {exerciseSets.length} sets · Best: {bestSet.weight}kg × {bestSet.reps}
                             </p>
                           ) : (
-                            <p className="text-white/40 text-xs mt-0.5">
+                            <p className="text-white/50 text-xs mt-0.5">
                               {exercise.metrics_template?.target_sets || 3} sets × {exercise.metrics_template?.target_reps || '8-12'} reps
                             </p>
                           )}
@@ -966,7 +966,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                       </span>
                     )}
                     {exerciseCacheData?.exercise_role && (
-                      <span className="text-white/40 text-xs capitalize">
+                      <span className="text-white/50 text-xs capitalize">
                         {exerciseCacheData.exercise_role}
                       </span>
                     )}
@@ -974,7 +974,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 </div>
                 <button
                   onClick={() => setShowExerciseInfo(false)}
-                  className="text-white/40 active:text-white p-2 -m-2"
+                  className="text-white/50 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center -m-2"
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6L6 18M6 6l12 12" />
@@ -985,19 +985,19 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
               {/* Target Metrics */}
               <div className="flex gap-3 mb-6">
                 <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
-                  <p className="text-white/40 text-xs uppercase mb-1">Sets</p>
+                  <p className="text-white/50 text-xs uppercase mb-1">Sets</p>
                   <p className="text-white font-bold text-lg">
                     {currentExercise.metrics_template?.target_sets || 3}
                   </p>
                 </div>
                 <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
-                  <p className="text-white/40 text-xs uppercase mb-1">Reps</p>
+                  <p className="text-white/50 text-xs uppercase mb-1">Reps</p>
                   <p className="text-white font-bold text-lg">
                     {currentExercise.metrics_template?.target_reps || '8-12'}
                   </p>
                 </div>
                 <div className="flex-1 p-3 rounded-xl bg-white/5 text-center">
-                  <p className="text-white/40 text-xs uppercase mb-1">Rest</p>
+                  <p className="text-white/50 text-xs uppercase mb-1">Rest</p>
                   <p className="text-white font-bold text-lg">
                     {currentExercise.metrics_template?.rest_period_s || 90}s
                   </p>

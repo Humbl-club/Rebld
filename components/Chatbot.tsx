@@ -527,12 +527,14 @@ export default function Chatbot({ isOpen, onClose, plan, onPlanUpdate, initialMe
                 <button
                   onClick={onClose}
                   className={cn(
-                    'p-[var(--space-1)]',
+                    'min-w-[44px] min-h-[44px]',
+                    'flex items-center justify-center',
                     'rounded-full',
                     'text-[var(--text-secondary)]',
                     'hover:bg-[var(--surface-hover)]',
                     'hover:text-[var(--text-primary)]',
-                    'transition-colors duration-[var(--duration-fast)]'
+                    'transition-colors duration-[var(--duration-fast)]',
+                    'active:scale-95'
                   )}
                 >
                     <XMarkIcon className="w-6 h-6" />
@@ -718,11 +720,12 @@ export default function Chatbot({ isOpen, onClose, plan, onPlanUpdate, initialMe
                         inputRef.current?.focus();
                       }}
                       className={cn(
-                        'px-[var(--space-3)] py-[var(--space-2)]',
+                        'px-[var(--space-4)] py-[var(--space-3)]',
+                        'min-h-[44px]',
                         'bg-[var(--surface-primary)]',
                         'border-2 border-[var(--border-default)]',
                         'rounded-[var(--radius-lg)]',
-                        'text-[var(--text-xs)]',
+                        'text-[var(--text-sm)]',
                         'font-[var(--weight-bold)]',
                         'text-[var(--text-primary)]',
                         'hover:border-[var(--brand-primary)]',

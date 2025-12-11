@@ -296,8 +296,8 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
             <span className="text-[var(--brand-primary)]">BLD</span>
           </div>
 
-          {/* Day indicator - subtle dots */}
-          <div className="flex items-center gap-1.5">
+          {/* Day indicator - 44px touch targets per iOS HIG */}
+          <div className="flex items-center gap-0.5">
             {shortDays.map((d, i) => (
               <button
                 key={i}
@@ -306,14 +306,14 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                   haptic.light();
                 }}
                 className={cn(
-                  "w-7 h-7 rounded-full text-[10px] font-bold transition-all",
+                  "min-w-[44px] min-h-[44px] rounded-full text-xs font-bold transition-all flex items-center justify-center",
                   i === selectedDayIndex
-                    ? "bg-[var(--brand-primary)] text-white scale-110"
+                    ? "bg-[var(--brand-primary)] text-white"
                     : i === todayIndex
                       ? "bg-white/20 text-white"
                       : i < todayIndex
-                        ? "text-white/30"
-                        : "text-white/50"
+                        ? "text-white/50"
+                        : "text-white/60"
                 )}
               >
                 {d}
@@ -325,7 +325,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         {/* Current day label */}
         <p className={cn(
           "text-sm mt-3 font-medium",
-          isToday ? "text-white" : isPast ? "text-white/40" : "text-white/60"
+          isToday ? "text-white" : isPast ? "text-white/50" : "text-white/70"
         )}>
           {isToday ? 'Today' : dayNames[selectedDayIndex]}
           {!isToday && isPast && ' (Past)'}
@@ -372,7 +372,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
           <>
             {/* Time of day indicator for 2x daily */}
             {hasTwoADaySessions && (
-              <p className="text-white/40 text-sm uppercase tracking-widest mb-2">
+              <p className="text-white/50 text-sm uppercase tracking-widest mb-2">
                 {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
               </p>
             )}
@@ -390,9 +390,9 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
             </h1>
 
             {/* Subtle metrics */}
-            <div className="flex items-center gap-4 text-white/50 text-sm mb-10">
+            <div className="flex items-center gap-4 text-white/60 text-sm mb-10">
               <span>{workoutInfo.exerciseCount} exercises</span>
-              <span className="w-1 h-1 rounded-full bg-white/30" />
+              <span className="w-1 h-1 rounded-full bg-white/50" />
               <span>~{workoutInfo.duration} min</span>
             </div>
 
@@ -406,7 +406,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                 "transition-all duration-300",
                 "active:scale-95",
                 isPast
-                  ? "bg-white/10 text-white/30 cursor-not-allowed"
+                  ? "bg-white/10 text-white/50 cursor-not-allowed"
                   : "bg-[var(--brand-primary)] text-white shadow-[0_0_40px_rgba(224,122,95,0.4)]"
               )}
             >
@@ -420,7 +420,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                   setSessionView(sessionView === 'am' ? 'pm' : 'am');
                   haptic.light();
                 }}
-                className="mt-8 text-white/40 text-sm active:text-white/60"
+                className="mt-8 text-white/50 text-sm active:text-white/70 min-h-[44px] px-4"
               >
                 {sessionView === 'am' ? (
                   <>Later: {pmSession?.session_name || 'Evening Session'}</>
@@ -452,7 +452,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               <p className="text-white/70 text-sm">
                 Try 5 minutes of deep breathing
               </p>
-              <p className="text-white/40 text-xs mt-1">
+              <p className="text-white/50 text-xs mt-1">
                 4 seconds in, 4 seconds hold, 4 seconds out
               </p>
             </div>
@@ -462,7 +462,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
       {/* Swipe hint */}
       <footer className="pb-[calc(env(safe-area-inset-bottom)+100px)] text-center">
-        <p className="text-white/20 text-xs">
+        <p className="text-white/50 text-xs">
           {hasTwoADaySessions ? 'Swipe ↕ sessions • Swipe ↔ days' : 'Swipe ↔ to see other days'}
         </p>
       </footer>

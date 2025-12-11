@@ -307,7 +307,15 @@
      - primary (#FFFFFF): 21:1 ✓ AAA
      - secondary (#AEAEB2): 7.7:1 ✓ AAA
      - tertiary (#8E8E93): 6.3:1 ✓ AA (upgraded from gray-500 for better accessibility)
-     - disabled (#636366): 4.1:1 ✓ AA for large text only */
+     - disabled (#636366): 4.1:1 ✓ AA for large text only
+
+     ⚠️  IMPORTANT: Use these tokens instead of raw opacity values!
+         - text-white/50 or lower → use var(--text-tertiary) or var(--text-secondary)
+         - text-white/60-70 → use var(--text-secondary)
+         - text-white/80-90 → use var(--text-primary)
+
+         Raw opacity classes (text-white/30, /40, etc.) often fail WCAG AA.
+         The semantic tokens above are pre-validated for accessibility. */
   --text-primary: var(--color-white);
   --text-secondary: var(--color-gray-300);
   --text-tertiary: var(--color-gray-400);
