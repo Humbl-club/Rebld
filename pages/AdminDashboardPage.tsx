@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from 'convex/react';
+import React, { useState, useRef } from 'react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useUser } from '@clerk/clerk-react';
 
@@ -13,7 +13,7 @@ import { useUser } from '@clerk/clerk-react';
  */
 export default function AdminDashboardPage() {
   const { user, isLoaded } = useUser();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'health' | 'demographics'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'health' | 'demographics' | 'backgrounds'>('overview');
 
   // Analytics queries
   const realtimeStats = useQuery(api.analyticsQueries.getRealtimeDashboard, {});
@@ -23,6 +23,9 @@ export default function AdminDashboardPage() {
   const retention = useQuery(api.adminQueries.getRetentionMetrics, { days: 30 });
   const trainingPrefs = useQuery(api.adminQueries.getTrainingPreferencesStats, {});
   const userList = useQuery(api.adminQueries.getUserList, { limit: 100, offset: 0 });
+
+  // Background images queries
+  const backgrounds = useQuery(api.backgroundImages.getAllBackgrounds, {});
 
   // Auth checks
   if (!isLoaded) {
@@ -79,6 +82,9 @@ export default function AdminDashboardPage() {
             <TabButton active={selectedTab === 'demographics'} onClick={() => setSelectedTab('demographics')}>
               DEMOGRAPHICS
             </TabButton>
+            <TabButton active={selectedTab === 'backgrounds'} onClick={() => setSelectedTab('backgrounds')}>
+              BACKGROUNDS
+            </TabButton>
           </div>
         </div>
       </header>
@@ -100,6 +106,9 @@ export default function AdminDashboardPage() {
         )}
         {selectedTab === 'demographics' && (
           <DemographicsTab demographics={demographics} deviceStats={deviceStats} />
+        )}
+        {selectedTab === 'backgrounds' && (
+          <BackgroundsTab backgrounds={backgrounds} />
         )}
       </main>
 
@@ -353,6 +362,258 @@ function DemographicsTab({ demographics, deviceStats }: any) {
           </tbody>
         </DataTable>
       </section>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKGROUNDS TAB
+// ═══════════════════════════════════════════════════════════════
+
+const PAGE_TARGETS = ['home', 'goals', 'profile', 'auth', 'onboarding'] as const;
+
+function BackgroundsTab({ backgrounds }: any) {
+  const [uploading, setUploading] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<string>('home');
+  const [imageName, setImageName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const generateUploadUrl = useMutation(api.backgroundImages.generateUploadUrl);
+  const saveBackgroundImage = useMutation(api.backgroundImages.saveBackgroundImage);
+  const toggleActive = useMutation(api.backgroundImages.toggleBackgroundActive);
+  const deleteBackground = useMutation(api.backgroundImages.deleteBackgroundImage);
+  const updateOpacity = useMutation(api.backgroundImages.updateBackgroundOpacity);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!imageName.trim()) {
+      alert('Please enter a name for the background');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // 1. Get upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // 2. Upload file directly to Convex storage
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const { storageId } = await response.json();
+
+      // 3. Save metadata
+      await saveBackgroundImage({
+        storageId,
+        pageTarget: selectedPage,
+        name: imageName.trim(),
+        setActive: true,
+      });
+
+      // Reset form
+      setImageName('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      alert('Background uploaded successfully!');
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload background');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: any) => {
+    if (!confirm('Delete this background image?')) return;
+    try {
+      await deleteBackground({ backgroundId: id });
+    } catch (error) {
+      alert('Failed to delete');
+    }
+  };
+
+  const handleToggleActive = async (id: any) => {
+    try {
+      await toggleActive({ backgroundId: id });
+    } catch (error) {
+      alert('Failed to toggle');
+    }
+  };
+
+  // Group backgrounds by page
+  const groupedBackgrounds = backgrounds?.reduce((acc: any, bg: any) => {
+    if (!acc[bg.pageTarget]) acc[bg.pageTarget] = [];
+    acc[bg.pageTarget].push(bg);
+    return acc;
+  }, {} as Record<string, any[]>) || {};
+
+  return (
+    <div className="space-y-8">
+      {/* Upload Section */}
+      <section>
+        <SectionHeader>UPLOAD NEW BACKGROUND</SectionHeader>
+        <div className="bg-[var(--surface-primary)] border-2 border-[var(--border-default)] p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Page selector */}
+            <div>
+              <label className="block text-xs font-mono text-[var(--text-tertiary)] mb-2">
+                TARGET PAGE
+              </label>
+              <select
+                value={selectedPage}
+                onChange={(e) => setSelectedPage(e.target.value)}
+                className="w-full bg-[var(--bg-secondary)] border-2 border-[var(--border-default)] text-[var(--text-primary)] p-3 font-mono"
+              >
+                {PAGE_TARGETS.map((page) => (
+                  <option key={page} value={page}>
+                    {page.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Name input */}
+            <div>
+              <label className="block text-xs font-mono text-[var(--text-tertiary)] mb-2">
+                BACKGROUND NAME
+              </label>
+              <input
+                type="text"
+                value={imageName}
+                onChange={(e) => setImageName(e.target.value)}
+                placeholder="e.g., Dark Gym"
+                className="w-full bg-[var(--bg-secondary)] border-2 border-[var(--border-default)] text-[var(--text-primary)] p-3 font-mono"
+              />
+            </div>
+
+            {/* File input */}
+            <div>
+              <label className="block text-xs font-mono text-[var(--text-tertiary)] mb-2">
+                IMAGE FILE
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={uploading || !imageName.trim()}
+                className="w-full bg-[var(--bg-secondary)] border-2 border-[var(--border-default)] text-[var(--text-primary)] p-2.5 font-mono file:mr-4 file:py-1 file:px-3 file:border-0 file:bg-[var(--brand-primary)] file:text-white file:font-bold file:cursor-pointer disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          {uploading && (
+            <div className="text-[var(--brand-primary)] font-mono text-sm">
+              Uploading...
+            </div>
+          )}
+
+          <p className="text-xs text-[var(--text-tertiary)] font-mono mt-2">
+            Recommended: 1125×2436px (iPhone Pro Max), dark images work best. PNG or JPG.
+          </p>
+        </div>
+      </section>
+
+      {/* Current Backgrounds by Page */}
+      {PAGE_TARGETS.map((pageTarget) => {
+        const pageBackgrounds = groupedBackgrounds[pageTarget] || [];
+
+        return (
+          <section key={pageTarget}>
+            <SectionHeader>
+              {pageTarget.toUpperCase()} PAGE ({pageBackgrounds.length} images)
+            </SectionHeader>
+
+            {pageBackgrounds.length === 0 ? (
+              <div className="bg-[var(--surface-primary)] border-2 border-dashed border-[var(--border-default)] p-8 text-center">
+                <p className="text-[var(--text-tertiary)] font-mono text-sm">
+                  No backgrounds uploaded for this page
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pageBackgrounds.map((bg: any) => (
+                  <div
+                    key={bg._id}
+                    className={`bg-[var(--surface-primary)] border-2 overflow-hidden ${
+                      bg.isActive ? 'border-[var(--brand-primary)]' : 'border-[var(--border-default)]'
+                    }`}
+                  >
+                    {/* Preview */}
+                    <div
+                      className="h-40 bg-cover bg-center relative"
+                      style={{ backgroundImage: bg.url ? `url(${bg.url})` : undefined }}
+                    >
+                      {bg.isActive && (
+                        <div className="absolute top-2 right-2 bg-[var(--brand-primary)] text-white text-xs font-bold px-2 py-1">
+                          ACTIVE
+                        </div>
+                      )}
+                      {/* Overlay preview */}
+                      <div
+                        className="absolute inset-0"
+                        style={{ backgroundColor: `rgba(0,0,0,${bg.opacity || 0.7})` }}
+                      />
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4">
+                      <h4 className="font-bold text-[var(--text-primary)] mb-1">{bg.name}</h4>
+                      <p className="text-xs text-[var(--text-tertiary)] font-mono mb-3">
+                        Uploaded {new Date(bg.uploadedAt).toLocaleDateString()}
+                      </p>
+
+                      {/* Opacity slider */}
+                      <div className="mb-3">
+                        <label className="text-xs text-[var(--text-tertiary)] font-mono">
+                          Overlay: {Math.round((bg.opacity || 0.7) * 100)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={Math.round((bg.opacity || 0.7) * 100)}
+                          onChange={(e) => updateOpacity({
+                            backgroundId: bg._id,
+                            opacity: parseInt(e.target.value) / 100
+                          })}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleActive(bg._id)}
+                          className={`flex-1 py-2 text-xs font-bold ${
+                            bg.isActive
+                              ? 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
+                              : 'bg-[var(--brand-primary)] text-white'
+                          }`}
+                        >
+                          {bg.isActive ? 'DEACTIVATE' : 'ACTIVATE'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(bg._id)}
+                          className="px-4 py-2 text-xs font-bold bg-red-600 text-white"
+                        >
+                          DELETE
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

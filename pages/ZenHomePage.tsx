@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { WorkoutPlan, PlanDay, DailyRoutine, UserProfile, WorkoutSession } from '../types';
 import { cn } from '../lib/utils';
 import { useHaptic } from '../hooks/useAnimations';
+import { usePageBackground, BackgroundOverlay } from '../hooks/usePageBackground';
 
 /* ═══════════════════════════════════════════════════════════════
    ZEN HOME PAGE - Clean, Sophisticated Design
@@ -22,10 +23,10 @@ interface ZenHomePageProps {
   userProfile?: UserProfile | null;
 }
 
-// Accent color - warm coral, easier on eyes
-const ACCENT = '#F0725C';
-const ACCENT_SOFT = 'rgba(240, 114, 92, 0.15)';
-const ACCENT_GLOW = 'rgba(240, 114, 92, 0.3)';
+// Accent color - rich red, distinct but not harsh
+const ACCENT = '#E54D42';
+const ACCENT_SOFT = 'rgba(229, 77, 66, 0.15)';
+const ACCENT_GLOW = 'rgba(229, 77, 66, 0.3)';
 
 // Simple greeting
 function getGreeting(hour: number): string {
@@ -56,9 +57,21 @@ function formatFocusName(focus: string): string {
   return focus.replace(/^(AM|PM)\s+/i, '').trim();
 }
 
+// Check if exercise is cardio-based (shows duration instead of sets/reps)
+function isCardioExercise(name: string): boolean {
+  const cardioKeywords = [
+    'elliptical', 'treadmill', 'bike', 'cycling', 'running', 'walking',
+    'rowing', 'stair', 'cardio', 'jogging', 'sprint', 'hiit', 'aerobic',
+    'stepper', 'climber', 'jump rope', 'skipping'
+  ];
+  const lowerName = name.toLowerCase();
+  return cardioKeywords.some(keyword => lowerName.includes(keyword));
+}
+
 export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHomePageProps) {
   const haptic = useHaptic();
   const [mounted, setMounted] = useState(false);
+  const { backgroundStyles, hasBackground } = usePageBackground('home');
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50);
@@ -146,11 +159,19 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     return {
       focus: formatFocusName(focus || 'Workout'),
       exerciseCount: exercises.length,
-      exercises: exercises.map(ex => ({
-        name: ex.exercise_name,
-        sets: ex.metrics_template?.target_sets || 3,
-        reps: ex.metrics_template?.target_reps || '8-12',
-      })),
+      exercises: exercises.map(ex => {
+        const isCardio = isCardioExercise(ex.exercise_name);
+        const targetDuration = ex.metrics_template?.target_duration || ex.metrics_template?.duration;
+
+        return {
+          name: ex.exercise_name,
+          sets: ex.metrics_template?.target_sets || 3,
+          reps: ex.metrics_template?.target_reps || '8-12',
+          isCardio,
+          // For cardio: show duration in minutes (default 20 min if not specified)
+          cardioMinutes: isCardio ? (targetDuration || 20) : null,
+        };
+      }),
       duration: duration || Math.round(exercises.length * 4),
     };
   }, [currentSession, hasWorkout]);
@@ -222,12 +243,16 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
   return (
     <div
-      className="min-h-screen w-full bg-[#0A0A0A] flex flex-col"
+      className="min-h-screen w-full bg-[#0A0A0A] flex flex-col relative"
+      style={backgroundStyles}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Background overlay for readability */}
+      {hasBackground && <BackgroundOverlay opacity={0.7} />}
+
       {/* Header */}
-      <header className="pt-[calc(env(safe-area-inset-top)+20px)] px-6 pb-5 flex-shrink-0">
+      <header className="pt-[calc(env(safe-area-inset-top)+20px)] px-6 pb-5 flex-shrink-0 relative z-10">
         {/* Logo + Greeting */}
         <div
           className={cn(
@@ -288,19 +313,19 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                     haptic.light();
                   }}
                   className={cn(
-                    "flex flex-col items-center py-3 px-2 rounded-2xl transition-all duration-200",
-                    "min-w-[44px]",
+                    "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200",
+                    "min-w-[44px] min-h-[44px]",
                     isSelected && "scale-105",
                     !isSelected && "active:scale-95"
                   )}
                   style={{
                     backgroundColor: isSelected ? ACCENT : isTodayDay ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    boxShadow: isSelected ? `0 4px 20px ${ACCENT_GLOW}` : 'none'
+                    boxShadow: isSelected ? `0 4px 16px ${ACCENT_GLOW}` : 'none'
                   }}
                 >
                   {/* Day name */}
                   <span className={cn(
-                    "text-[10px] font-medium mb-1",
+                    "text-[10px] font-medium mb-0.5",
                     isSelected ? "text-white/90" : "text-white/40"
                   )}>
                     {dayNames[i].slice(0, 1)}
@@ -308,14 +333,14 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
                   {/* Date number */}
                   <span className={cn(
-                    "text-base font-semibold tabular-nums",
+                    "text-[15px] font-semibold tabular-nums",
                     isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/60"
                   )}>
                     {date.getDate()}
                   </span>
 
                   {/* Status dot */}
-                  <div className="h-1.5 mt-1.5 flex items-center">
+                  <div className="h-1.5 mt-1 flex items-center">
                     {status === 'completed' && !isSelected && (
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     )}
@@ -334,7 +359,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-6 pb-32 overflow-y-auto">
+      <main className="flex-1 px-6 pb-32 overflow-y-auto relative z-10">
         {/* 2x Daily Toggle */}
         {hasTwoADaySessions && (
           <div
@@ -453,9 +478,12 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                       </p>
                     </div>
 
-                    {/* Sets x Reps */}
+                    {/* Metrics: Duration for cardio, Sets × Reps for strength */}
                     <span className="text-white/30 text-sm font-medium shrink-0">
-                      {exercise.sets} × {exercise.reps}
+                      {exercise.isCardio
+                        ? `${exercise.cardioMinutes} min`
+                        : `${exercise.sets} × ${exercise.reps}`
+                      }
                     </span>
                   </div>
                 ))}

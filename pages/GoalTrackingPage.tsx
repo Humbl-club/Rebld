@@ -5,20 +5,21 @@ import { TrophyIcon, TargetIcon, TrendingUpIcon, FlameIcon } from '../components
 import { getAllPRs } from '../services/prService';
 import { cn } from '../lib/utils';
 import LogbookPage from './LogbookPage';
+import { usePageBackground, BackgroundOverlay } from '../hooks/usePageBackground';
 
 /* ═══════════════════════════════════════════════════════════════
    GOAL TRACKING PAGE - Clean, Sophisticated Design
 
-   - Warm coral accent (#F0725C)
+   - Rich red accent (#E54D42)
    - Clean system typography
    - Proper visual hierarchy
    - Easy on the eyes
    ═══════════════════════════════════════════════════════════════ */
 
-// Accent color - warm coral
-const ACCENT = '#F0725C';
-const ACCENT_SOFT = 'rgba(240, 114, 92, 0.15)';
-const ACCENT_GLOW = 'rgba(240, 114, 92, 0.25)';
+// Accent color - rich red, distinct but not harsh
+const ACCENT = '#E54D42';
+const ACCENT_SOFT = 'rgba(229, 77, 66, 0.15)';
+const ACCENT_GLOW = 'rgba(229, 77, 66, 0.25)';
 
 interface GoalTrackingPageProps {
   logs: WorkoutLog[];
@@ -178,6 +179,7 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'goals' | 'history'>('goals');
   const [mounted, setMounted] = useState(false);
+  const { backgroundStyles, hasBackground } = usePageBackground('goals');
 
   useEffect(() => {
     setMounted(true);
@@ -253,16 +255,20 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
   return (
     <div
       className={cn(
-        "w-full min-h-screen bg-[#0A0A0A]",
+        "w-full min-h-screen bg-[#0A0A0A] relative",
         "px-6",
         "pt-[calc(env(safe-area-inset-top)+16px)]",
         "pb-[calc(100px+env(safe-area-inset-bottom))]"
       )}
+      style={backgroundStyles}
     >
+      {/* Background overlay for readability */}
+      {hasBackground && <BackgroundOverlay opacity={0.7} />}
+
       {/* Header */}
       <header
         className={cn(
-          "mb-6 transition-all duration-500",
+          "mb-6 transition-all duration-500 relative z-10",
           mounted ? "opacity-100" : "opacity-0"
         )}
       >
@@ -277,7 +283,7 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
       {/* Tab Navigation */}
       <div
         className={cn(
-          "flex gap-1 p-1 rounded-xl mb-6",
+          "flex gap-1 p-1 rounded-xl mb-6 relative z-10",
           "bg-white/[0.02] border border-white/[0.04]",
           "transition-all duration-500 delay-50",
           mounted ? "opacity-100" : "opacity-0"
@@ -303,7 +309,7 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
       {activeTab === 'goals' && (
         <main
           className={cn(
-            "space-y-5 transition-all duration-500 delay-100",
+            "space-y-5 transition-all duration-500 delay-100 relative z-10",
             mounted ? "opacity-100" : "opacity-0"
           )}
         >

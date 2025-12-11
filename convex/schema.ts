@@ -1201,6 +1201,19 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"]),
 
+  // Background Images - Admin-uploaded backgrounds for pages
+  backgroundImages: defineTable({
+    storageId: v.id("_storage"), // Convex file storage ID
+    pageTarget: v.string(), // "home", "goals", "profile", "auth", "onboarding"
+    name: v.string(), // Display name for admin
+    isActive: v.boolean(), // Only one active per page
+    opacity: v.optional(v.number()), // 0-1, overlay darkness (default 0.7)
+    uploadedAt: v.string(), // ISO date
+    uploadedBy: v.string(), // Admin user ID
+  })
+    .index("by_pageTarget", ["pageTarget"])
+    .index("by_pageTarget_active", ["pageTarget", "isActive"]),
+
   // Event Tracking - Analytics and user behavior tracking
   events: defineTable({
     userId: v.string(),

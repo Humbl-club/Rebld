@@ -14,6 +14,7 @@ import type * as adminQueries from "../adminQueries.js";
 import type * as ai from "../ai.js";
 import type * as analyticsQueries from "../analyticsQueries.js";
 import type * as auth from "../auth.js";
+import type * as backgroundImages from "../backgroundImages.js";
 import type * as buddyMutations from "../buddyMutations.js";
 import type * as buddyQueries from "../buddyQueries.js";
 import type * as eventTracking from "../eventTracking.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   analyticsQueries: typeof analyticsQueries;
   auth: typeof auth;
+  backgroundImages: typeof backgroundImages;
   buddyMutations: typeof buddyMutations;
   buddyQueries: typeof buddyQueries;
   eventTracking: typeof eventTracking;
