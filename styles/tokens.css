@@ -28,17 +28,17 @@
   --color-gray-50: #F2F2F7;
   --color-white: #FFFFFF;
 
-  /* Brand: Coral (Primary accent - from reference images) */
-  --color-coral-900: #7A2E1E;
-  --color-coral-800: #9A3D28;
-  --color-coral-700: #B84C32;
-  --color-coral-600: #C45D45;
-  --color-coral-500: #E07A5F;  /* Main brand color */
-  --color-coral-400: #E99580;
-  --color-coral-300: #F2A593;
-  --color-coral-200: #F8C4B8;
-  --color-coral-100: #FCE4DE;
-  --color-coral-50: #FEF4F1;
+  /* Brand: Red (Primary accent - premium, energetic) */
+  --color-red-900: #7F1D1D;
+  --color-red-800: #991B1B;
+  --color-red-700: #B91C1C;
+  --color-red-600: #DC2626;
+  --color-red-500: #EF4444;  /* Main brand color */
+  --color-red-400: #F87171;
+  --color-red-300: #FCA5A5;
+  --color-red-200: #FECACA;
+  --color-red-100: #FEE2E2;
+  --color-red-50: #FEF2F2;
 
   /* Secondary: Amber (Energy, power) */
   --color-amber-600: #D48806;
@@ -324,13 +324,13 @@
   --text-on-brand: var(--color-white);
 
   /* Brand - Contrast with --text-on-brand (#FFFFFF):
-     - coral-500 (#E07A5F): 3.1:1 ✓ AA large text (used for buttons, badges)
-     - coral-400 (#E99580): 2.5:1 - hover state, decorative only
-     - coral-600 (#C45D45): 4.6:1 ✓ AA normal text */
-  --brand-primary: var(--color-coral-500);
-  --brand-primary-hover: var(--color-coral-400);
-  --brand-primary-active: var(--color-coral-600);
-  --brand-primary-subtle: rgba(224, 122, 95, 0.15);
+     - red-500 (#EF4444): 3.9:1 ✓ AA large text (used for buttons, badges)
+     - red-400 (#F87171): 3.2:1 - hover state
+     - red-600 (#DC2626): 5.3:1 ✓ AA normal text */
+  --brand-primary: var(--color-red-500);
+  --brand-primary-hover: var(--color-red-400);
+  --brand-primary-active: var(--color-red-600);
+  --brand-primary-subtle: rgba(239, 68, 68, 0.15);
   --brand-secondary: var(--color-amber-500);
   --brand-secondary-hover: var(--color-amber-400);
 
@@ -338,7 +338,7 @@
   --border-default: rgba(255, 255, 255, 0.12); /* Increased from 0.08 */
   --border-subtle: rgba(255, 255, 255, 0.06); /* Increased from 0.04 */
   --border-strong: rgba(255, 255, 255, 0.24); /* Increased from 0.16 */
-  --border-focus: var(--color-coral-500);
+  --border-focus: var(--color-red-500);
   --border-error: var(--color-error-500);
   --border-success: var(--color-success-500);
 
@@ -351,12 +351,12 @@
   --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.9);
 
   /* Glow effects */
-  --shadow-glow-brand: 0 0 20px rgba(224, 122, 95, 0.3);
+  --shadow-glow-brand: 0 0 20px rgba(239, 68, 68, 0.3);
   --shadow-glow-success: 0 0 20px rgba(52, 199, 89, 0.3);
   --shadow-glow-error: 0 0 20px rgba(255, 59, 48, 0.3);
 
   /* Focus ring */
-  --ring-focus: 0 0 0 3px rgba(224, 122, 95, 0.4);
+  --ring-focus: 0 0 0 3px rgba(239, 68, 68, 0.4);
   --ring-error: 0 0 0 3px rgba(255, 59, 48, 0.4);
 
   /* Semantic status */
@@ -430,10 +430,10 @@
   --text-on-brand: var(--color-white);
 
   /* Brand */
-  --brand-primary: var(--color-coral-600);
-  --brand-primary-hover: var(--color-coral-700);
-  --brand-primary-active: var(--color-coral-800);
-  --brand-primary-subtle: var(--color-coral-50);
+  --brand-primary: var(--color-red-600);
+  --brand-primary-hover: var(--color-red-700);
+  --brand-primary-active: var(--color-red-800);
+  --brand-primary-subtle: var(--color-red-50);
   --brand-secondary: var(--color-amber-600);
   --brand-secondary-hover: var(--color-amber-500);
 
@@ -441,7 +441,7 @@
   --border-default: var(--color-gray-200);
   --border-subtle: var(--color-gray-100);
   --border-strong: var(--color-gray-300);
-  --border-focus: var(--color-coral-500);
+  --border-focus: var(--color-red-500);
   --border-error: var(--color-error-500);
   --border-success: var(--color-success-500);
 
@@ -454,12 +454,12 @@
   --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.16);
 
   /* Glow effects (softer in light mode) */
-  --shadow-glow-brand: 0 0 24px rgba(224, 122, 95, 0.2);
+  --shadow-glow-brand: 0 0 24px rgba(239, 68, 68, 0.2);
   --shadow-glow-success: 0 0 24px rgba(52, 199, 89, 0.2);
   --shadow-glow-error: 0 0 24px rgba(255, 59, 48, 0.2);
 
   /* Focus ring */
-  --ring-focus: 0 0 0 3px rgba(224, 122, 95, 0.3);
+  --ring-focus: 0 0 0 3px rgba(239, 68, 68, 0.3);
   --ring-error: 0 0 0 3px rgba(255, 59, 48, 0.3);
 
   /* Semantic status */

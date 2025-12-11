@@ -510,7 +510,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             openingBeat === 'dark' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
           )}>
             {(openingBeat === 'name' || openingBeat === 'logo' || openingBeat === 'begin') && (
-              <p className="text-white/50 text-sm font-medium tracking-wider uppercase mb-2">
+              <p className="text-white/70 text-sm font-medium tracking-wider uppercase mb-2">
                 Welcome{userName !== 'Athlete' ? ` back, ${userName}` : ''}
               </p>
             )}
@@ -523,7 +523,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
           )}>
             <div className="flex items-center">
               <span className="text-white font-black text-5xl tracking-tighter">RE</span>
-              <span className="text-[#E07A5F] font-black text-5xl tracking-tighter">BLD</span>
+              <span className="text-[#EF4444] font-black text-5xl tracking-tighter">BLD</span>
             </div>
           </div>
         </div>
@@ -541,7 +541,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
           {/* Option 1: AI Build */}
           <button
             onClick={handleBegin}
-            className="w-full p-5 rounded-2xl bg-[#E07A5F] text-left active:scale-[0.98] transition-transform mb-4 shadow-[0_0_40px_rgba(224,122,95,0.2)]"
+            className="w-full p-5 rounded-2xl bg-[#EF4444] text-left active:scale-[0.98] transition-transform mb-4 shadow-[0_0_40px_rgba(224,122,95,0.2)]"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -571,7 +571,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-white font-bold text-lg">IMPORT MY PLAN</p>
-                <p className="text-white/50 text-sm mt-1">
+                <p className="text-white/70 text-sm mt-1">
                   Paste or upload your existing program
                 </p>
               </div>
@@ -616,12 +616,12 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
           <div className="mt-4 h-[2px] bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#E07A5F] transition-all duration-500 ease-out"
+              className="h-full bg-[#EF4444] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
 
-          <p className="mt-2 text-white/50 text-xs font-medium tracking-wider">
+          <p className="mt-2 text-white/70 text-xs font-medium tracking-wider">
             {currentQuestionIndex + 1} / {visibleQuestions.length}
           </p>
         </div>
@@ -746,20 +746,20 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             <div className="space-y-6 mt-6">
               {/* Age */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Age (optional)</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Age (optional)</p>
                 <input
                   type="number"
                   inputMode="numeric"
                   value={age || ''}
                   onChange={(e) => setAge(e.target.value ? parseInt(e.target.value) : undefined)}
                   placeholder="25"
-                  className="w-24 h-12 px-4 bg-white/10 border border-white/20 rounded-xl text-white text-lg font-bold text-center focus:border-[#E07A5F] outline-none transition-colors"
+                  className="w-24 h-12 px-4 bg-white/10 border border-white/20 rounded-xl text-white text-lg font-bold text-center focus:border-[#EF4444] outline-none transition-colors"
                 />
               </div>
 
               {/* Sex */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Sex (optional)</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Sex (optional)</p>
                 <div className="flex gap-2">
                   {[
                     { id: 'male' as Sex, label: 'Male' },
@@ -772,7 +772,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       className={cn(
                         'flex-1 h-12 rounded-xl font-semibold text-sm transition-all',
                         sex === option.id
-                          ? 'bg-[#E07A5F] text-white'
+                          ? 'bg-[#EF4444] text-white'
                           : 'bg-white/10 text-white/60 border border-white/20'
                       )}
                     >
@@ -793,7 +793,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             <div className="space-y-6 mt-6">
               {/* Sessions per day */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Sessions Per Day</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Sessions Per Day</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { id: '1' as const, label: 'Once Daily', desc: 'Single focused session' },
@@ -805,7 +805,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       className={cn(
                         'p-4 rounded-xl text-left transition-all border-2',
                         trainingSplit.sessions_per_day === option.id
-                          ? 'bg-[#E07A5F] border-[#E07A5F]'
+                          ? 'bg-[#EF4444] border-[#EF4444]'
                           : 'bg-white/5 border-white/10'
                       )}
                     >
@@ -815,7 +815,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       <span className={cn('block text-sm font-semibold mt-1', trainingSplit.sessions_per_day === option.id ? 'text-white' : 'text-white/70')}>
                         {option.label}
                       </span>
-                      <span className={cn('block text-xs mt-0.5', trainingSplit.sessions_per_day === option.id ? 'text-white/70' : 'text-white/50')}>
+                      <span className={cn('block text-xs mt-0.5', trainingSplit.sessions_per_day === option.id ? 'text-white/70' : 'text-white/70')}>
                         {option.desc}
                       </span>
                     </button>
@@ -825,7 +825,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
               {/* Training Type */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Training Type</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Training Type</p>
                 <div className="space-y-2">
                   {[
                     { id: 'strength_only' as TrainingType, label: 'Strength Only', desc: 'Pure resistance training' },
@@ -839,7 +839,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       className={cn(
                         'w-full p-4 rounded-xl text-left transition-all border-2 flex items-center justify-between',
                         trainingSplit.training_type === option.id
-                          ? 'bg-[#E07A5F] border-[#E07A5F]'
+                          ? 'bg-[#EF4444] border-[#EF4444]'
                           : 'bg-white/5 border-white/10'
                       )}
                     >
@@ -847,7 +847,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                         <span className={cn('font-bold text-sm', trainingSplit.training_type === option.id ? 'text-white' : 'text-white/90')}>
                           {option.label}
                         </span>
-                        <span className={cn('block text-xs mt-0.5', trainingSplit.training_type === option.id ? 'text-white/70' : 'text-white/50')}>
+                        <span className={cn('block text-xs mt-0.5', trainingSplit.training_type === option.id ? 'text-white/70' : 'text-white/70')}>
                           {option.desc}
                         </span>
                       </div>
@@ -872,7 +872,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             <div className="space-y-6 mt-6">
               {/* Cardio Types */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Cardio Types</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Cardio Types</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { id: 'running' as CardioType, emoji: '🏃', label: 'Run' },
@@ -896,7 +896,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                         }}
                         className={cn(
                           'p-3 rounded-xl flex flex-col items-center justify-center transition-all border-2 min-h-[72px]',
-                          isSelected ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10'
+                          isSelected ? 'bg-[#EF4444] border-[#EF4444]' : 'bg-white/5 border-white/10'
                         )}
                       >
                         <span className="text-xl mb-1">{option.emoji}</span>
@@ -911,7 +911,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
               {/* Duration */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Session Length</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Session Length</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[20, 30, 45, 60].map(mins => (
                     <button
@@ -919,7 +919,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       onClick={() => setCardioDuration(mins)}
                       className={cn(
                         'py-3 rounded-xl font-bold text-sm transition-all border-2',
-                        cardioDuration === mins ? 'bg-[#E07A5F] border-[#E07A5F] text-white' : 'bg-white/5 border-white/10 text-white/70'
+                        cardioDuration === mins ? 'bg-[#EF4444] border-[#EF4444] text-white' : 'bg-white/5 border-white/10 text-white/70'
                       )}
                     >
                       {mins}m
@@ -955,7 +955,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             <div className="space-y-6 mt-6">
               {/* Event Type */}
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Event Type</p>
+                <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Event Type</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'hyrox', label: 'Hyrox', emoji: '🏃' },
@@ -976,7 +976,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                       }}
                       className={cn(
                         'p-3 rounded-xl text-center transition-all border-2',
-                        specificGoal?.event_type === option.id ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10'
+                        specificGoal?.event_type === option.id ? 'bg-[#EF4444] border-[#EF4444]' : 'bg-white/5 border-white/10'
                       )}
                     >
                       <span className="text-lg mb-1 block">{option.emoji}</span>
@@ -991,13 +991,13 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
               {/* Target Date */}
               {specificGoal?.event_type && (
                 <div>
-                  <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Target Date</p>
+                  <p className="text-white/70 text-xs uppercase tracking-wider mb-3">Target Date</p>
                   <input
                     type="date"
                     value={specificGoal?.target_date || ''}
                     onChange={(e) => setSpecificGoal(prev => ({ ...prev, target_date: e.target.value || null } as SpecificGoal))}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full h-12 px-4 bg-white/10 border border-white/20 rounded-xl text-white focus:border-[#E07A5F] outline-none"
+                    className="w-full h-12 px-4 bg-white/10 border border-white/20 rounded-xl text-white focus:border-[#EF4444] outline-none"
                   />
                 </div>
               )}
@@ -1007,7 +1007,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                 <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-white font-bold text-sm">Your Training Phases</p>
-                    <p className="text-[#E07A5F] font-bold text-sm">{weeksUntilEvent} weeks</p>
+                    <p className="text-[#EF4444] font-bold text-sm">{weeksUntilEvent} weeks</p>
                   </div>
 
                   {/* Phase bars */}
@@ -1038,7 +1038,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                     </div>
                   </div>
 
-                  <p className="text-white/50 text-[10px] mt-3">
+                  <p className="text-white/70 text-[10px] mt-3">
                     Deload weeks automatically scheduled every 4 weeks
                   </p>
                 </div>
@@ -1083,7 +1083,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
               {showStrengthInputs && (
                 <div className="mt-4 space-y-4 p-4 bg-white/5 rounded-xl">
-                  <p className="text-white/50 text-xs">8-10 rep max (kg)</p>
+                  <p className="text-white/70 text-xs">8-10 rep max (kg)</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { key: 'squat_kg', label: 'Squat' },
@@ -1100,7 +1100,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                           value={(currentStrength as any)[field.key] || ''}
                           onChange={(e) => setCurrentStrength(prev => ({ ...prev, [field.key]: e.target.value ? parseInt(e.target.value) : undefined }))}
                           placeholder="kg"
-                          className="flex-1 h-10 px-3 bg-white/10 rounded-lg text-white text-sm text-center border border-white/20 focus:border-[#E07A5F] outline-none"
+                          className="flex-1 h-10 px-3 bg-white/10 rounded-lg text-white text-sm text-center border border-white/20 focus:border-[#EF4444] outline-none"
                         />
                       </div>
                     ))}
@@ -1111,7 +1111,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
             <button
               onClick={() => { haptic.medium(); goToNextQuestion(); }}
-              className="w-full h-14 mt-8 rounded-xl font-bold text-base uppercase tracking-wider bg-[#E07A5F] text-white active:scale-[0.98] transition-transform"
+              className="w-full h-14 mt-8 rounded-xl font-bold text-base uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform"
             >
               Generate My Plan
             </button>
@@ -1138,7 +1138,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             {days.map((day, idx) => (
               <div
                 key={idx}
-                className="w-10 h-14 rounded-lg bg-[#E07A5F] flex flex-col items-center justify-center animate-[day-pop_0.4s_ease-out_backwards]"
+                className="w-10 h-14 rounded-lg bg-[#EF4444] flex flex-col items-center justify-center animate-[day-pop_0.4s_ease-out_backwards]"
                 style={{ animationDelay: `${idx * 80}ms` }}
               >
                 <span className="text-[10px] font-bold text-white/70 uppercase">{day}</span>
@@ -1184,16 +1184,16 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
                 key={idx}
                 className={cn(
                   'relative w-10 h-16 rounded-lg transition-all duration-500 flex flex-col items-center justify-center overflow-hidden',
-                  isFilled ? 'bg-[#E07A5F]' : isActive ? 'bg-white/20' : 'bg-white/10'
+                  isFilled ? 'bg-[#EF4444]' : isActive ? 'bg-white/20' : 'bg-white/10'
                 )}
               >
-                <span className={cn('text-[11px] font-bold uppercase', isFilled ? 'text-white/80' : 'text-white/50')}>
+                <span className={cn('text-[11px] font-bold uppercase', isFilled ? 'text-white/80' : 'text-white/70')}>
                   {day}
                 </span>
 
                 {isActive && (
                   <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute bottom-0 left-0 right-0 bg-[#E07A5F] animate-[fill-up_2.5s_ease-out_forwards]" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#EF4444] animate-[fill-up_2.5s_ease-out_forwards]" />
                   </div>
                 )}
 
@@ -1206,7 +1206,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
         {/* Progress bar */}
         <div className="w-full max-w-xs h-1 bg-white/10 rounded-full overflow-hidden mb-6">
           <div
-            className="h-full bg-[#E07A5F] rounded-full transition-all duration-700 ease-out"
+            className="h-full bg-[#EF4444] rounded-full transition-all duration-700 ease-out"
             style={{ width: `${generationProgress}%` }}
           />
         </div>
@@ -1216,17 +1216,17 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
           <span className="text-2xl">{exerciseTypes[currentExercise].split(' ')[0]}</span>
           <div>
             <p className="text-white font-bold text-sm">Adding {exerciseTypes[currentExercise].split(' ')[1]}</p>
-            <p className="text-white/50 text-xs">Day {Math.min(filledDays.length + 1, 7)} of 7</p>
+            <p className="text-white/70 text-xs">Day {Math.min(filledDays.length + 1, 7)} of 7</p>
           </div>
         </div>
 
         <p className="text-white font-black text-lg uppercase tracking-wide mb-1">
           Building Your Week
         </p>
-        <p className="text-white/50 text-xs mb-1">{statusText}</p>
-        <p className="text-white/50 text-xs tabular-nums">{Math.round(generationProgress)}% complete</p>
+        <p className="text-white/70 text-xs mb-1">{statusText}</p>
+        <p className="text-white/70 text-xs tabular-nums">{Math.round(generationProgress)}% complete</p>
 
-        <p className="text-white/50 text-xs mt-6">
+        <p className="text-white/70 text-xs mt-6">
           Typically takes 2-4 minutes
         </p>
 
@@ -1251,7 +1251,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-8">
-          <div className="w-24 h-24 rounded-full bg-[#E07A5F] flex items-center justify-center mb-8 animate-[scale-in_0.5s_ease-out]">
+          <div className="w-24 h-24 rounded-full bg-[#EF4444] flex items-center justify-center mb-8 animate-[scale-in_0.5s_ease-out]">
             <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -1261,7 +1261,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
             Your Program<br />Is Ready
           </h1>
 
-          <p className="text-white/50 text-center">
+          <p className="text-white/70 text-center">
             {generatedPlan?.weeklyPlan?.length || 0} training days · {exerciseCount} exercises
           </p>
 
@@ -1281,7 +1281,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
         <div className="px-8 pb-[max(3rem,env(safe-area-inset-bottom))]">
           <button
             onClick={handleConfirmPlan}
-            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#E07A5F] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(224,122,95,0.3)]"
+            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(224,122,95,0.3)]"
           >
             Start Training
           </button>
@@ -1361,7 +1361,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
 
       <div className="flex-1 flex flex-col px-6 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
         <h1 className="text-white font-black text-3xl leading-tight">Import Your Plan</h1>
-        <p className="text-white/50 text-sm mt-2 mb-6">
+        <p className="text-white/70 text-sm mt-2 mb-6">
           Paste your workout program below. Our AI will convert it into a trackable format.
         </p>
 
@@ -1382,17 +1382,17 @@ Squats 4x6-8
 RDL 3x10-12
 Leg Press 3x12-15
 ...`}
-          className="flex-1 w-full p-4 bg-white/[0.06] border border-white/10 rounded-xl text-white text-sm resize-none focus:border-[#E07A5F] outline-none placeholder:text-white/50"
+          className="flex-1 w-full p-4 bg-white/[0.06] border border-white/10 rounded-xl text-white text-sm resize-none focus:border-[#EF4444] outline-none placeholder:text-white/70"
           disabled={isParsing}
         />
 
         {/* Supported formats */}
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Text</span>
-          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Markdown</span>
-          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Coach notes</span>
-          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Spreadsheet copy</span>
-          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/50 text-xs">Any format</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/70 text-xs">Text</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/70 text-xs">Markdown</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/70 text-xs">Coach notes</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/70 text-xs">Spreadsheet copy</span>
+          <span className="px-2 py-1 rounded-md bg-white/[0.06] text-white/70 text-xs">Any format</span>
         </div>
 
         {/* Error */}
@@ -1407,11 +1407,11 @@ Leg Press 3x12-15
           <div className="mt-4">
             <div className="h-1 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#E07A5F] transition-all duration-300"
+                className="h-full bg-[#EF4444] transition-all duration-300"
                 style={{ width: `${parseProgress}%` }}
               />
             </div>
-            <p className="text-white/50 text-xs mt-2">Analyzing your program...</p>
+            <p className="text-white/70 text-xs mt-2">Analyzing your program...</p>
           </div>
         )}
 
@@ -1422,8 +1422,8 @@ Leg Press 3x12-15
           className={cn(
             'w-full h-14 mt-6 rounded-xl font-bold text-base uppercase tracking-wider transition-all',
             isParsing || !importText.trim()
-              ? 'bg-white/10 text-white/50'
-              : 'bg-[#E07A5F] text-white active:scale-[0.98]'
+              ? 'bg-white/10 text-white/70'
+              : 'bg-[#EF4444] text-white active:scale-[0.98]'
           )}
         >
           {isParsing ? 'Parsing...' : 'Import Plan'}
@@ -1453,7 +1453,7 @@ Leg Press 3x12-15
             </button>
             <button
               onClick={handleResume}
-              className="flex-1 h-12 rounded-xl font-bold text-sm text-white bg-[#E07A5F] active:scale-[0.98] transition-transform"
+              className="flex-1 h-12 rounded-xl font-bold text-sm text-white bg-[#EF4444] active:scale-[0.98] transition-transform"
             >
               Resume
             </button>
@@ -1481,7 +1481,7 @@ function QuestionCard({ headline, subtext, children }: { headline: string; subte
   return (
     <div className="flex-1 flex flex-col">
       <h1 className="text-white font-black text-3xl leading-tight">{headline}</h1>
-      <p className="text-white/50 text-base mt-2">{subtext}</p>
+      <p className="text-white/70 text-base mt-2">{subtext}</p>
       {children}
     </div>
   );
@@ -1500,11 +1500,11 @@ function SelectionCard({ selected, onClick, label, description }: SelectionCardP
       onClick={onClick}
       className={cn(
         'w-full p-4 rounded-xl text-left transition-all duration-150 active:scale-[0.98] border-2',
-        selected ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10 active:border-white/30'
+        selected ? 'bg-[#EF4444] border-[#EF4444]' : 'bg-white/5 border-white/10 active:border-white/30'
       )}
     >
       <p className={cn('font-bold text-sm tracking-wider', selected ? 'text-white' : 'text-white/90')}>{label}</p>
-      <p className={cn('text-sm mt-0.5', selected ? 'text-white/70' : 'text-white/50')}>{description}</p>
+      <p className={cn('text-sm mt-0.5', selected ? 'text-white/70' : 'text-white/70')}>{description}</p>
     </button>
   );
 }
@@ -1522,11 +1522,11 @@ function NumberCard({ selected, onClick, value, unit }: NumberCardProps) {
       onClick={onClick}
       className={cn(
         'flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-150 active:scale-[0.97] border-2 min-h-[88px]',
-        selected ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10 active:border-white/30'
+        selected ? 'bg-[#EF4444] border-[#EF4444]' : 'bg-white/5 border-white/10 active:border-white/30'
       )}
     >
       <span className={cn('font-black text-3xl', selected ? 'text-white' : 'text-white/90')}>{value}</span>
-      {unit && <span className={cn('text-xs mt-1 font-medium', selected ? 'text-white/70' : 'text-white/40')}>{unit}</span>}
+      {unit && <span className={cn('text-xs mt-1 font-medium', selected ? 'text-white/70' : 'text-white/60')}>{unit}</span>}
     </button>
   );
 }
@@ -1543,7 +1543,7 @@ function PillButton({ selected, onClick, label }: PillButtonProps) {
       onClick={onClick}
       className={cn(
         'px-5 py-3 rounded-full transition-all duration-150 active:scale-[0.97] border-2 font-semibold text-sm',
-        selected ? 'bg-[#E07A5F] border-[#E07A5F] text-white' : 'bg-transparent border-white/20 text-white/60 active:border-white/40'
+        selected ? 'bg-[#EF4444] border-[#EF4444] text-white' : 'bg-transparent border-white/20 text-white/60 active:border-white/40'
       )}
     >
       {label}
@@ -1555,7 +1555,7 @@ function ContinueButton({ onClick, label = 'Continue' }: { onClick: () => void; 
   return (
     <button
       onClick={onClick}
-      className="w-full h-14 mt-8 rounded-xl font-bold text-base uppercase tracking-wider bg-[#E07A5F] text-white active:scale-[0.98] transition-transform"
+      className="w-full h-14 mt-8 rounded-xl font-bold text-base uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform"
     >
       {label}
     </button>
@@ -1577,12 +1577,12 @@ function GoalCard({ selected, onClick, label, description, aiNote }: GoalCardPro
       onClick={onClick}
       className={cn(
         'w-full p-4 rounded-xl text-left transition-all duration-150 active:scale-[0.98] border-2',
-        selected ? 'bg-[#E07A5F] border-[#E07A5F]' : 'bg-white/5 border-white/10 active:border-white/30'
+        selected ? 'bg-[#EF4444] border-[#EF4444]' : 'bg-white/5 border-white/10 active:border-white/30'
       )}
     >
       <p className={cn('font-bold text-sm tracking-wider', selected ? 'text-white' : 'text-white/90')}>{label}</p>
-      <p className={cn('text-sm mt-0.5', selected ? 'text-white/70' : 'text-white/50')}>{description}</p>
-      <p className={cn('text-xs mt-2 italic', selected ? 'text-white/60' : 'text-white/30')}>{aiNote}</p>
+      <p className={cn('text-sm mt-0.5', selected ? 'text-white/70' : 'text-white/70')}>{description}</p>
+      <p className={cn('text-xs mt-2 italic', selected ? 'text-white/60' : 'text-white/70')}>{aiNote}</p>
     </button>
   );
 }

@@ -284,7 +284,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[#E07A5F] font-black text-2xl tabular-nums">
+              <p className="text-[#EF4444] font-black text-2xl tabular-nums">
                 {periodization.daysUntil}
               </p>
               <p className="text-white/50 text-xs">days left</p>
@@ -326,11 +326,11 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
         </div>
 
         {/* PRs */}
-        <div className="p-4 rounded-xl bg-[#E07A5F]/20 border border-[#E07A5F]/30 text-center">
-          <p className="text-[#E07A5F] font-black text-3xl tabular-nums">
+        <div className="p-4 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/30 text-center">
+          <p className="text-[#EF4444] font-black text-3xl tabular-nums">
             {analytics.weeklyPRs}
           </p>
-          <p className="text-[#E07A5F]/70 text-xs uppercase tracking-wider mt-1">PRs</p>
+          <p className="text-[#EF4444]/70 text-xs uppercase tracking-wider mt-1">PRs</p>
         </div>
       </div>
 
@@ -345,12 +345,12 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white font-semibold capitalize">{lift.name}</span>
                   <span className="text-white/90 font-mono text-sm">
-                    {lift.start}kg → <span className="text-[#E07A5F] font-bold">{lift.current}kg</span>
+                    {lift.start}kg → <span className="text-[#EF4444] font-bold">{lift.current}kg</span>
                   </span>
                 </div>
                 <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="absolute inset-y-0 left-0 bg-[#E07A5F] rounded-full transition-all duration-500"
+                    className="absolute inset-y-0 left-0 bg-[#EF4444] rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(10, (lift.current / (lift.start * 1.5)) * 100))}%` }}
                   />
                 </div>
@@ -373,7 +373,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
               <div className={cn(
                 'w-9 h-9 rounded-full flex items-center justify-center mb-1 transition-all',
                 analytics.completedDays[i]
-                  ? 'bg-[#E07A5F] text-white'
+                  ? 'bg-[#EF4444] text-white'
                   : 'bg-white/10 text-white/50'
               )}>
                 {analytics.completedDays[i] ? (
@@ -396,7 +396,7 @@ export default function DashboardPage({ logs, plan, onStartSession }: DashboardP
       {nextSession && onStartSession && (
         <button
           onClick={handleStartSession}
-          className="w-full p-5 rounded-2xl bg-[#E07A5F] text-left active:scale-[0.98] transition-transform"
+          className="w-full p-5 rounded-2xl bg-[#EF4444] text-left active:scale-[0.98] transition-transform"
         >
           <div className="flex items-start justify-between">
             <div>

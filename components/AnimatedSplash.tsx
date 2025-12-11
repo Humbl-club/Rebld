@@ -58,7 +58,7 @@ export default function AnimatedSplash({
       : 'translateY(-40px) rotateX(-90deg)',
     transition: `all 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
     transformOrigin: 'center bottom',
-    textShadow: phase >= 8 && color === '#E07A5F'
+    textShadow: phase >= 8 && color === '#EF4444'
       ? '0 0 30px rgba(224, 122, 95, 0.6)'
       : 'none',
   });
@@ -135,19 +135,19 @@ export default function AnimatedSplash({
           </span>
           <span
             className="text-[56px] font-black tracking-tight"
-            style={getLetterStyle(4, '#E07A5F')}
+            style={getLetterStyle(4, '#EF4444')}
           >
             B
           </span>
           <span
             className="text-[56px] font-black tracking-tight"
-            style={getLetterStyle(5, '#E07A5F')}
+            style={getLetterStyle(5, '#EF4444')}
           >
             L
           </span>
           <span
             className="text-[56px] font-black tracking-tight"
-            style={getLetterStyle(6, '#E07A5F')}
+            style={getLetterStyle(6, '#EF4444')}
           >
             D
           </span>
@@ -158,7 +158,7 @@ export default function AnimatedSplash({
           className="mx-auto mt-3 rounded-full"
           style={{
             height: '3px',
-            background: 'linear-gradient(90deg, transparent 0%, #E07A5F 50%, transparent 100%)',
+            background: 'linear-gradient(90deg, transparent 0%, #EF4444 50%, transparent 100%)',
             width: phase >= 7 ? '140px' : '0px',
             opacity: phase >= 7 ? 1 : 0,
             transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -198,7 +198,7 @@ export default function AnimatedSplash({
             style={{
               width: '6px',
               height: '6px',
-              backgroundColor: '#E07A5F',
+              backgroundColor: '#EF4444',
               animation: phase >= 7 ? `pulse-loading 1.4s ease-in-out ${i * 0.15}s infinite` : 'none',
             }}
           />

@@ -412,7 +412,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       <div className="min-h-screen w-full bg-black flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-white/60 text-lg mb-4">No exercises found</p>
-          <button onClick={onCancel} className="text-[#E07A5F] font-bold text-lg">
+          <button onClick={onCancel} className="text-[#EF4444] font-bold text-lg">
             Go Back
           </button>
         </div>
@@ -437,7 +437,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       {/* Ambient Progress Bar - top edge */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 z-20">
         <div
-          className="h-full bg-gradient-to-r from-[#E07A5F] to-[#E07A5F]/80 transition-all duration-500"
+          className="h-full bg-gradient-to-r from-[#EF4444] to-[#EF4444]/80 transition-all duration-500"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
@@ -481,8 +481,8 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       <div className="min-h-screen flex flex-col items-center justify-center px-6 py-32">
         {/* Block label if superset */}
         {isSuperset && (
-          <div className="mb-4 px-4 py-1.5 rounded-full bg-[#E07A5F]/20 border border-[#E07A5F]/40">
-            <span className="text-[#E07A5F] text-xs font-bold uppercase tracking-wider">
+          <div className="mb-4 px-4 py-1.5 rounded-full bg-[#EF4444]/20 border border-[#EF4444]/40">
+            <span className="text-[#EF4444] text-xs font-bold uppercase tracking-wider">
               Superset · Round {currentRound}/{totalRounds}
             </span>
           </div>
@@ -497,7 +497,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 className={cn(
                   "w-3 h-3 rounded-full transition-all duration-300",
                   i < currentRound - 1
-                    ? "bg-[#E07A5F]"
+                    ? "bg-[#EF4444]"
                     : i === currentRound - 1
                       ? "bg-white ring-2 ring-white/30 scale-110"
                       : "bg-white/20"
@@ -633,7 +633,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 <circle
                   cx="50" cy="50" r="45"
                   fill="none"
-                  stroke="#E07A5F"
+                  stroke="#EF4444"
                   strokeWidth="4"
                   strokeLinecap="round"
                   style={{
@@ -670,7 +670,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   ? "bg-green-500 text-white"
                   : timerRunning
                     ? "bg-red-500/80 text-white"
-                    : "bg-[#E07A5F] text-white"
+                    : "bg-[#EF4444] text-white"
               )}
             >
               {timerElapsed >= targetDuration ? 'Complete' : timerRunning ? 'Stop' : 'Start'}
@@ -687,7 +687,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
             }}
             className={cn(
               "w-full max-w-xs py-5 rounded-2xl",
-              "bg-[#E07A5F] text-white",
+              "bg-[#EF4444] text-white",
               "font-bold text-lg",
               "active:scale-95 transition-all",
               "shadow-[0_0_30px_rgba(224,122,95,0.3)]"
@@ -746,7 +746,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                     "rounded-2xl",
                     "text-white text-5xl font-black text-center",
                     "placeholder:text-white/50",
-                    "focus:border-[#E07A5F] focus:outline-none",
+                    "focus:border-[#EF4444] focus:outline-none",
                     "transition-colors"
                   )}
                 />
@@ -794,7 +794,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   "rounded-2xl",
                   "text-white text-5xl font-black text-center",
                   "placeholder:text-white/20",
-                  "focus:border-[#E07A5F] focus:outline-none",
+                  "focus:border-[#EF4444] focus:outline-none",
                   "transition-colors"
                 )}
               />
@@ -808,7 +808,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 "w-full max-w-sm py-5 rounded-2xl font-bold text-lg",
                 "transition-all active:scale-95",
                 inputWeight && inputReps
-                  ? "bg-[#E07A5F] text-white shadow-[0_0_30px_rgba(224,122,95,0.3)]"
+                  ? "bg-[#EF4444] text-white shadow-[0_0_30px_rgba(224,122,95,0.3)]"
                   : "bg-white/10 text-white/50"
               )}
             >
@@ -841,7 +841,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 <div key={blockIdx} className="py-3">
                   {block.type === 'superset' && (
                     <div className="px-2 py-1 mb-2">
-                      <span className="text-[#E07A5F] text-xs font-bold uppercase tracking-wider">
+                      <span className="text-[#EF4444] text-xs font-bold uppercase tracking-wider">
                         Superset · {(block as SupersetBlock).rounds} rounds
                       </span>
                     </div>
@@ -878,7 +878,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                         className={cn(
                           "w-full flex items-center gap-3 p-4 rounded-xl mb-2 text-left transition-all active:scale-[0.98]",
                           isCurrent
-                            ? "bg-[#E07A5F]/20 border border-[#E07A5F]/40"
+                            ? "bg-[#EF4444]/20 border border-[#EF4444]/40"
                             : isCompleted
                               ? "bg-white/5 border border-white/10"
                               : "bg-white/5 border border-transparent"
@@ -886,14 +886,14 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                       >
                         <div className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                          isCompleted ? "bg-green-500/20" : isCurrent ? "bg-[#E07A5F]/30" : "bg-white/10"
+                          isCompleted ? "bg-green-500/20" : isCurrent ? "bg-[#EF4444]/30" : "bg-white/10"
                         )}>
                           {isCompleted ? (
                             <CheckIcon className="w-4 h-4 text-green-400" />
                           ) : (
                             <span className={cn(
                               "text-sm font-bold",
-                              isCurrent ? "text-[#E07A5F]" : "text-white/50"
+                              isCurrent ? "text-[#EF4444]" : "text-white/50"
                             )}>
                               {blockIdx * 10 + exIdx + 1}
                             </span>
@@ -926,7 +926,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                         </div>
 
                         {isCurrent && (
-                          <span className="px-2 py-1 rounded-full bg-[#E07A5F] text-white text-xs font-bold">
+                          <span className="px-2 py-1 rounded-full bg-[#EF4444] text-white text-xs font-bold">
                             NOW
                           </span>
                         )}
@@ -1014,7 +1014,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                         key={i}
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-xs font-medium",
-                          i === 0 ? "bg-[#E07A5F]/20 text-[#E07A5F]" : "bg-white/5 text-white/70"
+                          i === 0 ? "bg-[#EF4444]/20 text-[#EF4444]" : "bg-white/5 text-white/70"
                         )}
                       >
                         {muscle}
@@ -1071,7 +1071,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                   <ol className="space-y-3">
                     {exerciseCacheData.step_by_step.map((step, i) => (
                       <li key={i} className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#E07A5F]/20 text-[#E07A5F] text-xs font-bold flex items-center justify-center">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#EF4444]/20 text-[#EF4444] text-xs font-bold flex items-center justify-center">
                           {i + 1}
                         </span>
                         <span className="text-white/70 text-sm leading-relaxed pt-0.5">{step}</span>
@@ -1091,19 +1091,19 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                         key={i}
                         className={cn(
                           "flex justify-between items-center p-3 rounded-xl",
-                          i === 0 ? "bg-[#E07A5F]/10 border border-[#E07A5F]/20" : "bg-white/5"
+                          i === 0 ? "bg-[#EF4444]/10 border border-[#EF4444]/20" : "bg-white/5"
                         )}
                       >
                         <div>
                           <p className={cn(
                             "font-bold text-sm",
-                            i === 0 ? "text-[#E07A5F]" : "text-white/80"
+                            i === 0 ? "text-[#EF4444]" : "text-white/80"
                           )}>
                             {entry.weight}kg × {entry.reps}
                           </p>
-                          <p className="text-white/40 text-xs">{entry.totalSets} sets</p>
+                          <p className="text-white/60 text-xs">{entry.totalSets} sets</p>
                         </div>
-                        <p className="text-white/40 text-xs">
+                        <p className="text-white/60 text-xs">
                           {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
@@ -1147,7 +1147,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
       {/* Rest Timer Overlay */}
       {isResting && (
         <div className="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center">
-          <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Rest</p>
+          <p className="text-white/60 text-sm uppercase tracking-widest mb-4">Rest</p>
           <RestCountdown
             duration={restDuration}
             onComplete={() => setIsResting(false)}
@@ -1228,7 +1228,7 @@ function RestCountdown({
           <circle
             cx="50" cy="50" r="45"
             fill="none"
-            stroke="#E07A5F"
+            stroke="#EF4444"
             strokeWidth="3"
             strokeLinecap="round"
             style={{
@@ -1247,7 +1247,7 @@ function RestCountdown({
 
       <button
         onClick={onSkip}
-        className="text-white/40 text-sm font-medium active:text-white/60 py-2 px-4"
+        className="text-white/60 text-sm font-medium active:text-white/60 py-2 px-4"
       >
         Skip rest
       </button>

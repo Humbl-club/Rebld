@@ -175,7 +175,7 @@ export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], use
           <div
             className={cn(
               "inline-flex items-center justify-center w-16 h-16 rounded-full mb-4",
-              "bg-gradient-to-br from-[#E07A5F] to-[#C45D45]",
+              "bg-gradient-to-br from-[#EF4444] to-[#C45D45]",
               "transition-all duration-500",
               showContent ? "scale-100 opacity-100" : "scale-50 opacity-0"
             )}
@@ -186,7 +186,7 @@ export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], use
           </div>
 
           <p
-            className="text-[#E07A5F] text-xs uppercase tracking-[0.3em] mb-2"
+            className="text-[#EF4444] text-xs uppercase tracking-[0.3em] mb-2"
             style={{
               opacity: statsRevealed > 0 ? 1 : 0,
               transition: 'opacity 0.3s ease-out'
@@ -327,9 +327,9 @@ export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], use
               transition: 'all 0.4s ease-out'
             }}
           >
-            <div className="p-4 rounded-2xl bg-[#E07A5F]/10 border border-[#E07A5F]/20">
+            <div className="p-4 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-[#E07A5F] font-bold text-xs uppercase tracking-wider">
+                <h3 className="text-[#EF4444] font-bold text-xs uppercase tracking-wider">
                   {periodization.eventName}
                 </h3>
                 <span className="text-white/60 text-xs">
@@ -391,7 +391,7 @@ export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], use
               );
             })}
             {exercises.length > 5 && (
-              <p className="text-white/30 text-xs text-center mt-2">
+              <p className="text-white/50 text-xs text-center mt-2">
                 +{exercises.length - 5} more exercises
               </p>
             )}
@@ -412,11 +412,11 @@ export default function ZenVictoryScreen({ sessionLog, onDone, allLogs = [], use
         >
           <button
             onClick={handleDone}
-            className="w-full py-4 rounded-xl bg-[#E07A5F] text-white font-bold text-base active:scale-[0.98] transition-transform"
+            className="w-full py-4 rounded-xl bg-[#EF4444] text-white font-bold text-base active:scale-[0.98] transition-transform"
           >
             {t('victory.done', 'Done')}
           </button>
-          <p className="text-center text-white/30 text-xs mt-3">
+          <p className="text-center text-white/50 text-xs mt-3">
             Progress saved automatically
           </p>
         </div>

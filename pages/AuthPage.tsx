@@ -253,8 +253,8 @@ export default function AuthPage() {
     "w-full h-14 px-4 bg-white/[0.04] rounded-xl",
     "text-white text-[17px] font-medium",
     "border border-white/[0.08]",
-    "focus:border-[#E07A5F]/60 focus:bg-white/[0.06] focus:outline-none",
-    "placeholder:text-white/30",
+    "focus:border-[#EF4444]/60 focus:bg-white/[0.06] focus:outline-none",
+    "placeholder:text-white/50",
     "transition-all duration-200",
     "shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]"
   );
@@ -262,7 +262,7 @@ export default function AuthPage() {
   // Primary button styles
   const primaryButtonStyles = cn(
     "w-full h-14 rounded-xl",
-    "bg-[#E07A5F] text-white",
+    "bg-[#EF4444] text-white",
     "text-[17px] font-semibold",
     "active:scale-[0.98] active:brightness-90",
     "transition-all duration-150",
@@ -297,7 +297,7 @@ export default function AuthPage() {
           style={{ fontFamily: "'Syne', sans-serif" }}
         >
           <span className="text-white">RE</span>
-          <span className="text-[#E07A5F]">BLD</span>
+          <span className="text-[#EF4444]">BLD</span>
         </h1>
 
         {/* Tagline */}
@@ -361,14 +361,14 @@ export default function AuthPage() {
               onClick={() => { haptic.light(); setMode('email-signin'); }}
               className="text-white/50 text-[15px] min-h-[44px]"
             >
-              Already have an account? <span className="text-[#E07A5F] font-semibold">Sign in</span>
+              Already have an account? <span className="text-[#EF4444] font-semibold">Sign in</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Terms */}
-      <p className="text-center text-white/30 text-xs px-6 pb-6">
+      <p className="text-center text-white/50 text-xs px-6 pb-6">
         By continuing, you agree to our Terms & Privacy Policy
       </p>
     </div>
@@ -436,7 +436,7 @@ export default function AuthPage() {
           {/* Divider */}
           <div className="flex items-center gap-4 py-4">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/40 text-sm">or</span>
+            <span className="text-white/60 text-sm">or</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
@@ -455,7 +455,7 @@ export default function AuthPage() {
             onClick={() => { haptic.light(); setMode('email-signin'); }}
             className="text-white/50 text-[15px] min-h-[44px]"
           >
-            Already have an account? <span className="text-[#E07A5F] font-semibold">Sign in</span>
+            Already have an account? <span className="text-[#EF4444] font-semibold">Sign in</span>
           </button>
         </div>
       </div>
@@ -528,7 +528,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/40 active:text-white/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/60 active:text-white/60"
               >
                 {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
@@ -540,7 +540,7 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => { haptic.light(); setMode('forgot'); }}
-              className="text-[#E07A5F] text-[14px] font-medium py-2 active:opacity-70"
+              className="text-[#EF4444] text-[14px] font-medium py-2 active:opacity-70"
             >
               Forgot password?
             </button>
@@ -572,7 +572,7 @@ export default function AuthPage() {
             onClick={() => { haptic.light(); setMode('email-signup'); }}
             className="text-white/50 text-[15px] min-h-[44px]"
           >
-            New here? <span className="text-[#E07A5F] font-semibold">Create account</span>
+            New here? <span className="text-[#EF4444] font-semibold">Create account</span>
           </button>
         </div>
       </form>
@@ -646,12 +646,12 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/40 active:text-white/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/60 active:text-white/60"
               >
                 {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-white/40 text-[12px] mt-2">
+            <p className="text-white/60 text-[12px] mt-2">
               Must be at least 8 characters
             </p>
           </div>
@@ -682,7 +682,7 @@ export default function AuthPage() {
             onClick={() => { haptic.light(); setMode('email-signin'); }}
             className="text-white/50 text-[15px] min-h-[44px]"
           >
-            Already have an account? <span className="text-[#E07A5F] font-semibold">Sign in</span>
+            Already have an account? <span className="text-[#EF4444] font-semibold">Sign in</span>
           </button>
         </div>
       </form>
@@ -738,7 +738,7 @@ export default function AuthPage() {
                 "focus:outline-none transition-all duration-200",
                 "shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]",
                 code[i]
-                  ? "border-[#E07A5F]/60 bg-white/[0.06]"
+                  ? "border-[#EF4444]/60 bg-white/[0.06]"
                   : "border-white/[0.08]"
               )}
             />
@@ -770,7 +770,7 @@ export default function AuthPage() {
             onClick={() => haptic.light()}
             className="text-white/50 text-[15px] min-h-[44px]"
           >
-            Didn't get it? <span className="text-[#E07A5F] font-semibold">Resend code</span>
+            Didn't get it? <span className="text-[#EF4444] font-semibold">Resend code</span>
           </button>
         </div>
       </form>
@@ -897,7 +897,7 @@ export default function AuthPage() {
                   "focus:outline-none transition-all duration-200",
                   "shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]",
                   resetCode[i]
-                    ? "border-[#E07A5F]/60 bg-white/[0.06]"
+                    ? "border-[#EF4444]/60 bg-white/[0.06]"
                     : "border-white/[0.08]"
                 )}
               />
@@ -924,7 +924,7 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/40 active:text-white/60"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white/60 active:text-white/60"
             >
               {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
             </button>
