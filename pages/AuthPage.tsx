@@ -281,47 +281,17 @@ export default function AuthPage() {
   );
 
   // ═══════════════════════════════════════════════════════════════
-  // LANDING - Premium Welcome
+  // LANDING - Everything on one screen, no extra steps
   // ═══════════════════════════════════════════════════════════════
   const renderLanding = () => (
     <div className="min-h-[100dvh] bg-black flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Main content - centered */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8">
-        {/* Coral glow behind logo */}
-        <div className="relative mb-6">
-          <div
-            className="absolute inset-0 blur-[80px] opacity-25"
-            style={{
-              background: 'radial-gradient(circle, #E07A5F 0%, transparent 70%)',
-              transform: 'scale(3)',
-            }}
-          />
-
-          {/* Logo mark - four rounded squares */}
-          <div
-            className={cn(
-              "relative grid grid-cols-2 gap-1.5",
-              "transition-all duration-700 ease-out",
-              showContent ? "opacity-100 scale-100" : "opacity-0 scale-90"
-            )}
-          >
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="w-8 h-8 bg-[#E07A5F] rounded-lg"
-                style={{
-                  transitionDelay: `${i * 80}ms`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
         {/* REBLD wordmark */}
         <h1
           className={cn(
-            "font-display text-[56px] font-black tracking-tight mb-3",
-            "transition-all duration-700 delay-200",
+            "text-[56px] font-black tracking-tight mb-3",
+            "transition-all duration-500",
             showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           )}
           style={{ fontFamily: "'Syne', sans-serif" }}
@@ -333,41 +303,74 @@ export default function AuthPage() {
         {/* Tagline */}
         <p
           className={cn(
-            "text-white/60 text-lg font-medium tracking-wide",
-            "transition-all duration-700 delay-400",
+            "text-white/50 text-[17px] mb-12",
+            "transition-all duration-500 delay-100",
             showContent ? "opacity-100" : "opacity-0"
           )}
         >
           Train smarter. Progress faster.
         </p>
+
+        {/* Auth options - all on one screen */}
+        <div
+          className={cn(
+            "w-full max-w-sm space-y-3",
+            "transition-all duration-500 delay-200",
+            showCTA ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          )}
+        >
+          {/* Apple */}
+          <button
+            onClick={() => handleOAuth('oauth_apple')}
+            disabled={loading}
+            className={cn(
+              "w-full h-14 rounded-xl",
+              "bg-white text-black",
+              "flex items-center justify-center gap-3",
+              "text-[17px] font-semibold",
+              "active:scale-[0.98] active:bg-white/90",
+              "transition-all duration-150",
+              "disabled:opacity-50"
+            )}
+          >
+            <AppleIcon className="w-5 h-5" />
+            Continue with Apple
+          </button>
+
+          {/* Google */}
+          <button
+            onClick={() => handleOAuth('oauth_google')}
+            disabled={loading}
+            className={cn(secondaryButtonStyles, "flex items-center justify-center gap-3")}
+          >
+            <GoogleIcon className="w-5 h-5" />
+            Continue with Google
+          </button>
+
+          {/* Email */}
+          <button
+            onClick={() => { haptic.light(); setMode('email-signup'); }}
+            className={secondaryButtonStyles}
+          >
+            Continue with Email
+          </button>
+
+          {/* Sign in link */}
+          <div className="pt-4 text-center">
+            <button
+              onClick={() => { haptic.light(); setMode('email-signin'); }}
+              className="text-white/50 text-[15px] min-h-[44px]"
+            >
+              Already have an account? <span className="text-[#E07A5F] font-semibold">Sign in</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* CTA Section */}
-      <div
-        className={cn(
-          "px-6 pb-8",
-          "transition-all duration-500 delay-600",
-          showCTA ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-        )}
-      >
-        <button
-          onClick={() => { haptic.medium(); setMode('method'); }}
-          className={primaryButtonStyles}
-        >
-          Get Started
-        </button>
-
-        <button
-          onClick={() => { haptic.light(); setMode('email-signin'); }}
-          className="w-full h-12 mt-3 text-white/60 text-[15px] font-medium active:text-white transition-colors"
-        >
-          I already have an account
-        </button>
-
-        <p className="text-center text-white/30 text-xs mt-6">
-          By continuing, you agree to our Terms & Privacy Policy
-        </p>
-      </div>
+      {/* Terms */}
+      <p className="text-center text-white/30 text-xs px-6 pb-6">
+        By continuing, you agree to our Terms & Privacy Policy
+      </p>
     </div>
   );
 
