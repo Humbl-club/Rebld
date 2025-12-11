@@ -413,20 +413,20 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     }
   }, [phase, isGenerating, generatedPlan, generatePlan]);
 
-  // Progress animation synced to AI timing (~2-4 minutes for deepseek-reasoner)
-  // Slower progress that matches actual backend generation time
+  // Progress animation synced to AI timing (~30 seconds for deepseek-chat)
+  // Fast progress that matches the faster LLM backend
   useEffect(() => {
     if (!isGenerating) return;
 
-    // Progress rate designed to reach ~85% in ~3 minutes (180 seconds)
-    // Phase 1: 0-30% in 45 seconds (0.67%/sec)
-    // Phase 2: 30-60% in 60 seconds (0.5%/sec)
-    // Phase 3: 60-85% in 75 seconds (0.33%/sec)
+    // Progress rate designed to reach ~85% in ~25 seconds
+    // Phase 1: 0-40% in 10 seconds (4%/sec)
+    // Phase 2: 40-70% in 8 seconds (3.75%/sec)
+    // Phase 3: 70-85% in 7 seconds (2.14%/sec)
     const progressInterval = setInterval(() => {
       setGenerationProgress(prev => {
-        if (prev < 30) return prev + 0.67;      // ~45 seconds to reach 30%
-        if (prev < 60) return prev + 0.5;       // ~60 more seconds to reach 60%
-        if (prev < 85) return prev + 0.33;      // ~75 more seconds to reach 85%
+        if (prev < 40) return prev + 4;        // ~10 seconds to reach 40%
+        if (prev < 70) return prev + 3.75;     // ~8 more seconds to reach 70%
+        if (prev < 85) return prev + 2.14;     // ~7 more seconds to reach 85%
         return 85; // Cap at 85% until actual completion
       });
     }, 1000);
@@ -1194,6 +1194,8 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
     return (
       <PlanBuildingScreen
         preferences={buildingPreferences}
+        progress={generationProgress}
+        statusText={statusText}
         onComplete={() => {
           // The actual plan completion is handled by the useEffect that watches generatedPlan
           // This callback is just for the visual animation completion

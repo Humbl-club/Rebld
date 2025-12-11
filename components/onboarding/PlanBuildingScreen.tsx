@@ -40,13 +40,24 @@ interface PlanBuildingScreenProps {
       training_type?: string;
     };
   };
+  /** External progress (0-100) from parent component */
+  progress?: number;
+  /** Status text from parent */
+  statusText?: string;
   onComplete?: () => void;
 }
 
-export default function PlanBuildingScreen({ preferences, onComplete }: PlanBuildingScreenProps) {
+export default function PlanBuildingScreen({
+  preferences,
+  progress: externalProgress = 0,
+  statusText: externalStatusText,
+  onComplete
+}: PlanBuildingScreenProps) {
   const [steps, setSteps] = useState<BuildStep[]>([]);
-  const [progress, setProgress] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+  // Use external progress from parent
+  const progress = externalProgress;
 
   // Calculate periodization phases for competition prep
   const phases = useMemo(() => {
@@ -172,52 +183,31 @@ export default function PlanBuildingScreen({ preferences, onComplete }: PlanBuil
     setSteps(generatedSteps);
   }, [preferences, phases]);
 
-  // Progress simulation with realistic timing (20-30 seconds)
+  // Sync step status to external progress
   useEffect(() => {
     if (steps.length === 0) return;
 
-    const totalDuration = 25000; // 25 seconds
-    const stepDuration = totalDuration / steps.length;
+    // Calculate which step should be active based on external progress
+    const targetIndex = Math.min(
+      Math.floor((progress / 100) * steps.length),
+      steps.length - 1
+    );
 
-    let currentIndex = 0;
-    let elapsed = 0;
+    if (targetIndex !== currentStepIndex) {
+      setSteps(prev => prev.map((step, idx) => {
+        if (idx < targetIndex) return { ...step, status: 'complete' };
+        if (idx === targetIndex) return { ...step, status: 'active' };
+        return { ...step, status: 'pending' };
+      }));
+      setCurrentStepIndex(targetIndex);
+    }
 
-    const interval = setInterval(() => {
-      elapsed += 100;
-      const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
-      setProgress(newProgress);
-
-      // Calculate which step should be active
-      const targetIndex = Math.min(
-        Math.floor((elapsed / totalDuration) * steps.length),
-        steps.length - 1
-      );
-
-      if (targetIndex !== currentIndex) {
-        setSteps(prev => prev.map((step, idx) => {
-          if (idx < targetIndex) return { ...step, status: 'complete' };
-          if (idx === targetIndex) return { ...step, status: 'active' };
-          return step;
-        }));
-        currentIndex = targetIndex;
-        setCurrentStepIndex(targetIndex);
-      }
-
-      // Complete
-      if (elapsed >= totalDuration) {
-        setSteps(prev => prev.map(step => ({ ...step, status: 'complete' })));
-        setProgress(100);
-        clearInterval(interval);
-
-        // Call onComplete after a brief delay
-        setTimeout(() => {
-          onComplete?.();
-        }, 500);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [steps.length, onComplete]);
+    // All complete when progress hits 100
+    if (progress >= 100) {
+      setSteps(prev => prev.map(step => ({ ...step, status: 'complete' })));
+      onComplete?.();
+    }
+  }, [progress, steps.length, currentStepIndex, onComplete]);
 
   return (
     <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
