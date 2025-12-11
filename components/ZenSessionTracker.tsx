@@ -442,180 +442,174 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
         />
       </div>
 
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 pt-[calc(env(safe-area-inset-top)+16px)] px-5 flex justify-between items-center z-20">
+      {/* Header - minimal */}
+      <header className="absolute top-0 left-0 right-0 pt-[calc(env(safe-area-inset-top)+12px)] px-5 flex justify-between items-center z-20">
         <button
           onClick={onCancel}
-          className="text-white/60 text-sm font-semibold active:text-white transition-colors py-2 px-1"
+          className="text-white/40 text-xs font-semibold uppercase tracking-wider active:text-white/60 transition-colors py-2 min-w-[44px]"
         >
           Exit
         </button>
 
-        <div className="flex items-center gap-3">
-          <span className="text-white font-mono text-base tabular-nums">
-            {formatElapsed(elapsedTimeMs)}
-          </span>
-        </div>
+        <span className="text-white/50 font-mono text-sm tabular-nums">
+          {formatElapsed(elapsedTimeMs)}
+        </span>
+
+        {/* Placeholder for symmetry */}
+        <div className="w-[44px]" />
       </header>
 
-      {/* Exercise Counter Pill - shows progress */}
+      {/* Exercise Counter - minimal, tap for list */}
       <button
         onClick={() => {
           setShowExerciseList(true);
           haptic.light();
         }}
         className={cn(
-          "absolute top-[calc(env(safe-area-inset-top)+60px)] left-1/2 -translate-x-1/2 z-20",
-          "flex items-center gap-2 px-4 py-2 rounded-full",
-          "bg-white/10 backdrop-blur-md border border-white/20",
-          "active:scale-95 transition-transform"
+          "absolute top-[calc(env(safe-area-inset-top)+56px)] left-1/2 -translate-x-1/2 z-20",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+          "bg-white/[0.06] border border-white/10",
+          "active:bg-white/[0.1] transition-colors"
         )}
       >
-        <span className="text-white font-bold text-sm">
-          {currentExerciseGlobalIndex + 1} / {allExercises.length}
+        <span className="text-white/70 font-semibold text-xs tabular-nums">
+          {currentExerciseGlobalIndex + 1}
         </span>
-        <ChevronDownIcon className="w-4 h-4 text-white/60" />
+        <span className="text-white/30 text-xs">/</span>
+        <span className="text-white/40 text-xs tabular-nums">
+          {allExercises.length}
+        </span>
+        <ChevronDownIcon className="w-3 h-3 text-white/30 ml-0.5" />
       </button>
 
-      {/* Main Content */}
+      {/* Main Content - Simplified, focused view */}
       <div className="min-h-screen flex flex-col items-center justify-center px-6 py-32">
-        {/* Block label if superset */}
+
+        {/* Superset indicator - compact */}
         {isSuperset && (
-          <div className="mb-4 px-4 py-1.5 rounded-full bg-[#EF4444]/20 border border-[#EF4444]/40">
-            <span className="text-[#EF4444] text-xs font-bold uppercase tracking-wider">
+          <div className="mb-3 px-3 py-1 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30">
+            <span className="text-[#EF4444] text-[11px] font-bold uppercase tracking-wider">
               Superset · Round {currentRound}/{totalRounds}
             </span>
           </div>
         )}
 
-        {/* Set dots - not for cardio */}
-        {!isCardio && !isSuperset && (
-          <div className="flex gap-2 mb-6">
-            {Array.from({ length: totalRounds }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-3 h-3 rounded-full transition-all duration-300",
-                  i < currentRound - 1
-                    ? "bg-[#EF4444]"
-                    : i === currentRound - 1
-                      ? "bg-white ring-2 ring-white/30 scale-110"
-                      : "bg-white/20"
-                )}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Exercise Name */}
-        <h1 className={cn(
-          "text-white text-center font-black leading-tight mb-2",
-          "transition-all duration-300",
-          currentExercise.exercise_name.length > 25
-            ? "text-2xl"
-            : currentExercise.exercise_name.length > 15
-              ? "text-3xl"
-              : "text-4xl",
-          completedSetFlash && "scale-95 opacity-80"
-        )}>
+        {/* Exercise Name - Hero element */}
+        <h1
+          className={cn(
+            "text-white text-center font-black leading-[1.1] mb-3",
+            "transition-all duration-300",
+            currentExercise.exercise_name.length > 25
+              ? "text-[28px]"
+              : currentExercise.exercise_name.length > 15
+                ? "text-[34px]"
+                : "text-[42px]",
+            completedSetFlash && "scale-95 opacity-80"
+          )}
+          onClick={() => {
+            setShowExerciseInfo(true);
+            haptic.light();
+          }}
+        >
           {currentExercise.exercise_name}
         </h1>
 
-        {/* Exercise meta: tier, movement pattern, muscles */}
-        <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
-          {exerciseCacheData?.exercise_tier && (
-            <span className={cn(
-              "px-2 py-0.5 rounded text-xs font-bold uppercase",
-              TIER_COLORS[exerciseCacheData.exercise_tier]?.bg || 'bg-white/10',
-              TIER_COLORS[exerciseCacheData.exercise_tier]?.text || 'text-white/60'
-            )}>
-              {exerciseCacheData.exercise_tier}-Tier
-            </span>
-          )}
-          {exerciseCacheData?.movement_pattern && (
-            <span className="text-white/50 text-xs">
-              {MOVEMENT_PATTERNS[exerciseCacheData.movement_pattern] || exerciseCacheData.movement_pattern}
-            </span>
-          )}
-          {exerciseCacheData?.muscles_worked && exerciseCacheData.muscles_worked.length > 0 && (
-            <span className="text-white/50 text-xs">
-              · {exerciseCacheData.muscles_worked.slice(0, 2).join(', ')}
-            </span>
-          )}
-        </div>
-
-        {/* Injury Warning */}
-        {injuryWarning && (
-          <div className={cn(
-            "mb-4 px-4 py-3 rounded-xl border max-w-sm",
-            injuryWarning.severity === 'absolute'
-              ? "bg-red-500/10 border-red-500/30"
-              : injuryWarning.severity === 'caution'
-                ? "bg-amber-500/10 border-amber-500/30"
-                : "bg-blue-500/10 border-blue-500/30"
-          )}>
-            <div className="flex items-start gap-2">
-              <svg className={cn(
-                "w-4 h-4 mt-0.5 flex-shrink-0",
-                injuryWarning.severity === 'absolute' ? "text-red-400" :
-                  injuryWarning.severity === 'caution' ? "text-amber-400" : "text-blue-400"
-              )} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div>
-                <p className={cn(
-                  "text-sm font-semibold",
-                  injuryWarning.severity === 'absolute' ? "text-red-400" :
-                    injuryWarning.severity === 'caution' ? "text-amber-400" : "text-blue-400"
-                )}>
-                  {injuryWarning.severity === 'absolute' ? 'Not recommended' :
-                    injuryWarning.severity === 'caution' ? 'Use caution' : 'Monitor'} ({injuryWarning.painPoint})
-                </p>
-                <p className="text-white/60 text-xs mt-0.5">{injuryWarning.reason}</p>
-                {injuryWarning.modifications?.length > 0 && (
-                  <p className="text-white/50 text-xs mt-1">
-                    Tip: {injuryWarning.modifications[0]}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Exercise Info Button */}
+        {/* Compact meta line - tap for details */}
         <button
           onClick={() => {
             setShowExerciseInfo(true);
             haptic.light();
           }}
-          className="mb-4 flex items-center gap-1.5 text-white/50 text-sm font-medium active:text-white/70 transition-colors min-h-[44px]"
+          className="flex items-center gap-2 mb-6 min-h-[44px] px-2 active:opacity-70 transition-opacity"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {exerciseCacheData?.exercise_tier && (
+            <span className={cn(
+              "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+              TIER_COLORS[exerciseCacheData.exercise_tier]?.bg || 'bg-white/10',
+              TIER_COLORS[exerciseCacheData.exercise_tier]?.text || 'text-white/60'
+            )}>
+              {exerciseCacheData.exercise_tier}
+            </span>
+          )}
+          {exerciseCacheData?.muscles_worked && exerciseCacheData.muscles_worked.length > 0 && (
+            <span className="text-white/40 text-xs">
+              {exerciseCacheData.muscles_worked[0]}
+            </span>
+          )}
+          <svg className="w-3.5 h-3.5 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4M12 8h.01" />
           </svg>
-          <span>Exercise details</span>
         </button>
 
-        {/* Target metrics hint */}
-        {!isCardio && currentExercise.metrics_template && (
-          <div className="mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-            <p className="text-white/50 text-sm text-center">
-              Target: {currentExercise.metrics_template.target_sets} sets × {currentExercise.metrics_template.target_reps} reps
-              {currentExercise.metrics_template.rest_period_s && (
-                <span className="text-white/50"> · {currentExercise.metrics_template.rest_period_s}s rest</span>
-              )}
-            </p>
+        {/* Injury Warning - only show if critical */}
+        {injuryWarning && injuryWarning.severity !== 'monitor' && (
+          <div className={cn(
+            "mb-5 px-4 py-2.5 rounded-xl border max-w-[300px]",
+            injuryWarning.severity === 'absolute'
+              ? "bg-red-500/10 border-red-500/30"
+              : "bg-amber-500/10 border-amber-500/30"
+          )}>
+            <div className="flex items-center gap-2">
+              <svg className={cn(
+                "w-4 h-4 flex-shrink-0",
+                injuryWarning.severity === 'absolute' ? "text-red-400" : "text-amber-400"
+              )} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className={cn(
+                "text-xs font-medium",
+                injuryWarning.severity === 'absolute' ? "text-red-400" : "text-amber-400"
+              )}>
+                {injuryWarning.severity === 'absolute' ? 'Not recommended' : 'Use caution'} · {injuryWarning.painPoint}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Last performance hint */}
-        {lastPerformance && !isCardio && (
-          <div className="mb-8 flex items-center gap-2">
-            <span className="text-white/50 text-sm">Last:</span>
-            <span className="text-white/60 text-sm font-semibold">
-              {lastPerformance.weight}kg × {lastPerformance.reps} reps
+        {/* Set Progress - clean visual */}
+        {!isCardio && (
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex gap-1.5">
+              {Array.from({ length: totalRounds }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full transition-all duration-300",
+                    i < currentRound - 1
+                      ? "bg-[#EF4444]"
+                      : i === currentRound - 1
+                        ? "bg-white scale-125"
+                        : "bg-white/20"
+                  )}
+                />
+              ))}
+            </div>
+            <span className="text-white/50 text-sm font-medium">
+              Set {currentRound}
             </span>
+          </div>
+        )}
+
+        {/* Last performance + Target - compact single line */}
+        {!isCardio && (lastPerformance || currentExercise.metrics_template) && (
+          <div className="mb-8 flex items-center gap-4 text-xs">
+            {lastPerformance && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-white/40">Last</span>
+                <span className="text-white/70 font-semibold tabular-nums">
+                  {lastPerformance.weight}kg × {lastPerformance.reps}
+                </span>
+              </div>
+            )}
+            {currentExercise.metrics_template?.target_reps && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-white/40">Target</span>
+                <span className="text-white/70 font-semibold">
+                  {currentExercise.metrics_template.target_reps} reps
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -678,7 +672,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
           </div>
         )}
 
-        {/* Strength: Log button */}
+        {/* Strength: Log button - prominent CTA */}
         {!isCardio && !showInput && (
           <button
             onClick={() => {
@@ -686,23 +680,23 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
               haptic.light();
             }}
             className={cn(
-              "w-full max-w-xs py-5 rounded-2xl",
+              "w-full max-w-[280px] py-5 rounded-2xl",
               "bg-[#EF4444] text-white",
               "font-bold text-lg",
-              "active:scale-95 transition-all",
-              "shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+              "active:scale-[0.97] transition-transform",
+              "shadow-[0_0_40px_rgba(239,68,68,0.25)]"
             )}
           >
-            Log Set {currentRound}
+            Log Set
           </button>
         )}
 
-        {/* Skip option */}
+        {/* Skip - subtle, bottom of screen */}
         <button
           onClick={handleSkipExercise}
-          className="mt-6 text-white/50 text-sm font-medium active:text-white/70 transition-colors min-h-[44px] py-2"
+          className="mt-8 text-white/40 text-xs font-medium active:text-white/60 transition-colors min-h-[44px] py-2 uppercase tracking-wider"
         >
-          Skip exercise
+          Skip
         </button>
       </div>
 

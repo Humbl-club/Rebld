@@ -1240,56 +1240,135 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   };
 
   // ═══════════════════════════════════════════════════════════════════════
-  // RENDER: REVEAL
+  // RENDER: REVEAL - Redesigned with week preview
   // ═══════════════════════════════════════════════════════════════════════
 
   const renderReveal = () => {
-    const exerciseCount = generatedPlan?.weeklyPlan?.reduce(
-      (acc, day) => acc + (day.blocks?.reduce((a, b) => a + (b.exercises?.length || 0), 0) || 0), 0
-    ) || 0;
+    // Calculate total exercises counting both blocks and sessions
+    const exerciseCount = generatedPlan?.weeklyPlan?.reduce((total, day) => {
+      // Count from blocks
+      const blockExercises = day.blocks?.reduce((a, b) => a + (b.exercises?.length || 0), 0) || 0;
+      // Count from sessions (for 2x/day training)
+      const sessionExercises = day.sessions?.reduce((a, session) =>
+        a + (session.blocks?.reduce((b, block) => b + (block.exercises?.length || 0), 0) || 0), 0) || 0;
+      return total + blockExercises + sessionExercises;
+    }, 0) || 0;
+
+    // Get exercises for a day (handling both structures)
+    const getDayExercises = (day: any) => {
+      const exercises: string[] = [];
+      // From blocks
+      day.blocks?.forEach((block: any) => {
+        block.exercises?.forEach((ex: any) => exercises.push(ex.exercise_name));
+      });
+      // From sessions
+      day.sessions?.forEach((session: any) => {
+        session.blocks?.forEach((block: any) => {
+          block.exercises?.forEach((ex: any) => exercises.push(ex.exercise_name));
+        });
+      });
+      return exercises;
+    };
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return (
-      <div className="fixed inset-0 bg-black flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center px-8">
-          <div className="w-24 h-24 rounded-full bg-[#EF4444] flex items-center justify-center mb-8 animate-[scale-in_0.5s_ease-out]">
-            <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-
-          <h1 className="text-white font-black text-4xl text-center mb-4">
-            Your Program<br />Is Ready
-          </h1>
-
-          <p className="text-white/70 text-center">
-            {generatedPlan?.weeklyPlan?.length || 0} training days · {exerciseCount} exercises
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-2 mt-6">
-            <span className="px-4 py-2 rounded-full bg-white/10 text-white/70 text-sm font-medium">
-              {goal?.split(' ')[0]}
-            </span>
-            <span className="px-4 py-2 rounded-full bg-white/10 text-white/70 text-sm font-medium">
-              {experience}
-            </span>
-            <span className="px-4 py-2 rounded-full bg-white/10 text-white/70 text-sm font-medium">
-              {frequency} days/week
-            </span>
+      <div className="fixed inset-0 bg-black flex flex-col pt-[env(safe-area-inset-top)]">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-[#EF4444] flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-xl">Your Program Is Ready</h1>
+              <p className="text-white/60 text-sm">{exerciseCount} exercises · {generatedPlan?.weeklyPlan?.length || 0} training days</p>
+            </div>
           </div>
         </div>
 
-        <div className="px-8 pb-[max(3rem,env(safe-area-inset-bottom))]">
+        {/* Week Preview - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="space-y-3">
+            {generatedPlan?.weeklyPlan?.map((day, index) => {
+              const exercises = getDayExercises(day);
+              const isRestDay = exercises.length === 0;
+              const displayExercises = exercises.slice(0, 4);
+              const moreCount = exercises.length - 4;
+
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "rounded-2xl p-4 transition-all",
+                    isRestDay
+                      ? "bg-white/[0.03] border border-white/[0.06]"
+                      : "bg-white/[0.06] border border-white/[0.1]"
+                  )}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Day header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/50 text-xs font-semibold uppercase tracking-wider">
+                        {dayNames[day.day_of_week - 1]}
+                      </span>
+                      {!isRestDay && (
+                        <span className="px-2 py-0.5 rounded bg-[#EF4444]/20 text-[#EF4444] text-xs font-semibold">
+                          {exercises.length} ex
+                        </span>
+                      )}
+                    </div>
+                    {day.estimated_duration && (
+                      <span className="text-white/40 text-xs">~{day.estimated_duration}min</span>
+                    )}
+                  </div>
+
+                  {/* Focus/Title */}
+                  <h3 className={cn(
+                    "font-bold mb-2",
+                    isRestDay ? "text-white/40 text-base" : "text-white text-lg"
+                  )}>
+                    {isRestDay ? 'Rest Day' : day.focus}
+                  </h3>
+
+                  {/* Exercise preview */}
+                  {!isRestDay && displayExercises.length > 0 && (
+                    <div className="space-y-1">
+                      {displayExercises.map((ex, i) => (
+                        <p key={i} className="text-white/50 text-sm truncate">
+                          • {ex}
+                        </p>
+                      ))}
+                      {moreCount > 0 && (
+                        <p className="text-white/40 text-xs">
+                          +{moreCount} more
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Rest day message */}
+                  {isRestDay && (
+                    <p className="text-white/40 text-sm">Recovery & muscle growth</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 bg-gradient-to-t from-black via-black to-transparent">
           <button
             onClick={handleConfirmPlan}
-            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+            className="w-full h-14 rounded-2xl font-bold text-base uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform"
           >
             Start Training
           </button>
         </div>
-
-        <style>{`
-          @keyframes scale-in { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-        `}</style>
       </div>
     );
   };

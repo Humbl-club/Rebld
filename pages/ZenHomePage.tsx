@@ -203,7 +203,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     return blocks && blocks.length > 0 && blocks.some(b => b.exercises && b.exercises.length > 0);
   }, [currentSession]);
 
-  // Get workout info
+  // Get workout info with exercise names
   const workoutInfo = useMemo(() => {
     if (!currentSession || !hasWorkout) return null;
 
@@ -212,9 +212,13 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     const focus = 'focus' in currentSession ? currentSession.focus : ('session_name' in currentSession ? currentSession.session_name : 'Workout');
     const duration = 'estimated_duration' in currentSession ? currentSession.estimated_duration : null;
 
+    // Get exercise names for preview
+    const exerciseNames = exercises.map(ex => ex.exercise_name);
+
     return {
       focus: focus || 'Workout',
       exerciseCount: exercises.length,
+      exercises: exerciseNames,
       duration: duration || Math.round(exercises.length * 4), // Estimate 4min per exercise
       visualType: getWorkoutVisualType(currentSession as PlanDay)
     };
@@ -372,28 +376,42 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
           <>
             {/* Time of day indicator for 2x daily */}
             {hasTwoADaySessions && (
-              <p className="text-white/50 text-sm uppercase tracking-widest mb-2">
+              <p className="text-white/50 text-xs uppercase tracking-widest mb-4">
                 {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
               </p>
             )}
 
-            {/* Abstract Visual */}
-            <div className="w-full max-w-sm mb-6">
-              {workoutInfo.visualType === 'cardio' && <CardioVisual />}
-              {workoutInfo.visualType === 'strength' && <StrengthVisual />}
-              {workoutInfo.visualType === 'mixed' && <MixedVisual />}
-            </div>
-
             {/* Workout Title */}
-            <h1 className="text-white text-3xl font-black text-center mb-3 leading-tight">
+            <h1 className="text-white text-3xl font-black text-center mb-2 leading-tight">
               {workoutInfo.focus}
             </h1>
 
-            {/* Subtle metrics */}
-            <div className="flex items-center gap-4 text-white/60 text-sm mb-10">
+            {/* Metrics */}
+            <div className="flex items-center gap-3 text-white/60 text-sm mb-6">
               <span>{workoutInfo.exerciseCount} exercises</span>
-              <span className="w-1 h-1 rounded-full bg-white/50" />
+              <span className="w-1 h-1 rounded-full bg-white/40" />
               <span>~{workoutInfo.duration} min</span>
+            </div>
+
+            {/* Exercise Preview Card */}
+            <div className="w-full max-w-sm bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 mb-8">
+              <div className="space-y-2">
+                {workoutInfo.exercises.slice(0, 5).map((name, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-[#EF4444]/20 text-[#EF4444] text-xs font-bold flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <span className="text-white/80 text-sm font-medium truncate">
+                      {name}
+                    </span>
+                  </div>
+                ))}
+                {workoutInfo.exercises.length > 5 && (
+                  <p className="text-white/40 text-xs pl-9">
+                    +{workoutInfo.exercises.length - 5} more exercises
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* THE Button */}
@@ -401,13 +419,13 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               onClick={handleStart}
               disabled={isPast}
               className={cn(
-                "w-full max-w-xs py-5 rounded-2xl",
-                "text-xl font-black uppercase tracking-wider",
-                "transition-all duration-300",
-                "active:scale-95",
+                "w-full max-w-xs py-4 rounded-2xl",
+                "text-lg font-bold uppercase tracking-wider",
+                "transition-all duration-200",
+                "active:scale-[0.98]",
                 isPast
                   ? "bg-white/10 text-white/50 cursor-not-allowed"
-                  : "bg-[var(--brand-primary)] text-white shadow-[0_0_40px_rgba(239,68,68,0.4)]"
+                  : "bg-[#EF4444] text-white"
               )}
             >
               {isPast ? 'Past' : 'Start'}
@@ -420,7 +438,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                   setSessionView(sessionView === 'am' ? 'pm' : 'am');
                   haptic.light();
                 }}
-                className="mt-8 text-white/50 text-sm active:text-white/70 min-h-[44px] px-4"
+                className="mt-6 text-white/50 text-sm active:text-white/70 min-h-[44px] px-4"
               >
                 {sessionView === 'am' ? (
                   <>Later: {pmSession?.session_name || 'Evening Session'}</>
