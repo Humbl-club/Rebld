@@ -1,16 +1,16 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { WorkoutPlan, PlanDay, DailyRoutine, UserProfile, WorkoutSession } from '../types';
 import { cn } from '../lib/utils';
 import { useHaptic } from '../hooks/useAnimations';
 
 /* ═══════════════════════════════════════════════════════════════
-   ZEN HOME PAGE - Hero-Focused Dashboard
+   ZEN HOME PAGE - Premium Athlete Dashboard
 
-   Philosophy: One thing. Right now.
-   - Time-aware: Shows AM or PM based on current time
-   - Hero-focused: One workout dominates the screen
-   - Visual emotion: Abstract shapes convey workout energy
-   - Swipe to explore: Days accessible but not cluttering
+   Design Philosophy:
+   - Bold, confident branding
+   - Functional calendar that shows real dates and allows past access
+   - Premium typography with clear hierarchy
+   - Exercise presentation that's scannable and informative
    ═══════════════════════════════════════════════════════════════ */
 
 type SessionType = PlanDay | DailyRoutine | WorkoutSession;
@@ -22,97 +22,24 @@ interface ZenHomePageProps {
   userProfile?: UserProfile | null;
 }
 
-// ─────────────────────────────────────────────────────────────
-// ABSTRACT WORKOUT VISUALS - Emotional shapes
-// ─────────────────────────────────────────────────────────────
+// Get week dates starting from Monday
+function getWeekDates() {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-function CardioVisual() {
-  // Flowing, rhythmic lines for cardio
-  return (
-    <div className="relative w-full h-48 overflow-hidden">
-      <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-        {/* Animated flowing waves */}
-        {[0, 1, 2, 3, 4].map((i) => (
-          <path
-            key={i}
-            d={`M-50,${100 + i * 15} Q100,${60 + i * 20} 200,${100 + i * 10} T450,${90 + i * 15}`}
-            fill="none"
-            stroke={`rgba(239, 68, 68, ${0.15 + i * 0.08})`}
-            strokeWidth={3 - i * 0.3}
-            className="animate-flow"
-            style={{
-              animationDelay: `${i * 0.2}s`,
-              animationDuration: `${3 + i * 0.5}s`
-            }}
-          />
-        ))}
-        {/* Pulse circles */}
-        <circle cx="200" cy="100" r="40" fill="none" stroke="rgba(239, 68, 68, 0.1)" strokeWidth="2" className="animate-ping-slow" />
-        <circle cx="200" cy="100" r="60" fill="none" stroke="rgba(239, 68, 68, 0.05)" strokeWidth="1" className="animate-ping-slow" style={{ animationDelay: '0.5s' }} />
-      </svg>
-    </div>
-  );
+  const dates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    dates.push(date);
+  }
+  return dates;
 }
 
-function StrengthVisual() {
-  // Bold, powerful blocks for strength
-  return (
-    <div className="relative w-full h-48 overflow-hidden">
-      <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-        {/* Stacked power blocks */}
-        <g className="animate-pulse-subtle">
-          <rect x="140" y="60" width="120" height="20" rx="4" fill="rgba(239, 68, 68, 0.3)" />
-          <rect x="120" y="90" width="160" height="25" rx="4" fill="rgba(239, 68, 68, 0.4)" />
-          <rect x="100" y="125" width="200" height="30" rx="4" fill="rgba(239, 68, 68, 0.5)" />
-        </g>
-        {/* Side weights */}
-        <circle cx="80" cy="115" r="25" fill="rgba(239, 68, 68, 0.2)" />
-        <circle cx="320" cy="115" r="25" fill="rgba(239, 68, 68, 0.2)" />
-        {/* Bar */}
-        <rect x="60" y="110" width="280" height="10" rx="5" fill="rgba(239, 68, 68, 0.15)" />
-      </svg>
-    </div>
-  );
-}
-
-function MixedVisual() {
-  // Combination of flow and power
-  return (
-    <div className="relative w-full h-48 overflow-hidden">
-      <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-        {/* Central diamond */}
-        <g className="animate-pulse-subtle">
-          <polygon points="200,40 260,100 200,160 140,100" fill="none" stroke="rgba(239, 68, 68, 0.3)" strokeWidth="2" />
-          <polygon points="200,60 240,100 200,140 160,100" fill="rgba(239, 68, 68, 0.15)" />
-        </g>
-        {/* Orbiting elements */}
-        <circle cx="200" cy="100" r="70" fill="none" stroke="rgba(239, 68, 68, 0.1)" strokeWidth="1" strokeDasharray="10 5" className="animate-spin-slow" />
-      </svg>
-    </div>
-  );
-}
-
-function RestVisual() {
-  // Calm, breathing circles for rest
-  return (
-    <div className="relative w-full h-48 overflow-hidden flex items-center justify-center">
-      <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-        {/* Breathing circles */}
-        <circle cx="200" cy="100" r="60" fill="rgba(124, 179, 66, 0.1)" className="animate-breathe" />
-        <circle cx="200" cy="100" r="45" fill="rgba(124, 179, 66, 0.15)" className="animate-breathe" style={{ animationDelay: '0.5s' }} />
-        <circle cx="200" cy="100" r="30" fill="rgba(124, 179, 66, 0.2)" className="animate-breathe" style={{ animationDelay: '1s' }} />
-        {/* Moon icon */}
-        <path
-          d="M200,70 A30,30 0 1,1 200,130 A20,20 0 1,0 200,70"
-          fill="rgba(124, 179, 66, 0.3)"
-        />
-      </svg>
-    </div>
-  );
-}
-
-// Detect workout type from exercises
-function getWorkoutVisualType(session: PlanDay | WorkoutSession | null): 'cardio' | 'strength' | 'mixed' | 'rest' {
+// Workout type detection
+function getWorkoutType(session: PlanDay | WorkoutSession | null): 'cardio' | 'strength' | 'hybrid' | 'rest' {
   if (!session) return 'rest';
 
   const blocks = 'blocks' in session ? session.blocks : [];
@@ -124,53 +51,40 @@ function getWorkoutVisualType(session: PlanDay | WorkoutSession | null): 'cardio
   const focus = ('focus' in session ? session.focus : ('session_name' in session ? session.session_name : '')) || '';
   const focusLower = focus.toLowerCase();
 
-  // Check focus name first
   if (focusLower.includes('cardio') || focusLower.includes('conditioning') || focusLower.includes('hiit') || focusLower.includes('run')) {
     return 'cardio';
   }
-  if (focusLower.includes('strength') || focusLower.includes('power') || focusLower.includes('upper') || focusLower.includes('lower') || focusLower.includes('push') || focusLower.includes('pull') || focusLower.includes('leg')) {
+  if (focusLower.includes('strength') || focusLower.includes('power') || focusLower.includes('upper') || focusLower.includes('lower')) {
     return 'strength';
   }
 
-  // Check exercise names
-  const cardioKeywords = ['cardio', 'run', 'bike', 'row', 'elliptical', 'treadmill', 'swim', 'jump rope', 'burpee'];
-  const strengthKeywords = ['bench', 'squat', 'deadlift', 'press', 'curl', 'row', 'pull', 'push'];
-
-  let cardioCount = 0;
-  let strengthCount = 0;
-
-  exercises.forEach(ex => {
-    const name = ex.exercise_name.toLowerCase();
-    if (cardioKeywords.some(k => name.includes(k))) cardioCount++;
-    if (strengthKeywords.some(k => name.includes(k))) strengthCount++;
-  });
-
-  if (cardioCount > strengthCount * 2) return 'cardio';
-  if (strengthCount > cardioCount * 2) return 'strength';
-  return 'mixed';
+  return 'hybrid';
 }
 
-// ─────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
+// Format workout focus name (remove "AM/PM" prefix if present)
+function formatFocusName(focus: string): string {
+  return focus.replace(/^(AM|PM)\s+/i, '').trim();
+}
 
 export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHomePageProps) {
   const haptic = useHaptic();
 
-  // Time awareness
   const now = new Date();
   const currentHour = now.getHours();
-  const isAfternoon = currentHour >= 14; // After 2pm
+  const isAfternoon = currentHour >= 14;
 
-  // Day navigation
-  const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Mon, 6=Sun
+  // Get today's index (0=Mon, 6=Sun)
+  const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1;
   const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
   const [sessionView, setSessionView] = useState<'am' | 'pm'>(isAfternoon ? 'pm' : 'am');
+
+  // Week dates for the calendar
+  const weekDates = useMemo(() => getWeekDates(), []);
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Swipe handling
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const weeklyPlan = plan?.weeklyPlan || [];
   const activeDayPlan = weeklyPlan[selectedDayIndex];
@@ -188,7 +102,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     return { amSession: null, pmSession: null, hasTwoADaySessions: false };
   }, [activeDayPlan]);
 
-  // Current session to display
+  // Current session
   const currentSession = useMemo(() => {
     if (hasTwoADaySessions) {
       return sessionView === 'am' ? amSession : pmSession;
@@ -196,14 +110,14 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     return activeDayPlan;
   }, [hasTwoADaySessions, sessionView, amSession, pmSession, activeDayPlan]);
 
-  // Check if there's a workout
+  // Check if workout exists
   const hasWorkout = useMemo(() => {
     if (!currentSession) return false;
     const blocks = 'blocks' in currentSession ? currentSession.blocks : [];
     return blocks && blocks.length > 0 && blocks.some(b => b.exercises && b.exercises.length > 0);
   }, [currentSession]);
 
-  // Get workout info with exercise names
+  // Workout info
   const workoutInfo = useMemo(() => {
     if (!currentSession || !hasWorkout) return null;
 
@@ -212,23 +126,36 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     const focus = 'focus' in currentSession ? currentSession.focus : ('session_name' in currentSession ? currentSession.session_name : 'Workout');
     const duration = 'estimated_duration' in currentSession ? currentSession.estimated_duration : null;
 
-    // Get exercise names for preview
-    const exerciseNames = exercises.map(ex => ex.exercise_name);
-
     return {
-      focus: focus || 'Workout',
+      focus: formatFocusName(focus || 'Workout'),
       exerciseCount: exercises.length,
-      exercises: exerciseNames,
-      duration: duration || Math.round(exercises.length * 4), // Estimate 4min per exercise
-      visualType: getWorkoutVisualType(currentSession as PlanDay)
+      exercises: exercises.map(ex => ({
+        name: ex.exercise_name,
+        sets: ex.metrics_template?.target_sets || 3,
+        reps: ex.metrics_template?.target_reps || '8-12',
+      })),
+      duration: duration || Math.round(exercises.length * 4),
+      type: getWorkoutType(currentSession as PlanDay)
     };
   }, [currentSession, hasWorkout]);
 
-  // Day names
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const shortDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  // Day status for calendar
+  const getDayStatus = useCallback((dayIndex: number): 'completed' | 'today' | 'upcoming' | 'rest' => {
+    const dayPlan = weeklyPlan[dayIndex];
+    if (!dayPlan) return 'rest';
 
-  // Handle swipe gestures
+    const blocks = dayPlan.blocks || [];
+    const sessions = (dayPlan as any).sessions;
+    const hasExercises = blocks.some(b => b.exercises?.length > 0) ||
+                         sessions?.some((s: any) => s.blocks?.some((b: any) => b.exercises?.length > 0));
+
+    if (!hasExercises) return 'rest';
+    if (dayIndex < todayIndex) return 'completed'; // Past days with workouts
+    if (dayIndex === todayIndex) return 'today';
+    return 'upcoming';
+  }, [weeklyPlan, todayIndex]);
+
+  // Swipe handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -237,14 +164,10 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
 
-    // Minimum swipe distance
-    if (absX < 50 && absY < 50) return;
+    if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) return;
 
-    if (absX > absY) {
-      // Horizontal swipe - change days
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
       if (deltaX > 50 && selectedDayIndex > 0) {
         setSelectedDayIndex(prev => prev - 1);
         haptic.light();
@@ -253,7 +176,6 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         haptic.light();
       }
     } else if (hasTwoADaySessions) {
-      // Vertical swipe - change AM/PM
       if (deltaY > 50 && sessionView === 'am') {
         setSessionView('pm');
         haptic.light();
@@ -264,14 +186,12 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     }
   }, [selectedDayIndex, sessionView, hasTwoADaySessions, haptic]);
 
-  // Handle start
+  // Start workout
   const handleStart = useCallback(() => {
     if (!currentSession) return;
     haptic.medium();
 
-    // Normalize for the session tracker
     if (hasTwoADaySessions && currentSession) {
-      // Pass the WorkoutSession with day_of_week added
       onStartSession({
         ...currentSession,
         day_of_week: activeDayPlan?.day_of_week || todayIndex + 1
@@ -283,88 +203,115 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
   const isToday = selectedDayIndex === todayIndex;
   const isPast = selectedDayIndex < todayIndex;
+  const selectedDate = weekDates[selectedDayIndex];
 
   return (
     <div
-      ref={containerRef}
-      className="h-screen w-full bg-black overflow-hidden flex flex-col"
+      className="min-h-screen w-full bg-black flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Minimal Header */}
-      <header className="pt-[calc(env(safe-area-inset-top)+8px)] px-6 pb-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="text-2xl font-black tracking-tight">
+      {/* Header with Premium Logo */}
+      <header className="pt-[calc(env(safe-area-inset-top)+16px)] px-6 pb-6 flex-shrink-0">
+        {/* REBLD Logo - Bold, prominent */}
+        <div className="flex items-center justify-center mb-8">
+          <h1
+            className="text-[42px] font-black tracking-[-0.02em]"
+            style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
+          >
             <span className="text-white">RE</span>
-            <span className="text-[var(--brand-primary)]">BLD</span>
-          </div>
-
-          {/* Day indicator - 44px touch targets per iOS HIG */}
-          <div className="flex items-center gap-0.5">
-            {shortDays.map((d, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setSelectedDayIndex(i);
-                  haptic.light();
-                }}
-                className={cn(
-                  "min-w-[44px] min-h-[44px] rounded-full text-xs font-bold transition-all flex items-center justify-center",
-                  i === selectedDayIndex
-                    ? "bg-[var(--brand-primary)] text-white"
-                    : i === todayIndex
-                      ? "bg-white/20 text-white"
-                      : i < todayIndex
-                        ? "text-white/50"
-                        : "text-white/60"
-                )}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
+            <span className="text-[#EF4444]">BLD</span>
+          </h1>
         </div>
 
-        {/* Current day label */}
-        <p className={cn(
-          "text-sm mt-3 font-medium",
-          isToday ? "text-white" : isPast ? "text-white/50" : "text-white/70"
-        )}>
-          {isToday ? 'Today' : dayNames[selectedDayIndex]}
-          {!isToday && isPast && ' (Past)'}
-        </p>
+        {/* Week Calendar - Premium timeline */}
+        <div className="relative">
+          {/* Day cards */}
+          <div className="flex justify-between gap-1">
+            {weekDates.map((date, i) => {
+              const status = getDayStatus(i);
+              const isSelected = i === selectedDayIndex;
+              const isTodayDay = i === todayIndex;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setSelectedDayIndex(i);
+                    haptic.light();
+                  }}
+                  className={cn(
+                    "flex-1 flex flex-col items-center py-3 rounded-xl transition-all",
+                    "min-h-[72px]",
+                    isSelected
+                      ? "bg-[#EF4444]"
+                      : isTodayDay
+                        ? "bg-white/10"
+                        : "bg-transparent",
+                    !isSelected && "active:bg-white/10"
+                  )}
+                >
+                  {/* Day name */}
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider mb-1",
+                    isSelected ? "text-white/80" : "text-white/40"
+                  )}>
+                    {dayNames[i]}
+                  </span>
+
+                  {/* Date number */}
+                  <span className={cn(
+                    "text-lg font-bold tabular-nums",
+                    isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/70"
+                  )}>
+                    {date.getDate()}
+                  </span>
+
+                  {/* Status indicator */}
+                  <div className="h-2 mt-1">
+                    {status === 'completed' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    )}
+                    {status === 'upcoming' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
+                    )}
+                    {status === 'today' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+                    )}
+                    {status === 'rest' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </header>
 
-      {/* Hero Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 relative">
-        {/* 2x Daily Session Toggle */}
+      {/* Main Content */}
+      <main className="flex-1 px-6 pb-32 overflow-y-auto">
+        {/* 2x Daily Toggle */}
         {hasTwoADaySessions && (
-          <div className="absolute top-0 left-0 right-0 flex justify-center gap-4 py-2">
+          <div className="flex justify-center gap-3 mb-6">
             <button
-              onClick={() => {
-                setSessionView('am');
-                haptic.light();
-              }}
+              onClick={() => { setSessionView('am'); haptic.light(); }}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-semibold transition-all",
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
                 sessionView === 'am'
-                  ? "bg-[var(--brand-primary)] text-white"
-                  : "bg-white/10 text-white/60"
+                  ? "bg-[#EF4444] text-white"
+                  : "bg-white/5 text-white/50 border border-white/10"
               )}
             >
               Morning
             </button>
             <button
-              onClick={() => {
-                setSessionView('pm');
-                haptic.light();
-              }}
+              onClick={() => { setSessionView('pm'); haptic.light(); }}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-semibold transition-all",
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
                 sessionView === 'pm'
-                  ? "bg-[var(--brand-primary)] text-white"
-                  : "bg-white/10 text-white/60"
+                  ? "bg-[#EF4444] text-white"
+                  : "bg-white/5 text-white/50 border border-white/10"
               )}
             >
               Evening
@@ -373,156 +320,165 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         )}
 
         {hasWorkout && workoutInfo ? (
-          <>
-            {/* Time of day indicator for 2x daily */}
-            {hasTwoADaySessions && (
-              <p className="text-white/50 text-xs uppercase tracking-widest mb-4">
-                {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
-              </p>
-            )}
+          <div className="space-y-6">
+            {/* Workout Header Card */}
+            <div className="relative">
+              {/* Past day badge */}
+              {isPast && (
+                <div className="absolute -top-2 left-4 px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">
+                  <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                    {dayNames[selectedDayIndex]} · {selectedDate.getDate()}
+                  </span>
+                </div>
+              )}
 
-            {/* Workout Title */}
-            <h1 className="text-white text-3xl font-black text-center mb-2 leading-tight">
-              {workoutInfo.focus}
-            </h1>
-
-            {/* Metrics */}
-            <div className="flex items-center gap-3 text-white/60 text-sm mb-6">
-              <span>{workoutInfo.exerciseCount} exercises</span>
-              <span className="w-1 h-1 rounded-full bg-white/40" />
-              <span>~{workoutInfo.duration} min</span>
-            </div>
-
-            {/* Exercise Preview Card */}
-            <div className="w-full max-w-sm bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 mb-8">
-              <div className="space-y-2">
-                {workoutInfo.exercises.slice(0, 5).map((name, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-lg bg-[#EF4444]/20 text-[#EF4444] text-xs font-bold flex items-center justify-center">
-                      {i + 1}
-                    </span>
-                    <span className="text-white/80 text-sm font-medium truncate">
-                      {name}
-                    </span>
-                  </div>
-                ))}
-                {workoutInfo.exercises.length > 5 && (
-                  <p className="text-white/40 text-xs pl-9">
-                    +{workoutInfo.exercises.length - 5} more exercises
+              {/* Main card */}
+              <div className={cn(
+                "rounded-2xl p-6 border",
+                isPast
+                  ? "bg-white/[0.02] border-white/10"
+                  : "bg-gradient-to-br from-white/[0.06] to-white/[0.02] border-white/10"
+              )}>
+                {/* Session time label */}
+                {hasTwoADaySessions && (
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">
+                    {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
                   </p>
                 )}
+
+                {/* Workout name - BIG and bold */}
+                <h2 className="text-white text-[32px] font-black leading-[1.1] tracking-tight mb-3">
+                  {workoutInfo.focus}
+                </h2>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#EF4444] font-bold">{workoutInfo.exerciseCount}</span>
+                    <span className="text-white/50">exercises</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-white/20" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-white/70 font-bold">~{workoutInfo.duration}</span>
+                    <span className="text-white/50">min</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-white/20" />
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                    workoutInfo.type === 'cardio' && "bg-blue-500/20 text-blue-400",
+                    workoutInfo.type === 'strength' && "bg-green-500/20 text-green-400",
+                    workoutInfo.type === 'hybrid' && "bg-purple-500/20 text-purple-400"
+                  )}>
+                    {workoutInfo.type}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* THE Button */}
-            <button
-              onClick={handleStart}
-              disabled={isPast}
-              className={cn(
-                "w-full max-w-xs py-4 rounded-2xl",
-                "text-lg font-bold uppercase tracking-wider",
-                "transition-all duration-200",
-                "active:scale-[0.98]",
-                isPast
-                  ? "bg-white/10 text-white/50 cursor-not-allowed"
-                  : "bg-[#EF4444] text-white"
-              )}
-            >
-              {isPast ? 'Past' : 'Start'}
-            </button>
+            {/* Exercise List */}
+            <div className="space-y-2">
+              <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest px-1 mb-3">
+                Exercises
+              </h3>
 
-            {/* Other session preview for 2x daily */}
+              {workoutInfo.exercises.slice(0, 6).map((exercise, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-xl",
+                    "bg-white/[0.03] border border-white/[0.06]",
+                    "transition-colors"
+                  )}
+                >
+                  {/* Number badge */}
+                  <div className="w-8 h-8 rounded-lg bg-[#EF4444]/15 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#EF4444] text-sm font-bold">{i + 1}</span>
+                  </div>
+
+                  {/* Exercise info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-[15px] truncate">
+                      {exercise.name}
+                    </p>
+                    <p className="text-white/40 text-xs mt-0.5">
+                      {exercise.sets} sets × {exercise.reps} reps
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {workoutInfo.exercises.length > 6 && (
+                <p className="text-white/30 text-xs text-center py-2">
+                  +{workoutInfo.exercises.length - 6} more exercises
+                </p>
+              )}
+            </div>
+
+            {/* Start Button - Always enabled */}
+            <div className="pt-4">
+              <button
+                onClick={handleStart}
+                className={cn(
+                  "w-full py-5 rounded-2xl",
+                  "font-bold text-lg uppercase tracking-wider",
+                  "transition-all active:scale-[0.98]",
+                  "bg-[#EF4444] text-white",
+                  "shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+                )}
+              >
+                {isPast ? 'Start Catch-Up' : 'Start Workout'}
+              </button>
+            </div>
+
+            {/* Other session hint */}
             {hasTwoADaySessions && (
               <button
                 onClick={() => {
                   setSessionView(sessionView === 'am' ? 'pm' : 'am');
                   haptic.light();
                 }}
-                className="mt-6 text-white/50 text-sm active:text-white/70 min-h-[44px] px-4"
+                className="w-full text-center text-white/40 text-sm py-3 active:text-white/60"
               >
                 {sessionView === 'am' ? (
-                  <>Later: {pmSession?.session_name || 'Evening Session'}</>
+                  <>Also today: {pmSession?.session_name || 'Evening'} →</>
                 ) : (
-                  <>{amSession?.session_name || 'Morning Session'}</>
+                  <>← {amSession?.session_name || 'Morning'}</>
                 )}
               </button>
             )}
-          </>
+          </div>
         ) : (
-          /* Rest Day */
-          <>
-            <RestVisual />
+          /* Rest Day */}
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+            {/* Rest icon */}
+            <div className="w-24 h-24 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6">
+              <svg className="w-10 h-10 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+              </svg>
+            </div>
 
-            <h1 className="text-white text-3xl font-black text-center mb-3 mt-6">
-              Rest Day
-            </h1>
-
-            <p className="text-white/50 text-center max-w-xs mb-8 leading-relaxed">
-              Recovery is where growth happens. Your muscles rebuild stronger during rest.
+            <h2 className="text-white text-2xl font-black mb-2">Rest Day</h2>
+            <p className="text-white/40 text-sm text-center max-w-[260px] leading-relaxed">
+              Recovery is where growth happens.
+              Your muscles rebuild stronger during rest.
             </p>
 
-            {/* Breathing exercise suggestion */}
-            <div className={cn(
-              "px-6 py-4 rounded-2xl",
-              "bg-white/5 border border-white/10",
-              "text-center"
-            )}>
-              <p className="text-white/70 text-sm">
-                Try 5 minutes of deep breathing
-              </p>
-              <p className="text-white/50 text-xs mt-1">
-                4 seconds in, 4 seconds hold, 4 seconds out
+            {/* Quick recovery tip */}
+            <div className="mt-8 p-4 rounded-xl bg-white/[0.03] border border-white/10 max-w-[280px]">
+              <p className="text-white/60 text-sm text-center">
+                💡 Try stretching, walking, or foam rolling
               </p>
             </div>
-          </>
+          </div>
         )}
       </main>
 
-      {/* Swipe hint */}
-      <footer className="pb-[calc(env(safe-area-inset-bottom)+100px)] text-center">
-        <p className="text-white/50 text-xs">
-          {hasTwoADaySessions ? 'Swipe ↕ sessions • Swipe ↔ days' : 'Swipe ↔ to see other days'}
+      {/* Swipe hint - only show when relevant */}
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+90px)] left-0 right-0 text-center pointer-events-none">
+        <p className="text-white/20 text-[10px] uppercase tracking-widest">
+          {hasTwoADaySessions ? 'Swipe ↕ sessions · ↔ days' : 'Swipe to change days'}
         </p>
-      </footer>
-
-      {/* CSS for custom animations */}
-      <style>{`
-        @keyframes flow {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(20px); }
-        }
-        .animate-flow {
-          animation: flow 3s ease-in-out infinite;
-        }
-        @keyframes ping-slow {
-          0% { transform: scale(1); opacity: 0.3; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        .animate-ping-slow {
-          animation: ping-slow 2s ease-out infinite;
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 20s linear infinite;
-        }
-        @keyframes breathe {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.15); opacity: 0.6; }
-        }
-        .animate-breathe {
-          animation: breathe 4s ease-in-out infinite;
-        }
-        @keyframes pulse-subtle {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        .animate-pulse-subtle {
-          animation: pulse-subtle 2s ease-in-out infinite;
-        }
-      `}</style>
+      </div>
     </div>
   );
 }
