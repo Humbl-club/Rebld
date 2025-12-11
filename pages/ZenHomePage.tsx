@@ -2,15 +2,16 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { WorkoutPlan, PlanDay, DailyRoutine, UserProfile, WorkoutSession } from '../types';
 import { cn } from '../lib/utils';
 import { useHaptic } from '../hooks/useAnimations';
+import { FlameIcon, TrophyIcon, TargetIcon } from '../components/icons';
 
 /* ═══════════════════════════════════════════════════════════════
-   ZEN HOME PAGE - Premium Athlete Dashboard
+   ZEN HOME PAGE - Premium Athlete Dashboard v2
 
    Design Philosophy:
-   - Bold, confident branding with animated logo
-   - Premium cards with depth and subtle animations
-   - Staggered entrance animations for polish
-   - Functional calendar with strong visual hierarchy
+   - Personal & intelligent - knows you, speaks to you
+   - Shows the AI working FOR you
+   - Progress-focused - always showing momentum
+   - Emotionally engaging - celebrates wins
    ═══════════════════════════════════════════════════════════════ */
 
 type SessionType = PlanDay | DailyRoutine | WorkoutSession;
@@ -20,6 +21,57 @@ interface ZenHomePageProps {
   onStartSession: (session: SessionType) => void;
   onOpenChat: () => void;
   userProfile?: UserProfile | null;
+}
+
+// Dynamic greetings based on time + context
+function getGreeting(hour: number, name?: string): { greeting: string; subtext: string } {
+  const firstName = name?.split(' ')[0] || null;
+
+  if (hour >= 5 && hour < 12) {
+    return {
+      greeting: firstName ? `Morning, ${firstName}` : 'Good Morning',
+      subtext: 'Ready to build something great?'
+    };
+  } else if (hour >= 12 && hour < 17) {
+    return {
+      greeting: firstName ? `Hey ${firstName}` : 'Good Afternoon',
+      subtext: 'Let\'s keep the momentum going'
+    };
+  } else if (hour >= 17 && hour < 21) {
+    return {
+      greeting: firstName ? `Evening, ${firstName}` : 'Good Evening',
+      subtext: 'Time to earn that rest'
+    };
+  } else {
+    return {
+      greeting: firstName ? `Late one, ${firstName}?` : 'Night Owl Mode',
+      subtext: 'Nothing stops a true athlete'
+    };
+  }
+}
+
+// Motivational insights based on workout
+function getWorkoutInsight(type: string, focus: string, exerciseCount: number): string {
+  const insights: Record<string, string[]> = {
+    strength: [
+      'Building raw power today',
+      'Heavy lifts, heavy gains',
+      'Strength is earned, not given'
+    ],
+    cardio: [
+      'Heart and lungs working overtime',
+      'Endurance day — mental toughness',
+      'Every step makes you harder to beat'
+    ],
+    hybrid: [
+      'Best of both worlds',
+      'Complete athlete training',
+      'Versatility is your weapon'
+    ]
+  };
+
+  const typeInsights = insights[type] || insights.hybrid;
+  return typeInsights[Math.floor(Math.random() * typeInsights.length)];
 }
 
 // Get week dates starting from Monday
@@ -61,16 +113,39 @@ function getWorkoutType(session: PlanDay | WorkoutSession | null): 'cardio' | 's
   return 'hybrid';
 }
 
-// Format workout focus name (remove "AM/PM" prefix if present)
+// Format workout focus name
 function formatFocusName(focus: string): string {
   return focus.replace(/^(AM|PM)\s+/i, '').trim();
+}
+
+// Get muscle groups from workout
+function getMuscleGroups(exercises: { name: string }[]): string[] {
+  const muscleMap: Record<string, string[]> = {
+    chest: ['bench', 'push-up', 'fly', 'press', 'dip'],
+    back: ['row', 'pull', 'lat', 'deadlift', 'chin'],
+    shoulders: ['shoulder', 'delt', 'overhead', 'lateral'],
+    legs: ['squat', 'lunge', 'leg', 'hamstring', 'quad', 'calf'],
+    arms: ['curl', 'tricep', 'bicep', 'extension'],
+    core: ['plank', 'crunch', 'ab', 'core', 'twist']
+  };
+
+  const found = new Set<string>();
+  exercises.forEach(ex => {
+    const nameLower = ex.name.toLowerCase();
+    Object.entries(muscleMap).forEach(([muscle, keywords]) => {
+      if (keywords.some(kw => nameLower.includes(kw))) {
+        found.add(muscle);
+      }
+    });
+  });
+
+  return Array.from(found).slice(0, 3);
 }
 
 export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHomePageProps) {
   const haptic = useHaptic();
   const [mounted, setMounted] = useState(false);
 
-  // Trigger mount animation
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(timer);
@@ -80,6 +155,12 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
   const currentHour = now.getHours();
   const isAfternoon = currentHour >= 14;
 
+  // Get greeting
+  const { greeting, subtext } = useMemo(() =>
+    getGreeting(currentHour, userProfile?.name),
+    [currentHour, userProfile?.name]
+  );
+
   // Get today's index (0=Mon, 6=Sun)
   const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1;
   const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
@@ -87,7 +168,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
   // Week dates for the calendar
   const weekDates = useMemo(() => getWeekDates(), []);
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -95,6 +176,26 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
   const weeklyPlan = plan?.weeklyPlan || [];
   const activeDayPlan = weeklyPlan[selectedDayIndex];
+
+  // Calculate week stats
+  const weekStats = useMemo(() => {
+    let completed = 0;
+    let total = 0;
+
+    weeklyPlan.forEach((day, i) => {
+      const blocks = day?.blocks || [];
+      const sessions = (day as any)?.sessions;
+      const hasExercises = blocks.some(b => b.exercises?.length > 0) ||
+                          sessions?.some((s: any) => s.blocks?.some((b: any) => b.exercises?.length > 0));
+
+      if (hasExercises) {
+        total++;
+        if (i < todayIndex) completed++;
+      }
+    });
+
+    return { completed, total, remaining: total - completed };
+  }, [weeklyPlan, todayIndex]);
 
   // Detect 2x daily sessions
   const { amSession, pmSession, hasTwoADaySessions } = useMemo(() => {
@@ -132,6 +233,8 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
     const exercises = blocks?.flatMap(b => b.exercises || []) || [];
     const focus = 'focus' in currentSession ? currentSession.focus : ('session_name' in currentSession ? currentSession.session_name : 'Workout');
     const duration = 'estimated_duration' in currentSession ? currentSession.estimated_duration : null;
+    const type = getWorkoutType(currentSession as PlanDay);
+    const muscleGroups = getMuscleGroups(exercises.map(ex => ({ name: ex.exercise_name })));
 
     return {
       focus: formatFocusName(focus || 'Workout'),
@@ -142,7 +245,9 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         reps: ex.metrics_template?.target_reps || '8-12',
       })),
       duration: duration || Math.round(exercises.length * 4),
-      type: getWorkoutType(currentSession as PlanDay)
+      type,
+      muscleGroups,
+      insight: getWorkoutInsight(type, focus || '', exercises.length)
     };
   }, [currentSession, hasWorkout]);
 
@@ -210,7 +315,6 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
 
   const isToday = selectedDayIndex === todayIndex;
   const isPast = selectedDayIndex < todayIndex;
-  const selectedDate = weekDates[selectedDayIndex];
 
   return (
     <div
@@ -218,149 +322,180 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header with Premium Logo */}
-      <header className="pt-[calc(env(safe-area-inset-top)+20px)] px-6 pb-6 flex-shrink-0">
-        {/* REBLD Logo - MASSIVE, with glow */}
+      {/* Header */}
+      <header className="pt-[calc(env(safe-area-inset-top)+16px)] px-5 pb-4 flex-shrink-0">
+        {/* Greeting + Week Progress */}
         <div
           className={cn(
-            "flex items-center justify-center mb-10 transition-all duration-700",
+            "flex items-start justify-between mb-6 transition-all duration-500",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
           )}
         >
-          <div className="relative">
-            {/* Glow effect behind BLD */}
-            <div
-              className="absolute inset-0 blur-2xl opacity-40"
-              style={{
-                background: 'radial-gradient(circle at 60% 50%, #EF4444 0%, transparent 60%)',
-                transform: 'scale(1.5)',
-              }}
-            />
+          <div>
             <h1
-              className="relative text-[56px] font-black tracking-[0.02em]"
+              className="text-white text-[28px] font-black leading-tight"
               style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
             >
-              <span className="text-white">RE</span>
-              <span
-                className="text-[#EF4444]"
-                style={{ textShadow: '0 0 30px rgba(239, 68, 68, 0.5)' }}
-              >
-                BLD
-              </span>
+              {greeting}
             </h1>
+            <p className="text-white/40 text-sm mt-0.5">{subtext}</p>
+          </div>
+
+          {/* REBLD Mini Logo */}
+          <div className="flex flex-col items-end">
+            <span
+              className="text-[20px] font-black tracking-tight"
+              style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
+            >
+              <span className="text-white/60">RE</span>
+              <span className="text-[#EF4444]">BLD</span>
+            </span>
           </div>
         </div>
 
-        {/* Week Calendar - Premium styling */}
+        {/* Quick Stats Row */}
         <div
           className={cn(
-            "relative transition-all duration-500 delay-100",
+            "flex gap-2 mb-5 transition-all duration-500 delay-100",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           )}
         >
-          {/* Calendar container with border */}
-          <div className="bg-white/[0.02] rounded-2xl p-2 border border-white/[0.06]">
-            <div className="flex justify-between gap-1">
-              {weekDates.map((date, i) => {
-                const status = getDayStatus(i);
-                const isSelected = i === selectedDayIndex;
-                const isTodayDay = i === todayIndex;
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedDayIndex(i);
-                      haptic.light();
-                    }}
-                    className={cn(
-                      "flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-200",
-                      "min-h-[76px]",
-                      isSelected
-                        ? "bg-[#EF4444] shadow-[0_0_20px_rgba(239,68,68,0.4)]"
-                        : isTodayDay
-                          ? "bg-white/[0.08] border border-white/10"
-                          : "bg-transparent",
-                      !isSelected && "active:scale-95"
-                    )}
-                  >
-                    {/* Day name */}
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider mb-1",
-                      isSelected ? "text-white" : isTodayDay ? "text-white/70" : "text-white/40"
-                    )}>
-                      {dayNames[i]}
-                    </span>
-
-                    {/* Date number */}
-                    <span className={cn(
-                      "text-xl font-black tabular-nums",
-                      isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/60"
-                    )}>
-                      {date.getDate()}
-                    </span>
-
-                    {/* Status indicator */}
-                    <div className="h-3 mt-1 flex items-center justify-center">
-                      {status === 'completed' && !isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                      )}
-                      {status === 'upcoming' && !isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-white/20" />
-                      )}
-                      {status === 'today' && !isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-[#EF4444] shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" />
-                      )}
-                      {status === 'rest' && !isSelected && (
-                        <div className="w-1.5 h-0.5 rounded-full bg-white/10" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+          {/* Week Progress */}
+          <div className="flex-1 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-2">
+              <TargetIcon className="w-3.5 h-3.5 text-[#EF4444]" />
+              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">This Week</span>
             </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-white text-xl font-black">{weekStats.completed}</span>
+              <span className="text-white/30 text-sm">/</span>
+              <span className="text-white/50 text-sm font-bold">{weekStats.total}</span>
+            </div>
+            {/* Mini progress bar */}
+            <div className="mt-2 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#EF4444] rounded-full transition-all duration-500"
+                style={{ width: `${weekStats.total > 0 ? (weekStats.completed / weekStats.total) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Streak */}
+          <div className="w-[90px] p-3 rounded-xl bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20">
+            <div className="flex items-center gap-1.5 mb-1">
+              <FlameIcon className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Streak</span>
+            </div>
+            <span className="text-orange-400 text-xl font-black">
+              {weekStats.completed}
+            </span>
+          </div>
+        </div>
+
+        {/* Compact Week Calendar */}
+        <div
+          className={cn(
+            "transition-all duration-500 delay-150",
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          )}
+        >
+          <div className="flex justify-between gap-1 px-1">
+            {weekDates.map((date, i) => {
+              const status = getDayStatus(i);
+              const isSelected = i === selectedDayIndex;
+              const isTodayDay = i === todayIndex;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setSelectedDayIndex(i);
+                    haptic.light();
+                  }}
+                  className={cn(
+                    "flex-1 flex flex-col items-center py-2.5 rounded-xl transition-all duration-200",
+                    "min-h-[56px]",
+                    isSelected
+                      ? "bg-[#EF4444]"
+                      : isTodayDay
+                        ? "bg-white/[0.06]"
+                        : "bg-transparent",
+                    !isSelected && "active:scale-90"
+                  )}
+                >
+                  {/* Day letter */}
+                  <span className={cn(
+                    "text-[9px] font-bold uppercase mb-0.5",
+                    isSelected ? "text-white/80" : "text-white/30"
+                  )}>
+                    {dayNames[i]}
+                  </span>
+
+                  {/* Date number */}
+                  <span className={cn(
+                    "text-base font-black tabular-nums",
+                    isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/50"
+                  )}>
+                    {date.getDate()}
+                  </span>
+
+                  {/* Status dot */}
+                  <div className="h-2 mt-0.5 flex items-center">
+                    {status === 'completed' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    )}
+                    {status === 'today' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+                    )}
+                    {status === 'upcoming' && !isSelected && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-6 pb-32 overflow-y-auto">
+      <main className="flex-1 px-5 pb-32 overflow-y-auto">
         {/* 2x Daily Toggle */}
         {hasTwoADaySessions && (
           <div
             className={cn(
-              "flex justify-center gap-3 mb-6 transition-all duration-500 delay-200",
+              "flex gap-2 mb-5 transition-all duration-500 delay-200",
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
           >
             <button
               onClick={() => { setSessionView('am'); haptic.light(); }}
               className={cn(
-                "px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200",
+                "flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-200",
                 sessionView === 'am'
-                  ? "bg-[#EF4444] text-white shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                  : "bg-white/[0.04] text-white/50 border border-white/10 active:scale-95"
+                  ? "bg-[#EF4444] text-white"
+                  : "bg-white/[0.04] text-white/40 border border-white/10 active:scale-95"
               )}
             >
-              Morning
+              AM
             </button>
             <button
               onClick={() => { setSessionView('pm'); haptic.light(); }}
               className={cn(
-                "px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200",
+                "flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-200",
                 sessionView === 'pm'
-                  ? "bg-[#EF4444] text-white shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                  : "bg-white/[0.04] text-white/50 border border-white/10 active:scale-95"
+                  ? "bg-[#EF4444] text-white"
+                  : "bg-white/[0.04] text-white/40 border border-white/10 active:scale-95"
               )}
             >
-              Evening
+              PM
             </button>
           </div>
         )}
 
         {hasWorkout && workoutInfo ? (
-          <div className="space-y-5">
-            {/* Workout Header Card */}
+          <div className="space-y-4">
+            {/* Workout Card - Hero */}
             <div
               className={cn(
                 "relative transition-all duration-500 delay-200",
@@ -370,149 +505,164 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               {/* Past day badge */}
               {isPast && (
                 <div className="absolute -top-2 left-4 z-10 px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40">
-                  <span className="text-amber-400 text-[11px] font-bold uppercase tracking-wider">
-                    Catch Up · {dayNames[selectedDayIndex]}
+                  <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                    Catch Up
                   </span>
                 </div>
               )}
 
-              {/* Main card with gradient border effect */}
-              <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-white/20 via-white/5 to-transparent">
-                <div className={cn(
-                  "rounded-2xl p-6 bg-black",
-                  isPast ? "bg-gradient-to-br from-amber-500/5 to-transparent" : "bg-gradient-to-br from-[#EF4444]/10 via-black to-black"
-                )}>
-                  {/* Session time label */}
-                  {hasTwoADaySessions && (
-                    <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-3">
-                      {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
-                    </p>
-                  )}
+              <div className={cn(
+                "rounded-2xl overflow-hidden",
+                "bg-gradient-to-br from-white/[0.04] to-transparent",
+                "border border-white/[0.08]"
+              )}>
+                {/* Main content */}
+                <div className="p-5">
+                  {/* Insight - AI speaking */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-5 h-5 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-[#EF4444]" />
+                    </div>
+                    <span className="text-white/50 text-xs font-medium italic">
+                      {workoutInfo.insight}
+                    </span>
+                  </div>
 
-                  {/* Workout name - HERO */}
+                  {/* Workout name */}
                   <h2
-                    className="text-white text-[36px] font-black leading-[1.05] tracking-tight mb-4"
+                    className="text-white text-[32px] font-black leading-[1.05] tracking-tight mb-4"
                     style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
                   >
                     {workoutInfo.focus}
                   </h2>
 
-                  {/* Stats row - more pronounced */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.05]">
-                      <span className="text-[#EF4444] font-black text-lg">{workoutInfo.exerciseCount}</span>
-                      <span className="text-white/50 text-sm">exercises</span>
+                  {/* Muscle groups */}
+                  {workoutInfo.muscleGroups.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {workoutInfo.muscleGroups.map((muscle, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-lg bg-[#EF4444]/10 text-[#EF4444] text-xs font-bold uppercase tracking-wide"
+                        >
+                          {muscle}
+                        </span>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.05]">
-                      <span className="text-white font-black text-lg">~{workoutInfo.duration}</span>
-                      <span className="text-white/50 text-sm">min</span>
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className="text-white text-2xl font-black">{workoutInfo.exerciseCount}</span>
+                      <span className="text-white/40 text-sm ml-1.5">exercises</span>
                     </div>
-                    <span className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide",
-                      workoutInfo.type === 'cardio' && "bg-blue-500/20 text-blue-400 border border-blue-500/30",
-                      workoutInfo.type === 'strength' && "bg-green-500/20 text-green-400 border border-green-500/30",
-                      workoutInfo.type === 'hybrid' && "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                    )}>
-                      {workoutInfo.type}
-                    </span>
+                    <div className="w-px h-6 bg-white/10" />
+                    <div>
+                      <span className="text-white text-2xl font-black">~{workoutInfo.duration}</span>
+                      <span className="text-white/40 text-sm ml-1.5">min</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exercise preview strip */}
+                <div className="border-t border-white/[0.06] px-5 py-4 bg-white/[0.02]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 overflow-hidden flex-1">
+                      {workoutInfo.exercises.slice(0, 3).map((ex, i) => (
+                        <span
+                          key={i}
+                          className="text-white/50 text-xs font-medium truncate"
+                        >
+                          {ex.name}
+                          {i < 2 && <span className="text-white/20 ml-3">·</span>}
+                        </span>
+                      ))}
+                    </div>
+                    {workoutInfo.exercises.length > 3 && (
+                      <span className="text-white/30 text-xs font-bold ml-2">
+                        +{workoutInfo.exercises.length - 3}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Exercise List - Staggered animation */}
-            <div>
-              <h3
-                className={cn(
-                  "text-white/50 text-xs font-bold uppercase tracking-widest px-1 mb-4 transition-all duration-500 delay-300",
-                  mounted ? "opacity-100" : "opacity-0"
-                )}
-              >
-                Today's Exercises
-              </h3>
-
-              <div className="space-y-2">
-                {workoutInfo.exercises.slice(0, 6).map((exercise, i) => (
+            {/* Exercise List - Compact */}
+            <div
+              className={cn(
+                "transition-all duration-500 delay-300",
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              )}
+            >
+              <div className="space-y-1.5">
+                {workoutInfo.exercises.slice(0, 5).map((exercise, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "flex items-center gap-4 p-4 rounded-xl",
-                      "bg-white/[0.03] border border-white/[0.08]",
-                      "transition-all duration-300 active:scale-[0.98] active:bg-white/[0.06]",
-                      mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                      "flex items-center gap-3 p-3.5 rounded-xl",
+                      "bg-white/[0.02] border border-white/[0.05]",
+                      "active:scale-[0.98] active:bg-white/[0.04] transition-all duration-200"
                     )}
-                    style={{ transitionDelay: mounted ? `${300 + i * 50}ms` : '0ms' }}
                   >
-                    {/* Number badge with glow */}
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-[#EF4444] blur-lg opacity-30" />
-                      <div className="relative w-10 h-10 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/30 flex items-center justify-center">
-                        <span className="text-[#EF4444] text-sm font-black">{i + 1}</span>
-                      </div>
+                    {/* Number */}
+                    <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center shrink-0">
+                      <span className="text-[#EF4444] text-xs font-black">{i + 1}</span>
                     </div>
 
                     {/* Exercise info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-[15px] truncate">
+                      <p className="text-white font-semibold text-[14px] truncate">
                         {exercise.name}
-                      </p>
-                      <p className="text-white/40 text-xs mt-0.5 font-medium">
-                        {exercise.sets} sets × {exercise.reps} reps
                       </p>
                     </div>
 
-                    {/* Chevron */}
-                    <svg className="w-5 h-5 text-white/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
+                    {/* Sets x Reps */}
+                    <span className="text-white/30 text-xs font-medium shrink-0">
+                      {exercise.sets}×{exercise.reps}
+                    </span>
                   </div>
                 ))}
               </div>
 
-              {workoutInfo.exercises.length > 6 && (
-                <p className="text-white/30 text-xs text-center py-3 font-medium">
-                  +{workoutInfo.exercises.length - 6} more exercises
-                </p>
+              {workoutInfo.exercises.length > 5 && (
+                <button className="w-full text-center text-white/30 text-xs py-3 font-medium">
+                  +{workoutInfo.exercises.length - 5} more exercises
+                </button>
               )}
             </div>
 
-            {/* Start Button - Premium, no animation */}
+            {/* Start Button */}
             <div
               className={cn(
-                "pt-4 transition-all duration-500 delay-500",
+                "pt-2 transition-all duration-500 delay-400",
                 mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}
             >
               <button
                 onClick={handleStart}
                 className={cn(
-                  "w-full py-5 rounded-2xl",
-                  "bg-[#EF4444] text-white",
-                  "font-bold text-base uppercase tracking-wider",
-                  "shadow-[0_4px_20px_rgba(239,68,68,0.4)]",
-                  "transition-all duration-200 active:scale-[0.97] active:shadow-[0_2px_10px_rgba(239,68,68,0.3)]"
+                  "w-full py-5 rounded-2xl relative overflow-hidden",
+                  "bg-[#EF4444]",
+                  "font-bold text-[15px] uppercase tracking-wider text-white",
+                  "shadow-[0_8px_32px_rgba(239,68,68,0.4)]",
+                  "active:scale-[0.97] active:shadow-[0_4px_16px_rgba(239,68,68,0.3)] transition-all duration-200"
                 )}
               >
-                {isPast ? 'Start Catch-Up' : 'Start Workout'}
+                <span className="relative z-10">
+                  {isPast ? 'Start Catch-Up' : 'Begin Workout'}
+                </span>
               </button>
-            </div>
 
-            {/* Other session hint */}
-            {hasTwoADaySessions && (
-              <button
-                onClick={() => {
-                  setSessionView(sessionView === 'am' ? 'pm' : 'am');
-                  haptic.light();
-                }}
-                className="w-full text-center text-white/40 text-sm py-3 active:text-white/60 font-medium"
-              >
-                {sessionView === 'am' ? (
-                  <>Also today: {pmSession?.session_name || 'Evening'} →</>
-                ) : (
-                  <>← {amSession?.session_name || 'Morning'}</>
-                )}
-              </button>
-            )}
+              {/* Encouragement text */}
+              {isToday && weekStats.remaining > 0 && (
+                <p className="text-white/25 text-[11px] text-center mt-3 font-medium">
+                  {weekStats.remaining === 1
+                    ? 'Last workout of the week — finish strong!'
+                    : `${weekStats.remaining} more sessions this week`}
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           /* Rest Day */
@@ -522,44 +672,39 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
             )}
           >
-            {/* Rest icon with glow */}
-            <div className="relative mb-8">
-              <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-              <div className="relative w-28 h-28 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center">
-                <svg className="w-12 h-12 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            {/* Rest icon */}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-green-500/10 blur-3xl rounded-full" />
+              <div className="relative w-24 h-24 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center">
+                <svg className="w-10 h-10 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
                 </svg>
               </div>
             </div>
 
             <h2
-              className="text-white text-3xl font-black mb-3"
+              className="text-white text-2xl font-black mb-2"
               style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
             >
               Rest Day
             </h2>
-            <p className="text-white/40 text-sm text-center max-w-[260px] leading-relaxed">
+            <p className="text-white/40 text-sm text-center max-w-[240px] leading-relaxed mb-8">
               Recovery is where growth happens.
-              Your muscles rebuild stronger during rest.
+              Your muscles rebuild stronger.
             </p>
 
-            {/* Quick recovery tip */}
-            <div className="mt-8 p-5 rounded-2xl bg-white/[0.03] border border-white/10 max-w-[300px]">
-              <p className="text-white/60 text-sm text-center leading-relaxed">
-                Try stretching, walking, or foam rolling to enhance recovery
+            {/* Week progress reminder */}
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
+              <p className="text-white/50 text-sm">
+                <span className="text-white font-bold">{weekStats.completed}</span>
+                <span className="text-white/30"> / </span>
+                <span>{weekStats.total}</span>
+                <span className="text-white/30"> workouts done this week</span>
               </p>
             </div>
           </div>
         )}
       </main>
-
-      {/* Swipe hint */}
-      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+90px)] left-0 right-0 text-center pointer-events-none">
-        <p className="text-white/15 text-[10px] uppercase tracking-[0.2em] font-medium">
-          {hasTwoADaySessions ? 'Swipe ↕ sessions · ↔ days' : 'Swipe to change days'}
-        </p>
-      </div>
-
     </div>
   );
 }
