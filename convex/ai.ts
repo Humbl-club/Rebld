@@ -837,20 +837,23 @@ export const generateWorkoutPlan = action({
     // Always use deepseek-reasoner for quality - especially for background
     // periodization since users will wake up to these plans
     // ═══════════════════════════════════════════════════════════
-    let selectedModel = 'deepseek-reasoner'; // Default: Thinking mode for best quality
+    // ═══════════════════════════════════════════════════════════
+    // MODEL SELECTION: Default to fast model with robust prompts
+    // deepseek-chat is 10x faster and works great with explicit prompts
+    // ═══════════════════════════════════════════════════════════
+    let selectedModel = 'deepseek-chat'; // Default: Fast mode (10-30 seconds)
 
     // Force model if specified
     if (_forceProModel) {
       selectedModel = 'deepseek-reasoner';
-      loggers.ai.info("🧠 Model: DeepSeek Reasoner (forced - thinking mode)");
+      loggers.ai.info("🧠 Model: DeepSeek Reasoner (forced - thinking mode, 2-5 min)");
     } else if (_useFlashModel) {
       selectedModel = 'deepseek-chat';
       loggers.ai.info("⚡ Model: DeepSeek Chat (forced - fast mode)");
     } else {
-      // Default to deepseek-reasoner for best quality workout plans
-      // This applies to both interactive AND background periodization
-      selectedModel = 'deepseek-reasoner';
-      loggers.ai.info("🧠 Model: DeepSeek Reasoner (default - thinking mode, may take 2-5 min)");
+      // Default to deepseek-chat for speed - prompts are robust enough
+      selectedModel = 'deepseek-chat';
+      loggers.ai.info("⚡ Model: DeepSeek Chat (default - fast mode, ~30 seconds)");
     }
 
     // Get sport-specific training context
@@ -1125,27 +1128,41 @@ ${examplePlansPrompt}
 
 1. **Block-Based Structure**: Use workout blocks (single, superset, amrap)
 
-2. **Warmup Mandate**: Each training day MUST start with 5-7 SPECIFIC warmup exercises:
+2. **REST DAY DISTRIBUTION (MANDATORY):**
+   REST DAYS MUST BE DISTRIBUTED THROUGHOUT THE WEEK, NOT CLUSTERED AT WEEKENDS.
+
+   This is CRITICAL for recovery and muscle growth. The pattern depends on training frequency:
+
+   - **3 days/week**: Mon-Wed-Fri (rest Tue-Thu-Sat-Sun) OR Mon-Thu-Sat
+   - **4 days/week**: Mon-Tue-Thu-Fri (rest Wed-Sat-Sun) OR Mon-Wed-Fri-Sat
+   - **5 days/week**: Mon-Tue-Thu-Fri-Sat (rest Wed-Sun) OR Mon-Tue-Wed-Fri-Sat
+   - **6 days/week**: Mon-Tue-Wed-Thu-Fri-Sat (rest Sun only)
+
+   **NEVER do this:** Mon-Tue-Wed-Thu-Fri + Sat-Sun rest (too many consecutive days)
+   **ALWAYS ensure:** At least 1 rest day between every 2-3 consecutive workout days
+
+   Rest days have focus: "Rest" and blocks: []
+
+3. **Warmup Mandate**: Each training day MUST start with 5-7 SPECIFIC warmup exercises:
    - Use the mobility work listed above for the sport
    - Include dynamic stretches (Cat-Cow, Hip Circles, Arm Circles)
    - Include activation exercises (Band Pull-Aparts, Glute Bridges)
    - NEVER use generic names like "General Warmup"
 
-3. **Main Workout**: Evidence-based exercise selection
+4. **Main Workout**: Evidence-based exercise selection
    - PRIORITIZE the S-Tier exercises listed above for this sport
-   - Match training frequency (create rest days as needed)
    - Avoid exercises that aggravate pain points
    - Include RPE targets and rest periods
    - Follow the conditioning protocols specified above
 
-4. **Cooldown**: 2-4 specific stretching exercises relevant to the sport
+5. **Cooldown**: 2-4 specific stretching exercises relevant to the sport
 
-5. **Pain Point Protocol**: See detailed INJURY/PAIN POINT PROTOCOLS section above for:
+6. **Pain Point Protocol**: See detailed INJURY/PAIN POINT PROTOCOLS section above for:
    - Specific exercises to AVOID (with reasons)
    - Safe alternatives (USE INSTEAD)
    - MANDATORY rehab exercises to include
 
-6. **Core Training**: Include the core exercises listed above as essential for this sport
+7. **Core Training**: Include the core exercises listed above as essential for this sport
 
 **OUTPUT FORMAT (JSON only):**
 {
@@ -1201,26 +1218,49 @@ Generate a complete 7-day plan. Return ONLY valid JSON.`;
     let finalPrompt = systemPrompt;
 
     if (_useCompressedPrompt) {
-      // Compressed version (60% smaller, 40-50% faster)
-      finalPrompt = `Create 7-day plan.
-USER: goal=${primary_goal}, exp=${experience_level}, freq=${training_frequency}, sex=${sex || 'unspecified'}
-${pain_points && pain_points.length > 0 ? `injuries=${pain_points.join(',')}` : ''}
-${equipment ? `equip=${equipment}` : ''}
-${sport ? `sport=${sport}` : ''}
+      // Compressed version (60% smaller, still robust)
+      const freqNum = parseInt(training_frequency?.split('-')[0] || '4');
+      finalPrompt = `Create 7-day workout plan. JSON output only.
 
-RULES:
-- 7 days (Mon-Sun), rest days have empty blocks
-- Blocks: {type:"single"|"superset"|"amrap", exercises:[...]}
-- Exercise: {exercise_name, metrics_template:{type,sets,reps,weight_kg}, category:"warmup"|"main"|"cooldown"}
-- Warmup → Main → Cooldown order
-- ${primary_goal === 'strength' ? 'Focus: compounds, 3-5 reps, 85-95% 1RM' : ''}
-- ${primary_goal === 'aesthetic' ? 'Focus: volume, 6-12 reps, 65-85% 1RM' : ''}
-- ${primary_goal === 'athletic' ? 'Focus: power + strength, explosive work first' : ''}
-- ${pain_points && pain_points.length > 0 ? `AVOID: ${pain_points.join(', ')}` : ''}
+**USER PROFILE:**
+- Goal: ${primary_goal}
+- Experience: ${experience_level}
+- Frequency: ${training_frequency} days/week
+- Sex: ${sex || 'unspecified'}
+${pain_points && pain_points.length > 0 ? `- Injuries/Pain: ${pain_points.join(', ')} (AVOID exercises that stress these areas)` : ''}
+${equipment ? `- Equipment: ${equipment}` : ''}
+${sport ? `- Sport: ${sport}` : ''}
 
-Return valid JSON WorkoutPlan.`;
+**REST DAY DISTRIBUTION (CRITICAL):**
+NEVER cluster rest days at weekends. ALWAYS distribute rest throughout the week:
+- ${freqNum <= 3 ? '3 days: Mon-Wed-Fri pattern (rest between each workout)' : ''}
+- ${freqNum === 4 ? '4 days: Mon-Tue-Thu-Fri pattern (rest Wed + weekend)' : ''}
+- ${freqNum >= 5 ? '5-6 days: Include mid-week rest day (e.g., rest on Wed or Thu)' : ''}
+Rest days: { focus: "Rest", blocks: [] }
 
-      loggers.ai.info("📝 Using compressed prompt (60% token reduction)");
+**EXERCISE FORMAT:**
+{
+  "exercise_name": "Name",
+  "category": "warmup" | "main" | "cooldown",  // REQUIRED
+  "metrics_template": {
+    "type": "sets_reps_weight",
+    "target_sets": 3,
+    "target_reps": "8-10",
+    "rest_period_s": 90
+  },
+  "rpe": "7-8"
+}
+
+**STRUCTURE:**
+- Each training day: Warmup (5+ exercises) → Main (4-6 exercises) → Cooldown (2-3 stretches)
+- Use specific exercise names (never "General Warmup")
+- ${primary_goal === 'strength' ? 'Focus: compounds, 3-5 reps, heavy' : ''}
+- ${primary_goal === 'aesthetic' ? 'Focus: volume, 8-12 reps, moderate' : ''}
+- ${primary_goal === 'athletic' ? 'Focus: power + conditioning' : ''}
+
+Return: { "name": "...", "weeklyPlan": [{day_of_week, focus, blocks: [...]}] }`;
+
+      loggers.ai.info("📝 Using compressed prompt with rest day rules");
     }
 
     // ═══════════════════════════════════════════════════════════

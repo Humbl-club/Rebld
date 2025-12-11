@@ -146,11 +146,84 @@ export function validateWorkoutPlan(plan: Plan): ValidationResult {
     validateDay(day, dayIndex, errors, warnings);
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // REST DAY DISTRIBUTION VALIDATION
+  // ═══════════════════════════════════════════════════════════
+  validateRestDayDistribution(plan.weeklyPlan, warnings);
+
   return {
     valid: errors.length === 0,
     errors,
     warnings,
   };
+}
+
+/**
+ * Validate rest day distribution - ensure rest days are spread throughout the week
+ * Rest days clustered at weekends (Sat+Sun together) is bad programming
+ */
+function validateRestDayDistribution(weeklyPlan: Day[], warnings: string[]): void {
+  // Identify which days are rest days (day_of_week: 1=Mon, 7=Sun)
+  const restDayIndices: number[] = [];
+  const workoutDayIndices: number[] = [];
+
+  weeklyPlan.forEach((day) => {
+    const isRestDay =
+      day.focus?.toLowerCase().includes('rest') ||
+      day.focus?.toLowerCase().includes('recovery') ||
+      day.focus?.toLowerCase().includes('off') ||
+      (!day.blocks || day.blocks.length === 0) && (!day.sessions || day.sessions.length === 0);
+
+    if (isRestDay) {
+      restDayIndices.push(day.day_of_week);
+    } else {
+      workoutDayIndices.push(day.day_of_week);
+    }
+  });
+
+  // Check for "weekend-only" rest pattern (both Sat AND Sun are rest, but no mid-week rest)
+  const hasWeekendRest = restDayIndices.includes(6) && restDayIndices.includes(7); // Sat + Sun
+  const hasMidWeekRest = restDayIndices.some(d => d >= 2 && d <= 5); // Tue-Fri
+
+  if (hasWeekendRest && !hasMidWeekRest && restDayIndices.length <= 3) {
+    warnings.push(
+      `REST DAY DISTRIBUTION: Rest days clustered at weekend (Sat+Sun). ` +
+      `For better recovery, distribute rest days throughout the week. ` +
+      `Consider: Mon-Wed-Fri pattern or include mid-week rest.`
+    );
+  }
+
+  // Check for too many consecutive workout days (more than 3 in a row is suboptimal)
+  const sortedWorkoutDays = [...workoutDayIndices].sort((a, b) => a - b);
+  let maxConsecutive = 1;
+  let currentConsecutive = 1;
+
+  for (let i = 1; i < sortedWorkoutDays.length; i++) {
+    if (sortedWorkoutDays[i] === sortedWorkoutDays[i - 1] + 1) {
+      currentConsecutive++;
+      maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+    } else {
+      currentConsecutive = 1;
+    }
+  }
+
+  // Also check wrap-around (Sun to Mon)
+  if (sortedWorkoutDays.includes(7) && sortedWorkoutDays.includes(1)) {
+    // Need to count consecutive at the week boundaries
+    let endStreak = 0;
+    let startStreak = 0;
+    for (let d = 7; sortedWorkoutDays.includes(d); d--) endStreak++;
+    for (let d = 1; sortedWorkoutDays.includes(d); d++) startStreak++;
+    maxConsecutive = Math.max(maxConsecutive, endStreak + startStreak);
+  }
+
+  if (maxConsecutive >= 5) {
+    warnings.push(
+      `REST DAY DISTRIBUTION: ${maxConsecutive} consecutive workout days detected. ` +
+      `This increases injury risk and impairs recovery. ` +
+      `Recommend: Insert rest day after every 2-3 training days.`
+    );
+  }
 }
 
 /**
