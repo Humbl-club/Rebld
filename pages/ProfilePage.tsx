@@ -24,11 +24,18 @@ import { PRHistoryChart } from '../components/ui/PRHistoryChart';
 import { getAllPRs } from '../services/prService';
 
 /* ═══════════════════════════════════════════════════════════════
-   PROFILE PAGE - Premium Redesign
+   PROFILE PAGE - Clean, Sophisticated Design
 
-   User profile, stats, achievements, and settings.
-   Matches the new ZenHomePage design language with direct colors.
+   - Warm coral accent (#F0725C)
+   - Clean system typography
+   - Proper visual hierarchy
+   - Easy on the eyes
    ═══════════════════════════════════════════════════════════════ */
+
+// Accent color - warm coral
+const ACCENT = '#F0725C';
+const ACCENT_SOFT = 'rgba(240, 114, 92, 0.15)';
+const ACCENT_GLOW = 'rgba(240, 114, 92, 0.25)';
 
 interface ProfilePageProps {
   logs: WorkoutLog[];
@@ -150,7 +157,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
       <div
         className={cn(
-          "w-full min-h-screen bg-black",
+          "w-full min-h-screen bg-[#0A0A0A]",
           "px-5",
           "pt-[calc(env(safe-area-inset-top)+12px)]",
           "pb-[calc(100px+env(safe-area-inset-bottom))]",
@@ -167,13 +174,10 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.15em] text-white/40 font-semibold mb-1">
+              <p className="text-white/40 text-sm font-medium mb-1">
                 {t('profile.account')}
               </p>
-              <h1
-                className="text-[32px] font-black text-white leading-none"
-                style={{ fontFamily: 'Syne, system-ui, sans-serif' }}
-              >
+              <h1 className="text-white text-2xl font-semibold tracking-tight">
                 {t('profile.title')}
               </h1>
             </div>
@@ -192,8 +196,8 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
             )}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#EF4444]/10 flex items-center justify-center">
-                <UserIcon className="w-7 h-7 text-[#EF4444]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#F0725C]/10 flex items-center justify-center">
+                <UserIcon className="w-7 h-7 text-[#F0725C]" />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-[18px] font-bold text-white truncate">
@@ -245,22 +249,22 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
 
             <div className="grid grid-cols-3 gap-3">
               {/* Weight */}
-              <div className="text-center p-4 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20">
+              <div className="text-center p-4 rounded-2xl bg-[#F0725C]/10 border border-[#F0725C]/20">
                 <p className="text-[10px] uppercase tracking-wider text-white/50 font-bold mb-1">
                   Weight
                 </p>
-                <p className="text-[24px] font-black text-[#EF4444] tabular-nums">
+                <p className="text-[24px] font-semibold text-[#F0725C] tabular-nums">
                   {bodyMetrics?.weight || '—'}
                 </p>
                 <p className="text-[11px] text-white/40 font-semibold">kg</p>
               </div>
 
               {/* Body Fat */}
-              <div className="text-center p-4 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20">
+              <div className="text-center p-4 rounded-2xl bg-[#F0725C]/10 border border-[#F0725C]/20">
                 <p className="text-[10px] uppercase tracking-wider text-white/50 font-bold mb-1">
                   Body Fat
                 </p>
-                <p className="text-[24px] font-black text-[#EF4444] tabular-nums">
+                <p className="text-[24px] font-semibold text-[#F0725C] tabular-nums">
                   {bodyMetrics?.bodyFatPercentage || '—'}
                 </p>
                 <p className="text-[11px] text-white/40 font-semibold">%</p>
@@ -271,7 +275,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                 <p className="text-[10px] uppercase tracking-wider text-white/50 font-bold mb-1">
                   Workouts
                 </p>
-                <p className="text-[24px] font-black text-green-400 tabular-nums">
+                <p className="text-[24px] font-semibold text-green-400 tabular-nums">
                   {logs.length}
                 </p>
                 <p className="text-[11px] text-white/40 font-semibold">total</p>
@@ -298,7 +302,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
             )}
           >
             <div className="flex items-center gap-2 mb-4">
-              <BookCheckIcon className="w-5 h-5 text-[#EF4444]" />
+              <BookCheckIcon className="w-5 h-5 text-[#F0725C]" />
               <h3 className="text-[16px] font-bold text-white">
                 {t('profile.recentWorkouts')}
               </h3>
@@ -379,7 +383,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
               <div className="p-5 border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[16px] font-bold text-white flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#EF4444]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#F0725C]">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
                     </svg>
@@ -390,7 +394,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                     className={cn(
                       "px-3 py-2 rounded-lg",
                       "text-[12px] font-bold",
-                      "bg-[#EF4444] text-white",
+                      "bg-[#F0725C] text-white",
                       "active:scale-[0.95] transition-all duration-200"
                     )}
                   >
@@ -438,7 +442,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                       onClick={() => setIsPhotoCaptureOpen(true)}
                       className={cn(
                         "px-6 py-3 rounded-xl",
-                        "bg-[#EF4444] text-white",
+                        "bg-[#F0725C] text-white",
                         "text-[14px] font-bold",
                         "active:scale-[0.95] transition-all duration-200"
                       )}
@@ -463,7 +467,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
             >
               <div className="p-5 border-b border-white/10">
                 <h3 className="text-[16px] font-bold text-white flex items-center gap-2">
-                  <TrophyIcon className="w-5 h-5 text-[#EF4444]" />
+                  <TrophyIcon className="w-5 h-5 text-[#F0725C]" />
                   Achievements
                 </h3>
               </div>
@@ -481,7 +485,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                           key={achievement._id}
                           className={cn(
                             "p-4 rounded-xl text-center",
-                            "bg-[#EF4444]/5 border border-white/10",
+                            "bg-[#F0725C]/5 border border-white/10",
                             "active:scale-[0.98] transition-all duration-200"
                           )}
                         >
@@ -539,16 +543,16 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
             >
               <div className="p-5 border-b border-white/10">
                 <h3 className="text-[16px] font-bold text-white flex items-center gap-2">
-                  <UsersIcon className="w-5 h-5 text-[#EF4444]" />
+                  <UsersIcon className="w-5 h-5 text-[#F0725C]" />
                   Your Buddy Code
                 </h3>
               </div>
               <div className="p-5">
-                <div className="p-6 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20 text-center">
+                <div className="p-6 rounded-2xl bg-[#F0725C]/10 border border-[#F0725C]/20 text-center">
                   <p className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-2">
                     Share This Code
                   </p>
-                  <p className="text-[28px] font-black font-mono tracking-wider text-[#EF4444] mb-4">
+                  <p className="text-[28px] font-semibold font-mono tracking-wider text-[#F0725C] mb-4">
                     {userProfile.userCode}
                   </p>
                   <button
@@ -558,7 +562,7 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                     }}
                     className={cn(
                       "px-6 py-3 rounded-xl",
-                      "bg-[#EF4444] text-white",
+                      "bg-[#F0725C] text-white",
                       "font-bold text-[14px]",
                       "active:scale-[0.95] transition-all duration-200"
                     )}
@@ -754,9 +758,9 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                 onClick={handleCreateNewPlan}
                 className={cn(
                   "w-full py-4 rounded-xl",
-                  "bg-[#EF4444] text-white",
+                  "bg-[#F0725C] text-white",
                   "font-bold text-[14px]",
-                  "shadow-[0_4px_12px_rgba(239,68,68,0.3)]",
+                  "shadow-[0_4px_12px_rgba(240,114,92,0.3)]",
                   "active:scale-[0.98] transition-all duration-200"
                 )}
               >
