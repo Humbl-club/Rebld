@@ -493,8 +493,8 @@ export default function ProfilePage({ logs, userProfile, onUpdateProfile, onCrea
                             {log.durationMinutes && ` · ${log.durationMinutes} ${t('workout.min')}`}
                           </p>
                         </div>
-                        <p className="text-[var(--text-2xs)] text-[var(--text-secondary)]">
-                          {t('workout.exerciseCount', { count: log.exercises.length })}
+                        <p className="text-[var(--text-xs)] text-[var(--text-secondary)] whitespace-nowrap">
+                          {log.exercises.length} {t('workout.exercises')}
                         </p>
                       </div>
                     );

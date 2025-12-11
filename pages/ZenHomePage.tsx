@@ -37,7 +37,7 @@ function CardioVisual() {
             key={i}
             d={`M-50,${100 + i * 15} Q100,${60 + i * 20} 200,${100 + i * 10} T450,${90 + i * 15}`}
             fill="none"
-            stroke={`rgba(224, 122, 95, ${0.15 + i * 0.08})`}
+            stroke={`rgba(239, 68, 68, ${0.15 + i * 0.08})`}
             strokeWidth={3 - i * 0.3}
             className="animate-flow"
             style={{
@@ -47,8 +47,8 @@ function CardioVisual() {
           />
         ))}
         {/* Pulse circles */}
-        <circle cx="200" cy="100" r="40" fill="none" stroke="rgba(224, 122, 95, 0.1)" strokeWidth="2" className="animate-ping-slow" />
-        <circle cx="200" cy="100" r="60" fill="none" stroke="rgba(224, 122, 95, 0.05)" strokeWidth="1" className="animate-ping-slow" style={{ animationDelay: '0.5s' }} />
+        <circle cx="200" cy="100" r="40" fill="none" stroke="rgba(239, 68, 68, 0.1)" strokeWidth="2" className="animate-ping-slow" />
+        <circle cx="200" cy="100" r="60" fill="none" stroke="rgba(239, 68, 68, 0.05)" strokeWidth="1" className="animate-ping-slow" style={{ animationDelay: '0.5s' }} />
       </svg>
     </div>
   );
@@ -61,15 +61,15 @@ function StrengthVisual() {
       <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
         {/* Stacked power blocks */}
         <g className="animate-pulse-subtle">
-          <rect x="140" y="60" width="120" height="20" rx="4" fill="rgba(224, 122, 95, 0.3)" />
-          <rect x="120" y="90" width="160" height="25" rx="4" fill="rgba(224, 122, 95, 0.4)" />
-          <rect x="100" y="125" width="200" height="30" rx="4" fill="rgba(224, 122, 95, 0.5)" />
+          <rect x="140" y="60" width="120" height="20" rx="4" fill="rgba(239, 68, 68, 0.3)" />
+          <rect x="120" y="90" width="160" height="25" rx="4" fill="rgba(239, 68, 68, 0.4)" />
+          <rect x="100" y="125" width="200" height="30" rx="4" fill="rgba(239, 68, 68, 0.5)" />
         </g>
         {/* Side weights */}
-        <circle cx="80" cy="115" r="25" fill="rgba(224, 122, 95, 0.2)" />
-        <circle cx="320" cy="115" r="25" fill="rgba(224, 122, 95, 0.2)" />
+        <circle cx="80" cy="115" r="25" fill="rgba(239, 68, 68, 0.2)" />
+        <circle cx="320" cy="115" r="25" fill="rgba(239, 68, 68, 0.2)" />
         {/* Bar */}
-        <rect x="60" y="110" width="280" height="10" rx="5" fill="rgba(224, 122, 95, 0.15)" />
+        <rect x="60" y="110" width="280" height="10" rx="5" fill="rgba(239, 68, 68, 0.15)" />
       </svg>
     </div>
   );
@@ -82,11 +82,11 @@ function MixedVisual() {
       <svg viewBox="0 0 400 200" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
         {/* Central diamond */}
         <g className="animate-pulse-subtle">
-          <polygon points="200,40 260,100 200,160 140,100" fill="none" stroke="rgba(224, 122, 95, 0.3)" strokeWidth="2" />
-          <polygon points="200,60 240,100 200,140 160,100" fill="rgba(224, 122, 95, 0.15)" />
+          <polygon points="200,40 260,100 200,160 140,100" fill="none" stroke="rgba(239, 68, 68, 0.3)" strokeWidth="2" />
+          <polygon points="200,60 240,100 200,140 160,100" fill="rgba(239, 68, 68, 0.15)" />
         </g>
         {/* Orbiting elements */}
-        <circle cx="200" cy="100" r="70" fill="none" stroke="rgba(224, 122, 95, 0.1)" strokeWidth="1" strokeDasharray="10 5" className="animate-spin-slow" />
+        <circle cx="200" cy="100" r="70" fill="none" stroke="rgba(239, 68, 68, 0.1)" strokeWidth="1" strokeDasharray="10 5" className="animate-spin-slow" />
       </svg>
     </div>
   );
@@ -407,7 +407,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                 "active:scale-95",
                 isPast
                   ? "bg-white/10 text-white/50 cursor-not-allowed"
-                  : "bg-[var(--brand-primary)] text-white shadow-[0_0_40px_rgba(224,122,95,0.4)]"
+                  : "bg-[var(--brand-primary)] text-white shadow-[0_0_40px_rgba(239,68,68,0.4)]"
               )}
             >
               {isPast ? 'Past' : 'Start'}

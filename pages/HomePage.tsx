@@ -436,7 +436,7 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
                     "border-[var(--brand-primary)]",
                     "bg-[var(--brand-primary-subtle)]",
                     "text-[var(--brand-primary)]",
-                    "shadow-[0_0_20px_rgba(224,122,95,0.4)]",
+                    "shadow-[0_0_20px_rgba(239,68,68,0.4)]",
                 ],
 
                 // Today (not selected) - pure white text
@@ -487,8 +487,8 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
                     "w-2.5 h-2.5 rounded-full mx-auto transition-all duration-[var(--duration-fast)]",
                     hasExercises
                         ? isSelected
-                            ? "bg-[var(--brand-primary)] shadow-[0_0_12px_rgba(224,122,95,0.6)]"
-                            : "bg-[var(--brand-primary)] shadow-[0_0_8px_rgba(224,122,95,0.4)]"
+                            ? "bg-[var(--brand-primary)] shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+                            : "bg-[var(--brand-primary)] shadow-[0_0_8px_rgba(239,68,68,0.4)]"
                         : "bg-[var(--border-default)] w-1.5 h-1.5"
                 )} />
             </div>
@@ -503,7 +503,7 @@ const DaySelectorButton: React.FC<DaySelectorButtonProps> = ({
                     "text-white",
                     "text-[8px] font-[var(--weight-extrabold)]",
                     "uppercase tracking-[0.05em]",
-                    "shadow-[0_2px_8px_rgba(224,122,95,0.5)]"
+                    "shadow-[0_2px_8px_rgba(239,68,68,0.5)]"
                 )}>
                     Today
                 </div>

@@ -267,7 +267,7 @@ export default function AuthPage() {
     "active:scale-[0.98] active:brightness-90",
     "transition-all duration-150",
     "disabled:opacity-40 disabled:active:scale-100",
-    "shadow-[0_2px_8px_rgba(224,122,95,0.3)]"
+    "shadow-[0_2px_8px_rgba(239,68,68,0.3)]"
   );
 
   // Secondary button styles

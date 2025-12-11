@@ -59,7 +59,7 @@ export default function AnimatedSplash({
     transition: `all 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
     transformOrigin: 'center bottom',
     textShadow: phase >= 8 && color === '#EF4444'
-      ? '0 0 30px rgba(224, 122, 95, 0.6)'
+      ? '0 0 30px rgba(239, 68, 68, 0.6)'
       : 'none',
   });
 
@@ -80,7 +80,7 @@ export default function AnimatedSplash({
           width: '350px',
           height: '350px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(224, 122, 95, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)',
           filter: 'blur(60px)',
           opacity: phase >= 4 ? 1 : 0,
           transform: `scale(${phase >= 8 ? 1.3 : 1})`,
@@ -96,7 +96,7 @@ export default function AnimatedSplash({
           style={{
             width: `${3 + (i % 3) * 2}px`,
             height: `${3 + (i % 3) * 2}px`,
-            backgroundColor: i % 2 === 0 ? 'rgba(224, 122, 95, 0.5)' : 'rgba(255, 255, 255, 0.3)',
+            backgroundColor: i % 2 === 0 ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.3)',
             left: `${15 + (i * 10)}%`,
             top: `${30 + (i % 4) * 15}%`,
             opacity: phase >= 2 && !isExiting ? 0.7 : 0,

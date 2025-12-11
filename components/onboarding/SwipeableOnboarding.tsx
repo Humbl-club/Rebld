@@ -780,7 +780,7 @@ export default function SwipeableOnboarding({
         style={{
           background: data.goal
             ? `radial-gradient(ellipse 100% 60% at 50% -20%, ${accentColor}15 0%, transparent 50%)`
-            : 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(224, 122, 95, 0.06) 0%, transparent 50%)',
+            : 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(239, 68, 68, 0.06) 0%, transparent 50%)',
         }}
       />
 

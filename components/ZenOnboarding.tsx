@@ -541,7 +541,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
           {/* Option 1: AI Build */}
           <button
             onClick={handleBegin}
-            className="w-full p-5 rounded-2xl bg-[#EF4444] text-left active:scale-[0.98] transition-transform mb-4 shadow-[0_0_40px_rgba(224,122,95,0.2)]"
+            className="w-full p-5 rounded-2xl bg-[#EF4444] text-left active:scale-[0.98] transition-transform mb-4 shadow-[0_0_40px_rgba(239,68,68,0.2)]"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -1281,7 +1281,7 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
         <div className="px-8 pb-[max(3rem,env(safe-area-inset-bottom))]">
           <button
             onClick={handleConfirmPlan}
-            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(224,122,95,0.3)]"
+            className="w-full h-16 rounded-2xl font-bold text-lg uppercase tracking-wider bg-[#EF4444] text-white active:scale-[0.98] transition-transform shadow-[0_0_40px_rgba(239,68,68,0.3)]"
           >
             Start Training
           </button>

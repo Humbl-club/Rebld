@@ -690,7 +690,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
               "bg-[#EF4444] text-white",
               "font-bold text-lg",
               "active:scale-95 transition-all",
-              "shadow-[0_0_30px_rgba(224,122,95,0.3)]"
+              "shadow-[0_0_30px_rgba(239,68,68,0.3)]"
             )}
           >
             Log Set {currentRound}
@@ -808,7 +808,7 @@ export default function ZenSessionTracker({ session, onFinish, onCancel, allLogs
                 "w-full max-w-sm py-5 rounded-2xl font-bold text-lg",
                 "transition-all active:scale-95",
                 inputWeight && inputReps
-                  ? "bg-[#EF4444] text-white shadow-[0_0_30px_rgba(224,122,95,0.3)]"
+                  ? "bg-[#EF4444] text-white shadow-[0_0_30px_rgba(239,68,68,0.3)]"
                   : "bg-white/10 text-white/50"
               )}
             >
