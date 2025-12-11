@@ -476,7 +476,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               )}
             </div>
 
-            {/* Start Button - Premium with animated glow */}
+            {/* Start Button - Premium, no animation */}
             <div
               className={cn(
                 "pt-4 transition-all duration-500 delay-500",
@@ -486,21 +486,14 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
               <button
                 onClick={handleStart}
                 className={cn(
-                  "relative w-full py-5 rounded-2xl overflow-hidden",
-                  "font-black text-lg uppercase tracking-widest",
-                  "transition-transform duration-200 active:scale-[0.97]"
+                  "w-full py-5 rounded-2xl",
+                  "bg-[#EF4444] text-white",
+                  "font-bold text-base uppercase tracking-wider",
+                  "shadow-[0_4px_20px_rgba(239,68,68,0.4)]",
+                  "transition-all duration-200 active:scale-[0.97] active:shadow-[0_2px_10px_rgba(239,68,68,0.3)]"
                 )}
               >
-                {/* Animated gradient background */}
-                <div className="absolute inset-0 bg-[#EF4444]" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-
-                {/* Glow */}
-                <div className="absolute inset-0 shadow-[0_0_60px_rgba(239,68,68,0.5)]" />
-
-                <span className="relative text-white">
-                  {isPast ? 'Start Catch-Up' : 'Start Workout'}
-                </span>
+                {isPast ? 'Start Catch-Up' : 'Start Workout'}
               </button>
             </div>
 
@@ -567,16 +560,6 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         </p>
       </div>
 
-      {/* Premium animations */}
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-      `}</style>
     </div>
   );
 }
