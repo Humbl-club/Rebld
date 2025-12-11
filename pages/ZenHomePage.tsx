@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { WorkoutPlan, PlanDay, DailyRoutine, UserProfile, WorkoutSession } from '../types';
 import { cn } from '../lib/utils';
 import { useHaptic } from '../hooks/useAnimations';
@@ -7,10 +7,10 @@ import { useHaptic } from '../hooks/useAnimations';
    ZEN HOME PAGE - Premium Athlete Dashboard
 
    Design Philosophy:
-   - Bold, confident branding
-   - Functional calendar that shows real dates and allows past access
-   - Premium typography with clear hierarchy
-   - Exercise presentation that's scannable and informative
+   - Bold, confident branding with animated logo
+   - Premium cards with depth and subtle animations
+   - Staggered entrance animations for polish
+   - Functional calendar with strong visual hierarchy
    ═══════════════════════════════════════════════════════════════ */
 
 type SessionType = PlanDay | DailyRoutine | WorkoutSession;
@@ -68,6 +68,13 @@ function formatFocusName(focus: string): string {
 
 export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHomePageProps) {
   const haptic = useHaptic();
+  const [mounted, setMounted] = useState(false);
+
+  // Trigger mount animation
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -150,7 +157,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                          sessions?.some((s: any) => s.blocks?.some((b: any) => b.exercises?.length > 0));
 
     if (!hasExercises) return 'rest';
-    if (dayIndex < todayIndex) return 'completed'; // Past days with workouts
+    if (dayIndex < todayIndex) return 'completed';
     if (dayIndex === todayIndex) return 'today';
     return 'upcoming';
   }, [weeklyPlan, todayIndex]);
@@ -212,79 +219,106 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
       onTouchEnd={handleTouchEnd}
     >
       {/* Header with Premium Logo */}
-      <header className="pt-[calc(env(safe-area-inset-top)+16px)] px-6 pb-6 flex-shrink-0">
-        {/* REBLD Logo - Bold, prominent */}
-        <div className="flex items-center justify-center mb-8">
-          <h1
-            className="text-[42px] font-black tracking-[-0.02em]"
-            style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
-          >
-            <span className="text-white">RE</span>
-            <span className="text-[#EF4444]">BLD</span>
-          </h1>
+      <header className="pt-[calc(env(safe-area-inset-top)+20px)] px-6 pb-6 flex-shrink-0">
+        {/* REBLD Logo - MASSIVE, with glow */}
+        <div
+          className={cn(
+            "flex items-center justify-center mb-10 transition-all duration-700",
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+          )}
+        >
+          <div className="relative">
+            {/* Glow effect behind BLD */}
+            <div
+              className="absolute inset-0 blur-2xl opacity-40"
+              style={{
+                background: 'radial-gradient(circle at 60% 50%, #EF4444 0%, transparent 60%)',
+                transform: 'scale(1.5)',
+              }}
+            />
+            <h1
+              className="relative text-[56px] font-black tracking-[0.02em]"
+              style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
+            >
+              <span className="text-white">RE</span>
+              <span
+                className="text-[#EF4444]"
+                style={{ textShadow: '0 0 30px rgba(239, 68, 68, 0.5)' }}
+              >
+                BLD
+              </span>
+            </h1>
+          </div>
         </div>
 
-        {/* Week Calendar - Premium timeline */}
-        <div className="relative">
-          {/* Day cards */}
-          <div className="flex justify-between gap-1">
-            {weekDates.map((date, i) => {
-              const status = getDayStatus(i);
-              const isSelected = i === selectedDayIndex;
-              const isTodayDay = i === todayIndex;
+        {/* Week Calendar - Premium styling */}
+        <div
+          className={cn(
+            "relative transition-all duration-500 delay-100",
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          )}
+        >
+          {/* Calendar container with border */}
+          <div className="bg-white/[0.02] rounded-2xl p-2 border border-white/[0.06]">
+            <div className="flex justify-between gap-1">
+              {weekDates.map((date, i) => {
+                const status = getDayStatus(i);
+                const isSelected = i === selectedDayIndex;
+                const isTodayDay = i === todayIndex;
 
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedDayIndex(i);
-                    haptic.light();
-                  }}
-                  className={cn(
-                    "flex-1 flex flex-col items-center py-3 rounded-xl transition-all",
-                    "min-h-[72px]",
-                    isSelected
-                      ? "bg-[#EF4444]"
-                      : isTodayDay
-                        ? "bg-white/10"
-                        : "bg-transparent",
-                    !isSelected && "active:bg-white/10"
-                  )}
-                >
-                  {/* Day name */}
-                  <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider mb-1",
-                    isSelected ? "text-white/80" : "text-white/40"
-                  )}>
-                    {dayNames[i]}
-                  </span>
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedDayIndex(i);
+                      haptic.light();
+                    }}
+                    className={cn(
+                      "flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-200",
+                      "min-h-[76px]",
+                      isSelected
+                        ? "bg-[#EF4444] shadow-[0_0_20px_rgba(239,68,68,0.4)]"
+                        : isTodayDay
+                          ? "bg-white/[0.08] border border-white/10"
+                          : "bg-transparent",
+                      !isSelected && "active:scale-95"
+                    )}
+                  >
+                    {/* Day name */}
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider mb-1",
+                      isSelected ? "text-white" : isTodayDay ? "text-white/70" : "text-white/40"
+                    )}>
+                      {dayNames[i]}
+                    </span>
 
-                  {/* Date number */}
-                  <span className={cn(
-                    "text-lg font-bold tabular-nums",
-                    isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/70"
-                  )}>
-                    {date.getDate()}
-                  </span>
+                    {/* Date number */}
+                    <span className={cn(
+                      "text-xl font-black tabular-nums",
+                      isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/60"
+                    )}>
+                      {date.getDate()}
+                    </span>
 
-                  {/* Status indicator */}
-                  <div className="h-2 mt-1">
-                    {status === 'completed' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    )}
-                    {status === 'upcoming' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
-                    )}
-                    {status === 'today' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-                    )}
-                    {status === 'rest' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                    {/* Status indicator */}
+                    <div className="h-3 mt-1 flex items-center justify-center">
+                      {status === 'completed' && !isSelected && (
+                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                      )}
+                      {status === 'upcoming' && !isSelected && (
+                        <div className="w-2 h-2 rounded-full bg-white/20" />
+                      )}
+                      {status === 'today' && !isSelected && (
+                        <div className="w-2 h-2 rounded-full bg-[#EF4444] shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" />
+                      )}
+                      {status === 'rest' && !isSelected && (
+                        <div className="w-1.5 h-0.5 rounded-full bg-white/10" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </header>
@@ -293,14 +327,19 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
       <main className="flex-1 px-6 pb-32 overflow-y-auto">
         {/* 2x Daily Toggle */}
         {hasTwoADaySessions && (
-          <div className="flex justify-center gap-3 mb-6">
+          <div
+            className={cn(
+              "flex justify-center gap-3 mb-6 transition-all duration-500 delay-200",
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            )}
+          >
             <button
               onClick={() => { setSessionView('am'); haptic.light(); }}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
+                "px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200",
                 sessionView === 'am'
-                  ? "bg-[#EF4444] text-white"
-                  : "bg-white/5 text-white/50 border border-white/10"
+                  ? "bg-[#EF4444] text-white shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                  : "bg-white/[0.04] text-white/50 border border-white/10 active:scale-95"
               )}
             >
               Morning
@@ -308,10 +347,10 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
             <button
               onClick={() => { setSessionView('pm'); haptic.light(); }}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
+                "px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200",
                 sessionView === 'pm'
-                  ? "bg-[#EF4444] text-white"
-                  : "bg-white/5 text-white/50 border border-white/10"
+                  ? "bg-[#EF4444] text-white shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                  : "bg-white/[0.04] text-white/50 border border-white/10 active:scale-95"
               )}
             >
               Evening
@@ -320,113 +359,148 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
         )}
 
         {hasWorkout && workoutInfo ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Workout Header Card */}
-            <div className="relative">
+            <div
+              className={cn(
+                "relative transition-all duration-500 delay-200",
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              )}
+            >
               {/* Past day badge */}
               {isPast && (
-                <div className="absolute -top-2 left-4 px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">
-                  <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-                    {dayNames[selectedDayIndex]} · {selectedDate.getDate()}
+                <div className="absolute -top-2 left-4 z-10 px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40">
+                  <span className="text-amber-400 text-[11px] font-bold uppercase tracking-wider">
+                    Catch Up · {dayNames[selectedDayIndex]}
                   </span>
                 </div>
               )}
 
-              {/* Main card */}
-              <div className={cn(
-                "rounded-2xl p-6 border",
-                isPast
-                  ? "bg-white/[0.02] border-white/10"
-                  : "bg-gradient-to-br from-white/[0.06] to-white/[0.02] border-white/10"
-              )}>
-                {/* Session time label */}
-                {hasTwoADaySessions && (
-                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">
-                    {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
-                  </p>
-                )}
+              {/* Main card with gradient border effect */}
+              <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-white/20 via-white/5 to-transparent">
+                <div className={cn(
+                  "rounded-2xl p-6 bg-black",
+                  isPast ? "bg-gradient-to-br from-amber-500/5 to-transparent" : "bg-gradient-to-br from-[#EF4444]/10 via-black to-black"
+                )}>
+                  {/* Session time label */}
+                  {hasTwoADaySessions && (
+                    <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-3">
+                      {sessionView === 'am' ? 'Morning Session' : 'Evening Session'}
+                    </p>
+                  )}
 
-                {/* Workout name - BIG and bold */}
-                <h2 className="text-white text-[32px] font-black leading-[1.1] tracking-tight mb-3">
-                  {workoutInfo.focus}
-                </h2>
+                  {/* Workout name - HERO */}
+                  <h2
+                    className="text-white text-[36px] font-black leading-[1.05] tracking-tight mb-4"
+                    style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
+                  >
+                    {workoutInfo.focus}
+                  </h2>
 
-                {/* Stats row */}
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#EF4444] font-bold">{workoutInfo.exerciseCount}</span>
-                    <span className="text-white/50">exercises</span>
+                  {/* Stats row - more pronounced */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.05]">
+                      <span className="text-[#EF4444] font-black text-lg">{workoutInfo.exerciseCount}</span>
+                      <span className="text-white/50 text-sm">exercises</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.05]">
+                      <span className="text-white font-black text-lg">~{workoutInfo.duration}</span>
+                      <span className="text-white/50 text-sm">min</span>
+                    </div>
+                    <span className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide",
+                      workoutInfo.type === 'cardio' && "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+                      workoutInfo.type === 'strength' && "bg-green-500/20 text-green-400 border border-green-500/30",
+                      workoutInfo.type === 'hybrid' && "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                    )}>
+                      {workoutInfo.type}
+                    </span>
                   </div>
-                  <div className="w-1 h-1 rounded-full bg-white/20" />
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-white/70 font-bold">~{workoutInfo.duration}</span>
-                    <span className="text-white/50">min</span>
-                  </div>
-                  <div className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                    workoutInfo.type === 'cardio' && "bg-blue-500/20 text-blue-400",
-                    workoutInfo.type === 'strength' && "bg-green-500/20 text-green-400",
-                    workoutInfo.type === 'hybrid' && "bg-purple-500/20 text-purple-400"
-                  )}>
-                    {workoutInfo.type}
-                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Exercise List */}
-            <div className="space-y-2">
-              <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest px-1 mb-3">
-                Exercises
+            {/* Exercise List - Staggered animation */}
+            <div>
+              <h3
+                className={cn(
+                  "text-white/50 text-xs font-bold uppercase tracking-widest px-1 mb-4 transition-all duration-500 delay-300",
+                  mounted ? "opacity-100" : "opacity-0"
+                )}
+              >
+                Today's Exercises
               </h3>
 
-              {workoutInfo.exercises.slice(0, 6).map((exercise, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex items-center gap-4 p-4 rounded-xl",
-                    "bg-white/[0.03] border border-white/[0.06]",
-                    "transition-colors"
-                  )}
-                >
-                  {/* Number badge */}
-                  <div className="w-8 h-8 rounded-lg bg-[#EF4444]/15 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#EF4444] text-sm font-bold">{i + 1}</span>
-                  </div>
+              <div className="space-y-2">
+                {workoutInfo.exercises.slice(0, 6).map((exercise, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex items-center gap-4 p-4 rounded-xl",
+                      "bg-white/[0.03] border border-white/[0.08]",
+                      "transition-all duration-300 active:scale-[0.98] active:bg-white/[0.06]",
+                      mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                    )}
+                    style={{ transitionDelay: mounted ? `${300 + i * 50}ms` : '0ms' }}
+                  >
+                    {/* Number badge with glow */}
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#EF4444] blur-lg opacity-30" />
+                      <div className="relative w-10 h-10 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/30 flex items-center justify-center">
+                        <span className="text-[#EF4444] text-sm font-black">{i + 1}</span>
+                      </div>
+                    </div>
 
-                  {/* Exercise info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-[15px] truncate">
-                      {exercise.name}
-                    </p>
-                    <p className="text-white/40 text-xs mt-0.5">
-                      {exercise.sets} sets × {exercise.reps} reps
-                    </p>
+                    {/* Exercise info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-[15px] truncate">
+                        {exercise.name}
+                      </p>
+                      <p className="text-white/40 text-xs mt-0.5 font-medium">
+                        {exercise.sets} sets × {exercise.reps} reps
+                      </p>
+                    </div>
+
+                    {/* Chevron */}
+                    <svg className="w-5 h-5 text-white/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
 
               {workoutInfo.exercises.length > 6 && (
-                <p className="text-white/30 text-xs text-center py-2">
+                <p className="text-white/30 text-xs text-center py-3 font-medium">
                   +{workoutInfo.exercises.length - 6} more exercises
                 </p>
               )}
             </div>
 
-            {/* Start Button - Always enabled */}
-            <div className="pt-4">
+            {/* Start Button - Premium with animated glow */}
+            <div
+              className={cn(
+                "pt-4 transition-all duration-500 delay-500",
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              )}
+            >
               <button
                 onClick={handleStart}
                 className={cn(
-                  "w-full py-5 rounded-2xl",
-                  "font-bold text-lg uppercase tracking-wider",
-                  "transition-all active:scale-[0.98]",
-                  "bg-[#EF4444] text-white",
-                  "shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+                  "relative w-full py-5 rounded-2xl overflow-hidden",
+                  "font-black text-lg uppercase tracking-widest",
+                  "transition-transform duration-200 active:scale-[0.97]"
                 )}
               >
-                {isPast ? 'Start Catch-Up' : 'Start Workout'}
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-[#EF4444]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+
+                {/* Glow */}
+                <div className="absolute inset-0 shadow-[0_0_60px_rgba(239,68,68,0.5)]" />
+
+                <span className="relative text-white">
+                  {isPast ? 'Start Catch-Up' : 'Start Workout'}
+                </span>
               </button>
             </div>
 
@@ -437,7 +511,7 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
                   setSessionView(sessionView === 'am' ? 'pm' : 'am');
                   haptic.light();
                 }}
-                className="w-full text-center text-white/40 text-sm py-3 active:text-white/60"
+                className="w-full text-center text-white/40 text-sm py-3 active:text-white/60 font-medium"
               >
                 {sessionView === 'am' ? (
                   <>Also today: {pmSession?.session_name || 'Evening'} →</>
@@ -448,37 +522,61 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
             )}
           </div>
         ) : (
-          /* Rest Day */}
-          <div className="flex flex-col items-center justify-center min-h-[50vh]">
-            {/* Rest icon */}
-            <div className="w-24 h-24 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6">
-              <svg className="w-10 h-10 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
-              </svg>
+          /* Rest Day */
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center min-h-[50vh] transition-all duration-700",
+              mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            )}
+          >
+            {/* Rest icon with glow */}
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
+              <div className="relative w-28 h-28 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center">
+                <svg className="w-12 h-12 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+                </svg>
+              </div>
             </div>
 
-            <h2 className="text-white text-2xl font-black mb-2">Rest Day</h2>
+            <h2
+              className="text-white text-3xl font-black mb-3"
+              style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
+            >
+              Rest Day
+            </h2>
             <p className="text-white/40 text-sm text-center max-w-[260px] leading-relaxed">
               Recovery is where growth happens.
               Your muscles rebuild stronger during rest.
             </p>
 
             {/* Quick recovery tip */}
-            <div className="mt-8 p-4 rounded-xl bg-white/[0.03] border border-white/10 max-w-[280px]">
-              <p className="text-white/60 text-sm text-center">
-                💡 Try stretching, walking, or foam rolling
+            <div className="mt-8 p-5 rounded-2xl bg-white/[0.03] border border-white/10 max-w-[300px]">
+              <p className="text-white/60 text-sm text-center leading-relaxed">
+                Try stretching, walking, or foam rolling to enhance recovery
               </p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Swipe hint - only show when relevant */}
+      {/* Swipe hint */}
       <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+90px)] left-0 right-0 text-center pointer-events-none">
-        <p className="text-white/20 text-[10px] uppercase tracking-widest">
+        <p className="text-white/15 text-[10px] uppercase tracking-[0.2em] font-medium">
           {hasTwoADaySessions ? 'Swipe ↕ sessions · ↔ days' : 'Swipe to change days'}
         </p>
       </div>
+
+      {/* Premium animations */}
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
     </div>
   );
 }
