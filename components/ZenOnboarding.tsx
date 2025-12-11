@@ -10,6 +10,7 @@ import { analytics, EventTypes } from '../services/analyticsService';
 import { hasExceededLimit, getLimitMessage, getRemainingUsage } from '../lib/rateLimiter';
 import { cn } from '../lib/utils';
 import { CheckIcon } from './icons';
+import PlanBuildingScreen from './onboarding/PlanBuildingScreen';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    INTELLIGENT ONBOARDING - Full Redesign
@@ -1131,9 +1132,28 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
   const exerciseTypes = ['🔥 Warmup', '💪 Compound', '🎯 Accessory', '⚡ Core', '🧘 Cooldown'];
 
   const renderBuilding = () => {
+    // Error state
+    if (error) {
+      return (
+        <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
+          <div className="w-full max-w-md bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
+            <h3 className="text-red-400 font-bold text-lg mb-2">Generation Failed</h3>
+            <p className="text-red-300/80 text-sm mb-4">{error}</p>
+            <button
+              onClick={() => { setError(null); setIsGenerating(false); generatePlan(); }}
+              className="w-full py-3 bg-red-500 text-white font-bold rounded-xl active:scale-[0.98] transition-transform"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Success state - show completion
     if (showSuccess) {
       return (
-        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center px-8">
+        <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center px-8">
           <div className="flex gap-2 mb-8">
             {days.map((day, idx) => (
               <div
@@ -1153,89 +1173,32 @@ export default function ZenOnboarding({ onPlanGenerated }: ZenOnboardingProps) {
           <p className="text-white/60 text-sm">
             7 days of personalized training
           </p>
+
+          <style>{`
+            @keyframes day-pop { 0% { transform: scale(0) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+          `}</style>
         </div>
       );
     }
 
+    // NEW: Intelligent loading screen with contextual steps
+    const buildingPreferences = {
+      currentStrength: Object.keys(currentStrength).length > 0 ? currentStrength : undefined,
+      specificGoal: specificGoal || undefined,
+      sport: goal === 'Athletic Performance' || goal === 'Competition Prep' ? specificGoal?.event_type : undefined,
+      painPoints: painPoints.length > 0 ? painPoints : undefined,
+      primary_goal: goal || undefined,
+      training_split: trainingSplit,
+    };
+
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center px-8">
-        {error && (
-          <div className="absolute top-[max(6rem,env(safe-area-inset-top))] left-6 right-6">
-            <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-4">
-              <p className="text-red-400 text-sm text-center">{error}</p>
-              <button
-                onClick={() => { setError(null); setIsGenerating(false); generatePlan(); }}
-                className="w-full mt-3 py-2 text-red-400 font-medium text-sm"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Week builder */}
-        <div className="flex gap-2 mb-8">
-          {days.map((day, idx) => {
-            const isFilled = filledDays.includes(idx);
-            const isActive = activeDay === idx && !isFilled;
-
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'relative w-10 h-16 rounded-lg transition-all duration-500 flex flex-col items-center justify-center overflow-hidden',
-                  isFilled ? 'bg-[#EF4444]' : isActive ? 'bg-white/20' : 'bg-white/10'
-                )}
-              >
-                <span className={cn('text-[11px] font-bold uppercase', isFilled ? 'text-white/80' : 'text-white/70')}>
-                  {day}
-                </span>
-
-                {isActive && (
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute bottom-0 left-0 right-0 bg-[#EF4444] animate-[fill-up_2.5s_ease-out_forwards]" />
-                  </div>
-                )}
-
-                {isFilled && <CheckIcon className="w-4 h-4 text-white mt-1 animate-[pop-in_0.3s_ease-out]" />}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Progress bar */}
-        <div className="w-full max-w-xs h-1 bg-white/10 rounded-full overflow-hidden mb-6">
-          <div
-            className="h-full bg-[#EF4444] rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${generationProgress}%` }}
-          />
-        </div>
-
-        {/* Current exercise indicator */}
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl">{exerciseTypes[currentExercise].split(' ')[0]}</span>
-          <div>
-            <p className="text-white font-bold text-sm">Adding {exerciseTypes[currentExercise].split(' ')[1]}</p>
-            <p className="text-white/70 text-xs">Day {Math.min(filledDays.length + 1, 7)} of 7</p>
-          </div>
-        </div>
-
-        <p className="text-white font-black text-lg uppercase tracking-wide mb-1">
-          Building Your Week
-        </p>
-        <p className="text-white/70 text-xs mb-1">{statusText}</p>
-        <p className="text-white/70 text-xs tabular-nums">{Math.round(generationProgress)}% complete</p>
-
-        <p className="text-white/70 text-xs mt-6">
-          Typically takes 2-4 minutes
-        </p>
-
-        <style>{`
-          @keyframes fill-up { 0% { height: 0%; } 100% { height: 100%; } }
-          @keyframes pop-in { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
-          @keyframes day-pop { 0% { transform: scale(0) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
-        `}</style>
-      </div>
+      <PlanBuildingScreen
+        preferences={buildingPreferences}
+        onComplete={() => {
+          // The actual plan completion is handled by the useEffect that watches generatedPlan
+          // This callback is just for the visual animation completion
+        }}
+      />
     );
   };
 
