@@ -292,101 +292,138 @@ export default function ZenHomePage({ plan, onStartSession, userProfile }: ZenHo
           </h2>
         </div>
 
-        {/* Week Calendar */}
+        {/* Week Calendar - Contained Card Design */}
         <div
           className={cn(
             "transition-all duration-500 delay-150",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           )}
         >
-          <div className="flex justify-between">
-            {weekDates.map((date, i) => {
-              const status = getDayStatus(i);
-              const isSelected = i === selectedDayIndex;
-              const isTodayDay = i === todayIndex;
+          {/* Calendar Card Container */}
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+            {/* Week Days Row */}
+            <div className="flex justify-between items-center">
+              {weekDates.map((date, i) => {
+                const status = getDayStatus(i);
+                const isSelected = i === selectedDayIndex;
+                const isTodayDay = i === todayIndex;
+                const hasWorkoutDay = status !== 'rest';
+                const isCompleted = status === 'completed';
 
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedDayIndex(i);
-                    haptic.light();
-                  }}
-                  className={cn(
-                    "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200",
-                    "min-w-[44px] min-h-[44px]",
-                    isSelected && "scale-105",
-                    !isSelected && "active:scale-95"
-                  )}
-                  style={{
-                    backgroundColor: isSelected ? ACCENT : isTodayDay ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    boxShadow: isSelected ? `0 4px 16px ${ACCENT_GLOW}` : 'none'
-                  }}
-                >
-                  {/* Day name */}
-                  <span className={cn(
-                    "text-[10px] font-medium mb-0.5",
-                    isSelected ? "text-white/90" : "text-white/40"
-                  )}>
-                    {dayNames[i].slice(0, 1)}
-                  </span>
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedDayIndex(i);
+                      haptic.light();
+                    }}
+                    className={cn(
+                      "flex flex-col items-center transition-all duration-200",
+                      "min-w-[40px] py-2",
+                      !isSelected && "active:scale-95"
+                    )}
+                  >
+                    {/* Day letter */}
+                    <span className={cn(
+                      "text-[11px] font-medium mb-2",
+                      isSelected ? "text-white" : "text-white/40"
+                    )}>
+                      {dayNames[i].slice(0, 3)}
+                    </span>
 
-                  {/* Date number */}
-                  <span className={cn(
-                    "text-[15px] font-semibold tabular-nums",
-                    isSelected ? "text-white" : isTodayDay ? "text-white" : "text-white/60"
-                  )}>
-                    {date.getDate()}
-                  </span>
+                    {/* Date circle with status */}
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center relative transition-all duration-200",
+                        isSelected && "scale-110"
+                      )}
+                      style={{
+                        backgroundColor: isSelected ? ACCENT : 'transparent',
+                        boxShadow: isSelected ? `0 4px 20px ${ACCENT_GLOW}` : 'none'
+                      }}
+                    >
+                      {/* Today ring indicator (when not selected) */}
+                      {isTodayDay && !isSelected && (
+                        <div
+                          className="absolute inset-0 rounded-full border-2"
+                          style={{ borderColor: ACCENT }}
+                        />
+                      )}
 
-                  {/* Status dot */}
-                  <div className="h-1.5 mt-1 flex items-center">
-                    {status === 'completed' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      {/* Workout indicator ring (when has workout but not today/selected) */}
+                      {hasWorkoutDay && !isTodayDay && !isSelected && !isCompleted && (
+                        <div className="absolute inset-0 rounded-full border border-white/20" />
+                      )}
+
+                      {/* Completed checkmark or date number */}
+                      {isCompleted && !isSelected ? (
+                        <div className="w-full h-full rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <span className={cn(
+                          "text-[15px] font-semibold tabular-nums",
+                          isSelected ? "text-white" :
+                          isTodayDay ? "text-white" :
+                          hasWorkoutDay ? "text-white/70" : "text-white/30"
+                        )}>
+                          {date.getDate()}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Morning/Evening Toggle - Inside Calendar Card */}
+            {hasTwoADaySessions && (
+              <div className="flex gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                {['am', 'pm'].map((view) => (
+                  <button
+                    key={view}
+                    onClick={() => { setSessionView(view as 'am' | 'pm'); haptic.light(); }}
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                     )}
-                    {status === 'today' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ACCENT }} />
-                    )}
-                    {status === 'upcoming' && !isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                    style={{
+                      backgroundColor: sessionView === view ? ACCENT : 'rgba(255,255,255,0.04)',
+                      color: sessionView === view ? 'white' : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    {view === 'am' ? '☀️ Morning' : '🌙 Evening'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Legend - Below calendar */}
+          <div className="flex items-center justify-center gap-6 mt-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg className="w-2 h-2 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <span className="text-[10px] text-white/40">Done</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full border" style={{ borderColor: ACCENT }} />
+              <span className="text-[10px] text-white/40">Today</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full border border-white/20" />
+              <span className="text-[10px] text-white/40">Scheduled</span>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 px-6 pb-32 overflow-y-auto relative z-10">
-        {/* 2x Daily Toggle */}
-        {hasTwoADaySessions && (
-          <div
-            className={cn(
-              "flex gap-2 mb-6 transition-all duration-500 delay-200",
-              mounted ? "opacity-100" : "opacity-0"
-            )}
-          >
-            {['am', 'pm'].map((view) => (
-              <button
-                key={view}
-                onClick={() => { setSessionView(view as 'am' | 'pm'); haptic.light(); }}
-                className={cn(
-                  "flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200"
-                )}
-                style={{
-                  backgroundColor: sessionView === view ? ACCENT : 'rgba(255,255,255,0.04)',
-                  color: sessionView === view ? 'white' : 'rgba(255,255,255,0.5)',
-                  boxShadow: sessionView === view ? `0 4px 16px ${ACCENT_GLOW}` : 'none'
-                }}
-              >
-                {view === 'am' ? 'Morning' : 'Evening'}
-              </button>
-            ))}
-          </div>
-        )}
-
         {hasWorkout && workoutInfo ? (
           <div className="space-y-5">
             {/* Workout Card */}
