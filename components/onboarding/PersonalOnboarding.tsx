@@ -255,7 +255,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           } : undefined,
           training_split: {
             sessions_per_day: sessionsPerDay,
-            training_type: sessionsPerDay === '2' ? splitType : (path === 'competition' ? 'combined' as const : 'strength_only' as const),
+            // Map splitType to validator values: strength_only | strength_plus_cardio | combined | cardio_focused
+            training_type: sessionsPerDay === '2'
+              ? (splitType === 'strength_cardio' ? 'strength_plus_cardio' as const
+                : splitType === 'technique_conditioning' ? 'combined' as const
+                : 'strength_only' as const)  // am_pm_same
+              : (path === 'competition' ? 'combined' as const : 'strength_only' as const),
           },
           specific_goal: path === 'competition' ? {
             event_type: sport || undefined,
