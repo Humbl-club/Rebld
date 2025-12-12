@@ -188,16 +188,18 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
     return 'Push/Pull/Legs × 2';
   }, [selectedDays]);
 
-  // Progress animation during generation
+  // Progress animation during generation (~30-60 second target)
   useEffect(() => {
     if (!isGenerating) return;
 
     const interval = setInterval(() => {
       setGenerationProgress(prev => {
-        if (prev < 40) return prev + 4;
-        if (prev < 70) return prev + 3;
-        if (prev < 85) return prev + 1.5;
-        return 85;
+        // Fast model: reach 85% in ~30 seconds
+        if (prev < 30) return prev + 6;      // 0-30% in 5 seconds
+        if (prev < 60) return prev + 4;      // 30-60% in ~8 seconds
+        if (prev < 80) return prev + 2;      // 60-80% in ~10 seconds
+        if (prev < 90) return prev + 0.5;    // 80-90% slow creep
+        return 90;                            // Hold at 90% until complete
       });
     }, 1000);
 
@@ -258,6 +260,10 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             event_name: eventName || undefined,
           } : undefined,
           sport: path === 'competition' ? sport || undefined : undefined,
+          // PERFORMANCE: Use compressed prompt (60% smaller, same quality)
+          _useCompressedPrompt: true,
+          // PERFORMANCE: Use fast model (deepseek-chat, ~30 seconds)
+          _useFlashModel: true,
         },
         userId: user?.id,
       };
