@@ -17,7 +17,7 @@ import { INJURY_PROTOCOLS } from "./rehab/injuryProtocolsData";
 // EXPERT KNOWLEDGE BASE - Top 5 Books per Sport/Goal
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface ExpertPersona {
+export interface ExpertPersona {
   title: string;
   expertise: string;
   authorityBooks: string[];
@@ -695,11 +695,4 @@ export {
   getRehabProtocol,
   getExpertPersona,
   EXPERT_PERSONAS,
-};
-
-export type {
-  ExpertPersona,
-  OnboardingData,
-  SilverPromptOutput,
-  RehabExercise,
 };
