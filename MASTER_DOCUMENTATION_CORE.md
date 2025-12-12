@@ -1,7 +1,7 @@
 # REBLD Workout App - Core Documentation
 
-**Version:** 3.3 (Premium Onboarding + Plan Validation)
-**Last Updated:** December 10, 2025
+**Version:** 3.4 (iOS-Native Onboarding Overhaul)
+**Last Updated:** December 12, 2025
 **Status:** Production-Ready - Full Security Hardening ✅
 
 > **Note:** This is Part 1 of the documentation (Core). For AI Integration, Security, Design System, Features, and Reference material, see [MASTER_DOCUMENTATION_REFERENCE.md](./MASTER_DOCUMENTATION_REFERENCE.md)
@@ -238,97 +238,92 @@ User lands on app
 
 ### 2. Onboarding Flow (New User)
 
-**Premium SwipeableOnboarding Component** (`components/onboarding/SwipeableOnboarding.tsx`)
+**PersonalOnboarding Component** (`components/onboarding/PersonalOnboarding.tsx`)
 
-Design inspiration: Whoop/Oura editorial approach - dark, immersive, conversational.
+iOS-native, conversational design that makes users feel individual, not processed.
 
 ```
-SwipeableOnboarding (6-card swipeable flow)
+PersonalOnboarding (7-step conversational flow)
 
-Visual Design:
-  ├─ Dark immersive theme (#0a0a0a background)
-  ├─ Goal-specific gradient overlays (amber, slate, red, emerald, rose)
-  ├─ Film grain texture overlay for premium feel
-  ├─ Lucide icons throughout (Gem, Hexagon, Zap, Infinity, Target)
-  ├─ Conversational question phrasing
-  └─ White-on-dark selection states
+Design System:
+  ├─ Background: #0C0C0C (not pure black - OLED friendly)
+  ├─ Primary text: #F5F5F5 (not pure white - easier on eyes)
+  ├─ Secondary text: #A1A1AA
+  ├─ Surface: #1A1A1A
+  ├─ Border: #2A2A2A
+  ├─ Accent: #EF4444 (used sparingly)
+  ├─ Body text: 17px
+  ├─ Headlines: 28-32px
+  └─ Touch targets: 48px+ (iOS HIG compliant)
 
-Card 1: Goal Selection
-  ├─ "What drives you?" - conversational question
-  ├─ Goals: Aesthetic Physique, Strength & Power, Athletic Performance,
-  │         General Fitness, Lose Weight
-  └─ Each goal has gradient theme + mood tagline
+Step 1: Welcome
+  ├─ Personal greeting with user's first name
+  ├─ Value props with checkmarks
+  ├─ "Get Started" CTA
+  └─ "Takes about 2 minutes" note
 
-Card 2: Experience Level
-  ├─ "How long have you been training?"
-  └─ Options: Beginner (<1 year), Intermediate (1-3 years), Advanced (3+ years)
+Step 2: Path Selection
+  ├─ "What brings you here?" - conversational question
+  ├─ Two paths:
+  │   ├─ Competition: "I have a competition" (Hyrox, marathon, etc.)
+  │   │   └─ Shows: "Includes periodization: Base → Build → Peak → Taper"
+  │   └─ General: "I want to get fitter"
+  │       └─ Shows: "Progressive program, no deadline pressure"
+  └─ Each option shows detailed description
 
-Card 3: Fitness Level (1-10 scale)
-  ├─ "How would you rate your current fitness?"
-  ├─ Visual slider with explanations for each level:
-  │   - 1-2: Sedentary, no regular exercise
-  │   - 3-4: Light activity, walks occasionally
-  │   - 5-6: Moderate fitness, works out 2-3x/week
-  │   - 7-8: Good shape, consistent training
-  │   - 9-10: Peak condition, serious athlete
-  └─ Dynamic description updates as user selects
+Step 3: Goal (varies by path)
+  Competition Path:
+    ├─ Sport selection grid (Hyrox, Powerlifting, Marathon, etc.)
+    ├─ Event date picker with periodization preview
+    │   └─ Shows "X weeks out — perfect for periodized training"
+    └─ Optional event name input
 
-Card 4: Equipment
-  ├─ "What do you have access to?"
-  └─ Options: Minimal (bodyweight), Home Gym, Full Gym
+  General Path:
+    ├─ Goal cards with expandable details:
+    │   ├─ Build Muscle: 8-12 reps, moderate rest, progressive volume
+    │   ├─ Get Stronger: 3-6 reps, longer rest, heavy compounds
+    │   ├─ Lose Fat: Strength + conditioning hybrid
+    │   └─ General Wellness: Varied training, sustainable approach
+    └─ Selected goal expands to show programming details
 
-Card 5: Training Days
-  ├─ "How many days can you train?"
-  └─ Grid selection: Mon-Sun toggles
+Step 4: Schedule
+  ├─ Visual 7-day grid (Mon-Sun toggles)
+  ├─ Selected days count + recommended split
+  │   └─ e.g., "4 per week → Upper/Lower"
+  ├─ Session length selector (30/45/60/75/90 min)
+  └─ Experience level (Beginner/Intermediate/Advanced)
 
-Card 6: Commitment Card
-  ├─ Summary of all selections
-  ├─ Goal-specific motivational tagline
-  └─ "Build My Program" CTA button
+Step 5: Body Protection
+  ├─ "Any areas to protect?" - empathetic framing
+  ├─ Grid selection: Shoulders, Lower Back, Knees, Wrists, Neck, Hips
+  ├─ Selected areas show: "We'll modify or substitute exercises"
+  └─ None selected shows: "All exercises available"
 
-Navigation:
-  ├─ Swipe left/right between cards
-  ├─ Back button (ChevronLeft icon)
-  ├─ Progress dots at bottom
-  └─ Haptic feedback on selection (via useHaptic())
+Step 6: Strength Benchmarks (Optional)
+  ├─ "Current strength" - optional inputs
+  ├─ Bench Press, Squat, Deadlift inputs (kg)
+  ├─ Shows count: "2 of 3 provided"
+  ├─ "Generate My Plan" button
+  └─ "Skip — let AI estimate" secondary action
+
+Step 7: Generation
+  ├─ PlanBuildingScreen with contextual steps:
+  │   ├─ "Reading your profile"
+  │   ├─ "Analyzing strength benchmarks" (if provided)
+  │   ├─ "Creating X-week periodization" (if competition)
+  │   ├─ "Applying [Sport] protocols" (if sport selected)
+  │   ├─ "Protecting injury areas" (if pain points)
+  │   ├─ "Distributing rest days"
+  │   ├─ "Selecting warmup mobility"
+  │   └─ "Adding cooldown stretches"
+  ├─ Progress bar synced to actual AI generation (~30 seconds)
+  ├─ Phase preview for competition users
+  └─ Error handling with retry option
 ```
 
-**Legacy PlanImporter** (still available, disabled by default)
-```
-PlanImporter Component (4-step wizard) - useSwipeableUI = true by default
-
-Step 1: Goals & Experience
-  ├─ Primary goal: Strength, Hypertrophy, Athletic, Aesthetics
-  ├─ Experience level: Beginner, Intermediate, Advanced
-  └─ Training frequency: 2-3, 3-4, 4-5, 5+ days/week
-
-Step 2: Body & Physical Profile
-  ├─ Sex: Male, Female, Other (affects programming)
-  ├─ Weight + Height (computes BMI, but not judgmental)
-  ├─ Body type: Lean, Average, Muscular
-  ├─ Athletic level: Low, Moderate, High
-  └─ Training age: Years of consistent training
-
-Step 3: Constraints & Context
-  ├─ Equipment: Minimal, Home Gym, Commercial Gym
-  ├─ Session length: 30, 45, 60, 75 minutes
-  ├─ Pain points: Knees, Lower Back, Shoulders, etc.
-  ├─ Sport focus (optional): Hyrox, Running, Climbing, etc.
-  └─ Additional notes: Free-form context
-
-Step 4: Generation
-  ├─ Auto-triggers AI plan generation
-  ├─ Fetches sex-specific guidelines from DB
-  ├─ Fetches sport-specific guidelines from DB
-  ├─ Fetches body-context guidelines from DB
-  ├─ Builds structured "User Profile" for AI
-  └─ Calls convex/ai.ts → generateWorkoutPlan()
-      ├─ AI generates 7-day structured plan
-      ├─ Returns JSON (weeklyPlan + dailyRoutine)
-      ├─ Normalizes data for Convex schema
-      ├─ Saves to workoutPlans table
-      └─ Extracts exercises → saves to exerciseCache
-```
+**Files:**
+- `components/onboarding/PersonalOnboarding.tsx` - Main onboarding flow (45KB)
+- `components/onboarding/PlanBuildingScreen.tsx` - Intelligent loading screen (13KB)
 
 ### 3. Plan Generation Flow (Detailed)
 

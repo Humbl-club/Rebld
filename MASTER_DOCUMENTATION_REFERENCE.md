@@ -1243,48 +1243,73 @@ npx convex run queries:getWorkoutPlans '{"userId": "user_abc123"}'
 
 ## Recent Improvements
 
-### December 8, 2025 - Premium Onboarding Redesign + Plan Validation Fix ⭐ LATEST
+### December 12, 2025 - iOS-Native Onboarding Overhaul ⭐ LATEST
 
-**Complete onboarding overhaul with Whoop/Oura inspired editorial design**
+**Complete redesign focused on personal, conversational experience**
 
-#### 1. Premium SwipeableOnboarding Component ✅
-**Location:** `components/onboarding/SwipeableOnboarding.tsx`
+#### PersonalOnboarding Component ✅
+**Location:** `components/onboarding/PersonalOnboarding.tsx`
 
-**Design Features:**
-- Dark immersive theme (#0a0a0a background)
-- Goal-specific gradient overlays:
-  - Aesthetic Physique: amber/stone gradient
-  - Strength & Power: slate/zinc gradient
-  - Athletic Performance: red/stone gradient
-  - General Fitness: emerald/stone gradient
-  - Lose Weight: rose/stone gradient
-- Film grain texture overlay (SVG noise filter)
-- Conversational question phrasing ("What drives you?", "How long have you been training?")
-- White-on-dark selection states
-- Lucide icons (Gem, Hexagon, Zap, Infinity, Target, ChevronLeft)
-- Haptic feedback on all selections
+**Design Philosophy:**
+- iOS-native feel with OLED-friendly colors (not pure black/white)
+- Conversational flow that makes users feel individual, not processed
+- Clean typography with excellent contrast/legibility
+- Minimalist UI without gimmicky animations
 
-**6-Card Flow:**
-1. Goal selection with mood taglines
-2. Experience level (Beginner/Intermediate/Advanced)
-3. Fitness level 1-10 with dynamic explanations
-4. Equipment access
-5. Training days (Mon-Sun toggles)
-6. Commitment card with summary + "Build My Program" CTA
-
-#### 2. Fitness Level Explanations ✅
-**Problem:** Users didn't understand what fitness levels 1-10 meant
-**Solution:** Added dynamic descriptions that update as user selects:
+**Color System:**
 ```typescript
-const FITNESS_LEVEL_INFO = {
-  1: { label: "Sedentary", description: "No regular exercise, mostly inactive" },
-  2: { label: "Very Low", description: "Occasional light activity" },
-  // ... through 10
-  10: { label: "Elite", description: "Peak condition, competition-ready" },
+const colors = {
+  bg: '#0C0C0C',           // OLED-friendly near-black
+  surface: '#1A1A1A',       // Card backgrounds
+  surfaceHover: '#222222',  // Interactive states
+  border: '#2A2A2A',        // Subtle borders
+  borderFocus: '#3A3A3A',   // Focus states
+  textPrimary: '#F5F5F5',   // Main text (not pure white)
+  textSecondary: '#A1A1AA', // Secondary text
+  textMuted: '#71717A',     // Muted/hint text
+  accent: '#EF4444',        // Red accent for CTAs
 };
 ```
 
-#### 3. Plan Validation Auto-Fix ✅
+**7-Step Conversational Flow:**
+1. **Welcome** - Personal greeting with name input
+2. **Path Selection** - Competition prep vs General fitness (two distinct paths)
+3. **Goal** - Primary training objective
+4. **Schedule** - Day selection with visual week builder
+5. **Body** - Height, weight, body type (optional)
+6. **Strength** - Current lifting benchmarks (optional, with metric toggle)
+7. **Generating** - AI plan generation with PlanBuildingScreen
+
+**Two-Path Architecture:**
+- **Competition Path**: Event type, date, current benchmarks, periodization phases
+- **General Path**: Standard goal-based fitness approach
+
+**iOS-Native Features:**
+- 44pt+ touch targets for thumb accessibility
+- Safe area respect for notch/home indicator
+- Haptic feedback on interactions
+- No hover states (touch-first)
+- Single-handed usability
+
+**Files:**
+- `components/onboarding/PersonalOnboarding.tsx` - Main component (~1200 lines)
+- `components/onboarding/PlanBuildingScreen.tsx` - Loading/generation display
+
+**Deleted Old Files:**
+- `components/ZenOnboarding.tsx`
+- `components/onboarding/SwipeableOnboarding.tsx`
+- `components/onboarding/CompetitionFlow.tsx`
+- `components/onboarding/GeneralFlow.tsx`
+- `components/onboarding/WeekBuilder.tsx`
+- `components/onboarding/BodyMap.tsx`
+- `components/onboarding/BenchmarkInput.tsx`
+- And 6 other unused onboarding components
+
+---
+
+### December 8, 2025 - Plan Validation Fix
+
+#### Plan Validation Auto-Fix ✅
 **Location:** `convex/planValidator.ts` - `fixCardioTemplates()`
 
 **Problem:** AI sometimes generated incomplete metrics templates for exercises like "Sled Push/Pull"
@@ -4553,6 +4578,17 @@ type WorkoutBlock =
 
 ## Recent Changes (December 2025)
 
+### December 12, 2025 - iOS-Native Onboarding Overhaul
+
+**Complete onboarding redesign:**
+- New `PersonalOnboarding.tsx` component with conversational 7-step flow
+- iOS-native design with OLED-friendly colors (#0C0C0C background, #F5F5F5 text)
+- Two-path architecture: Competition prep vs General fitness
+- Deleted 13 legacy onboarding files (ZenOnboarding, SwipeableOnboarding, etc.)
+- CSS reduced from 152KB to 141KB
+
+---
+
 ### December 8, 2025 - AI Overhaul & Evidence-Based Rehab
 
 **AI Provider Switch:**
@@ -4592,6 +4628,6 @@ type WorkoutBlock =
 
 ---
 
-**Version:** 2.1
-**Last Updated:** December 8, 2025
+**Version:** 3.4
+**Last Updated:** December 12, 2025
 **Status:** Production-Ready ✅
