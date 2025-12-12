@@ -670,3 +670,312 @@ export const populateAllData = action({
     };
   },
 });
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2: GENERATION-TIME ENRICHMENT (No Auth Required)
+// These functions are called after plan generation to enrich the database
+// We're spending AI tokens anyway, so we should maximize data collection
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Main enrichment function called from generateWorkoutPlan
+ * Extracts exercises from generated plan and schedules background jobs
+ * NO AUTH REQUIRED - runs at generation time
+ */
+export const enrichPlanOnGeneration = action({
+  args: {
+    plan: v.any(), // The generated workout plan
+    sport: v.optional(v.string()),
+    painPoints: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const { plan, sport, painPoints } = args;
+
+    if (!plan?.weeklyPlan) {
+      return { success: false, error: "No plan to enrich" };
+    }
+
+    // Extract unique exercise names from the plan
+    const exerciseNames = new Set<string>();
+    const exerciseCategories: Record<string, string> = {};
+
+    for (const day of plan.weeklyPlan) {
+      // Handle single session (blocks directly on day)
+      if (day.blocks && Array.isArray(day.blocks)) {
+        for (const block of day.blocks) {
+          if (block.exercises && Array.isArray(block.exercises)) {
+            for (const ex of block.exercises) {
+              if (ex.exercise_name) {
+                exerciseNames.add(ex.exercise_name);
+                exerciseCategories[ex.exercise_name] = ex.category || 'main';
+              }
+            }
+          }
+        }
+      }
+      // Handle 2-a-day sessions
+      if (day.sessions && Array.isArray(day.sessions)) {
+        for (const session of day.sessions) {
+          if (session.blocks && Array.isArray(session.blocks)) {
+            for (const block of session.blocks) {
+              if (block.exercises && Array.isArray(block.exercises)) {
+                for (const ex of block.exercises) {
+                  if (ex.exercise_name) {
+                    exerciseNames.add(ex.exercise_name);
+                    exerciseCategories[ex.exercise_name] = ex.category || 'main';
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const exerciseList = Array.from(exerciseNames);
+    loggers.ai.info(`📊 Phase 2 Enrichment: Found ${exerciseList.length} unique exercises`);
+
+    // 1. Check which exercises need caching
+    const uncachedExercises: string[] = [];
+    for (const name of exerciseList) {
+      const cached = await ctx.runQuery(api.queries.getExerciseFromCache, { exerciseName: name });
+      if (!cached) {
+        uncachedExercises.push(name);
+      }
+    }
+
+    loggers.ai.info(`📊 Phase 2: ${uncachedExercises.length} exercises need caching`);
+
+    // 2. Schedule exercise caching (background job)
+    if (uncachedExercises.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.populateData.batchPopulateExercises, {
+        exerciseNames: uncachedExercises,
+        batchSize: 5,
+        delayMs: 1500,
+      });
+    }
+
+    // 3. Populate sport buckets if sport is specified
+    if (sport) {
+      await ctx.scheduler.runAfter(1000, internal.populateData.populateSportBucketInternal, {
+        sport,
+        exercises: exerciseList.map(name => ({
+          name,
+          category: exerciseCategories[name] || 'main',
+        })),
+      });
+    }
+
+    return {
+      success: true,
+      totalExercises: exerciseList.length,
+      newExercisesToCache: uncachedExercises.length,
+      sport: sport || null,
+    };
+  },
+});
+
+/**
+ * Internal mutation to populate sport buckets (no auth)
+ */
+export const populateSportBucketInternal = internalMutation({
+  args: {
+    sport: v.string(),
+    exercises: v.array(v.object({
+      name: v.string(),
+      category: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const { sport, exercises } = args;
+
+    for (const ex of exercises) {
+      // Normalize exercise name
+      const normalizedName = ex.name.toLowerCase().replace(/\s+/g, '_');
+
+      // Check if already exists
+      const existing = await ctx.db
+        .query("sportBuckets")
+        .filter(q =>
+          q.and(
+            q.eq(q.field("sport"), sport.toLowerCase()),
+            q.eq(q.field("exercise_name"), normalizedName)
+          )
+        )
+        .first();
+
+      // Determine placement stats
+      const isWarmup = ex.category === 'warmup';
+      const isCooldown = ex.category === 'cooldown';
+      const isMain = !isWarmup && !isCooldown;
+
+      if (!existing) {
+        await ctx.db.insert("sportBuckets", {
+          sport: sport.toLowerCase(),
+          exercise_name: normalizedName,
+          // Performance tracking (defaults for new entries)
+          usage_count: 1,
+          success_rate: 1.0, // Assume success on first use
+          avg_performance_score: 70, // Default mid-range score
+          // Volume patterns (will be updated with actual data)
+          typical_sets: 3,
+          typical_reps: isMain ? 10 : null,
+          typical_duration_s: isMain ? null : 60,
+          typical_weight_ratio: null,
+          // Placement stats
+          placement_stats: {
+            warmup_count: isWarmup ? 1 : 0,
+            main_count: isMain ? 1 : 0,
+            cooldown_count: isCooldown ? 1 : 0,
+          },
+          // Metadata (no user - system-generated)
+          last_updated: new Date().toISOString(),
+          confidence_score: 0.5, // Low confidence initially
+        });
+      } else {
+        // Update usage count and placement stats
+        const newPlacementStats = {
+          warmup_count: existing.placement_stats.warmup_count + (isWarmup ? 1 : 0),
+          main_count: existing.placement_stats.main_count + (isMain ? 1 : 0),
+          cooldown_count: existing.placement_stats.cooldown_count + (isCooldown ? 1 : 0),
+        };
+
+        // Increase confidence with more data points
+        const newConfidence = Math.min(1.0, existing.confidence_score + 0.1);
+
+        await ctx.db.patch(existing._id, {
+          usage_count: existing.usage_count + 1,
+          placement_stats: newPlacementStats,
+          last_updated: new Date().toISOString(),
+          confidence_score: newConfidence,
+        });
+      }
+    }
+
+    loggers.mutations.info(`📊 Sport bucket populated: ${exercises.length} exercises for ${sport}`);
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// BATCH JOB: POPULATE STEP-BY-STEP FOR EXISTING EXERCISES
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Find exercises missing step_by_step and populate them
+ * Can be run manually or scheduled
+ */
+export const batchPopulateStepByStep = action({
+  args: {
+    limit: v.optional(v.number()), // Max exercises to process (default 50)
+    delayMs: v.optional(v.number()), // Delay between API calls (default 2000)
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+    const delayMs = args.delayMs || 2000;
+
+    // Find exercises without step_by_step
+    const allExercises = await ctx.runQuery(api.queries.getAllExercisesNoPagination, {});
+
+    const needsStepByStep = allExercises.filter(ex =>
+      !ex.step_by_step || ex.step_by_step.length === 0
+    );
+
+    const toProcess = needsStepByStep.slice(0, limit);
+
+    loggers.ai.info(`📊 Step-by-step batch: ${needsStepByStep.length} exercises need processing, processing ${toProcess.length}`);
+
+    // Schedule individual processing
+    for (let i = 0; i < toProcess.length; i++) {
+      const ex = toProcess[i];
+      const delay = i * delayMs;
+
+      await ctx.scheduler.runAfter(delay, internal.populateData.populateStepByStepSingle, {
+        exerciseName: ex.exercise_name || ex.exerciseName,
+        exerciseId: ex._id,
+      });
+    }
+
+    return {
+      success: true,
+      totalNeedingStepByStep: needsStepByStep.length,
+      scheduled: toProcess.length,
+      estimatedTimeMinutes: Math.ceil((toProcess.length * delayMs) / 60000),
+    };
+  },
+});
+
+/**
+ * Internal action to populate step_by_step for a single exercise
+ */
+export const populateStepByStepSingle = action({
+  args: {
+    exerciseName: v.string(),
+    exerciseId: v.id("exerciseCache"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const apiKey = process.env.DEEPSEEK_API_KEY;
+      if (!apiKey) {
+        throw new Error("DeepSeek API key not configured");
+      }
+
+      const { createDeepSeekClient, generateJSONWithRetry } = await import("./utils/aiHelpers");
+      const ai = createDeepSeekClient(apiKey);
+
+      const prompt = `Exercise: "${args.exerciseName}"
+
+Generate step-by-step instructions for performing this exercise.
+
+JSON format:
+{
+  "step_by_step": [
+    "Step 1: Setup position description",
+    "Step 2: Movement initiation",
+    "Step 3: Execution phase",
+    "Step 4: Return to start"
+  ]
+}
+
+RULES:
+- 3-5 steps maximum
+- Each step should be 5-12 words
+- Focus on form, not muscles worked
+- Be specific and actionable
+- Start each step with an action verb
+
+Return ONLY valid JSON.`;
+
+      const validate = (data: any) => {
+        const errors = [];
+        if (!data.step_by_step || !Array.isArray(data.step_by_step)) {
+          errors.push("Missing step_by_step array");
+        } else if (data.step_by_step.length < 2) {
+          errors.push("Need at least 2 steps");
+        }
+        return { valid: errors.length === 0, errors };
+      };
+
+      const result = await generateJSONWithRetry(
+        ai.models,
+        {
+          model: "deepseek-chat",
+          contents: prompt,
+        },
+        validate,
+        2
+      ) as { step_by_step: string[] };
+
+      // Update the exercise with step_by_step
+      await ctx.runMutation(api.mutations.updateExerciseStepByStep, {
+        exerciseId: args.exerciseId,
+        step_by_step: result.step_by_step,
+      });
+
+      loggers.ai.info(`✅ Step-by-step added for: ${args.exerciseName}`);
+      return { success: true, exerciseName: args.exerciseName };
+    } catch (error: any) {
+      loggers.ai.error(`❌ Failed step-by-step for ${args.exerciseName}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  },
+});

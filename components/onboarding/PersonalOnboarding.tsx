@@ -146,6 +146,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 2, 4]); // Mon, Wed, Fri
   const [sessionLength, setSessionLength] = useState<number>(60);
   const [sessionsPerDay, setSessionsPerDay] = useState<'1' | '2'>('1');
+  const [splitType, setSplitType] = useState<'strength_cardio' | 'technique_conditioning' | 'am_pm_same'>('strength_cardio');
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [benchmarks, setBenchmarks] = useState<Record<string, number>>({});
   const [age, setAge] = useState<number | undefined>(undefined);
@@ -254,7 +255,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           } : undefined,
           training_split: {
             sessions_per_day: sessionsPerDay,
-            training_type: path === 'competition' ? 'combined' as const : 'strength_only' as const,
+            training_type: sessionsPerDay === '2' ? splitType : (path === 'competition' ? 'combined' as const : 'strength_only' as const),
           },
           specific_goal: path === 'competition' ? {
             event_type: sport || undefined,
@@ -265,8 +266,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           // Personalization fields
           age: age,
           additional_notes: additionalNotes || undefined,
-          // PERFORMANCE: Use compressed prompt (60% smaller, same quality)
-          _useCompressedPrompt: true,
+          // NEW: Use silver prompt (expert personas, structured JSON)
+          _useSilverPrompt: true,
           // PERFORMANCE: Use fast model (deepseek-chat, ~30 seconds)
           _useFlashModel: true,
         },
@@ -296,7 +297,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       setError(e.message || 'Something went wrong. Please try again.');
       setIsGenerating(false);
     }
-  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, painPoints, benchmarks, age, additionalNotes, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
+  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, splitType, painPoints, benchmarks, age, additionalNotes, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER: WELCOME
@@ -730,12 +731,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   // ═══════════════════════════════════════════════════════════════════════════
 
   const renderSchedule = () => (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      {/* Header */}
-      <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+    <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
         <button
           onClick={() => goToStep('goal')}
-          className="flex items-center gap-2 mb-6"
+          className="flex items-center gap-2 mb-4"
           style={{ color: colors.textSecondary }}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -758,213 +759,321 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
         </p>
       </div>
 
-      {/* Days */}
-      <div className="px-6 mb-8">
-        <div className="flex gap-2">
-          {DAYS.map((day, idx) => {
-            const isSelected = selectedDays.includes(idx);
-            return (
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6">
+        {/* Days */}
+        <div className="mb-6">
+          <div className="flex gap-2">
+            {DAYS.map((day, idx) => {
+              const isSelected = selectedDays.includes(idx);
+              return (
+                <button
+                  key={day}
+                  onClick={() => {
+                    haptic.light();
+                    setSelectedDays(prev =>
+                      isSelected
+                        ? prev.filter(d => d !== idx)
+                        : [...prev, idx].sort()
+                    );
+                  }}
+                  className="flex-1 h-14 rounded-xl flex flex-col items-center justify-center active:scale-95 transition-all border-2"
+                  style={{
+                    background: isSelected ? colors.accent : colors.surface,
+                    borderColor: isSelected ? colors.accent : colors.border,
+                  }}
+                >
+                  <span
+                    className="text-[13px] font-semibold"
+                    style={{ color: isSelected ? '#FFFFFF' : colors.textPrimary }}
+                  >
+                    {day}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Summary */}
+          <div
+            className="mt-3 p-3 rounded-xl"
+            style={{ background: colors.surface }}
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-[14px]" style={{ color: colors.textSecondary }}>
+                Training days
+              </span>
+              <span className="text-[14px] font-semibold" style={{ color: colors.textPrimary }}>
+                {selectedDays.length} per week
+              </span>
+            </div>
+            <div
+              className="mt-2 pt-2 border-t"
+              style={{ borderColor: colors.border }}
+            >
+              <span className="text-[12px]" style={{ color: colors.textMuted }}>
+                Recommended: {recommendedSplit}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Session length */}
+        <div className="mb-6">
+          <label
+            className="block text-[15px] font-medium mb-2"
+            style={{ color: colors.textPrimary }}
+          >
+            How long per session?
+          </label>
+          <div className="flex gap-2">
+            {[30, 45, 60, 75, 90].map(mins => (
               <button
-                key={day}
+                key={mins}
                 onClick={() => {
                   haptic.light();
-                  setSelectedDays(prev =>
-                    isSelected
-                      ? prev.filter(d => d !== idx)
-                      : [...prev, idx].sort()
-                  );
+                  setSessionLength(mins);
                 }}
-                className="flex-1 h-16 rounded-xl flex flex-col items-center justify-center active:scale-95 transition-all border-2"
+                className="flex-1 h-11 rounded-xl text-[15px] font-medium active:scale-95 transition-all border-2"
                 style={{
-                  background: isSelected ? colors.accent : colors.surface,
-                  borderColor: isSelected ? colors.accent : colors.border,
+                  background: sessionLength === mins ? colors.accent : colors.surface,
+                  borderColor: sessionLength === mins ? colors.accent : colors.border,
+                  color: sessionLength === mins ? '#FFFFFF' : colors.textPrimary,
+                }}
+              >
+                {mins}
+              </button>
+            ))}
+          </div>
+          <p
+            className="text-[12px] mt-1 text-center"
+            style={{ color: colors.textMuted }}
+          >
+            minutes
+          </p>
+        </div>
+
+        {/* 2-a-day option for competition prep */}
+        {path === 'competition' && (
+          <div className="mb-6">
+            <label
+              className="block text-[15px] font-medium mb-2"
+              style={{ color: colors.textPrimary }}
+            >
+              Sessions per day
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  haptic.light();
+                  setSessionsPerDay('1');
+                }}
+                className="h-14 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
+                style={{
+                  background: sessionsPerDay === '1' ? `${colors.accent}15` : colors.surface,
+                  borderColor: sessionsPerDay === '1' ? colors.accent : colors.border,
                 }}
               >
                 <span
-                  className="text-[13px] font-semibold"
-                  style={{ color: isSelected ? '#FFFFFF' : colors.textPrimary }}
+                  className="text-[15px] font-semibold"
+                  style={{ color: sessionsPerDay === '1' ? colors.accent : colors.textPrimary }}
                 >
-                  {day}
+                  1 session
+                </span>
+                <span
+                  className="text-[11px] mt-0.5"
+                  style={{ color: colors.textMuted }}
+                >
+                  Standard
                 </span>
               </button>
-            );
-          })}
-        </div>
+              <button
+                onClick={() => {
+                  haptic.light();
+                  setSessionsPerDay('2');
+                }}
+                className="h-14 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
+                style={{
+                  background: sessionsPerDay === '2' ? `${colors.accent}15` : colors.surface,
+                  borderColor: sessionsPerDay === '2' ? colors.accent : colors.border,
+                }}
+              >
+                <span
+                  className="text-[15px] font-semibold"
+                  style={{ color: sessionsPerDay === '2' ? colors.accent : colors.textPrimary }}
+                >
+                  2 sessions
+                </span>
+                <span
+                  className="text-[11px] mt-0.5"
+                  style={{ color: colors.textMuted }}
+                >
+                  AM/PM split
+                </span>
+              </button>
+            </div>
 
-        {/* Summary */}
-        <div
-          className="mt-4 p-4 rounded-xl"
-          style={{ background: colors.surface }}
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-[15px]" style={{ color: colors.textSecondary }}>
-              Training days
-            </span>
-            <span className="text-[15px] font-semibold" style={{ color: colors.textPrimary }}>
-              {selectedDays.length} per week
-            </span>
+            {/* Split type selector - only show when 2 sessions selected */}
+            {sessionsPerDay === '2' && (
+              <div className="mt-4">
+                <label
+                  className="block text-[14px] font-medium mb-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  What type of split?
+                </label>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      haptic.light();
+                      setSplitType('strength_cardio');
+                    }}
+                    className="w-full p-3 rounded-xl text-left active:scale-[0.98] transition-all border-2"
+                    style={{
+                      background: splitType === 'strength_cardio' ? `${colors.accent}15` : colors.surface,
+                      borderColor: splitType === 'strength_cardio' ? colors.accent : colors.border,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span
+                          className="text-[14px] font-semibold block"
+                          style={{ color: splitType === 'strength_cardio' ? colors.accent : colors.textPrimary }}
+                        >
+                          Strength + Cardio
+                        </span>
+                        <span className="text-[12px]" style={{ color: colors.textMuted }}>
+                          AM: Weights • PM: Running/Cardio
+                        </span>
+                      </div>
+                      {splitType === 'strength_cardio' && (
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: colors.accent }}>
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      haptic.light();
+                      setSplitType('technique_conditioning');
+                    }}
+                    className="w-full p-3 rounded-xl text-left active:scale-[0.98] transition-all border-2"
+                    style={{
+                      background: splitType === 'technique_conditioning' ? `${colors.accent}15` : colors.surface,
+                      borderColor: splitType === 'technique_conditioning' ? colors.accent : colors.border,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span
+                          className="text-[14px] font-semibold block"
+                          style={{ color: splitType === 'technique_conditioning' ? colors.accent : colors.textPrimary }}
+                        >
+                          Skill + Conditioning
+                        </span>
+                        <span className="text-[12px]" style={{ color: colors.textMuted }}>
+                          AM: Sport technique • PM: Fitness work
+                        </span>
+                      </div>
+                      {splitType === 'technique_conditioning' && (
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: colors.accent }}>
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      haptic.light();
+                      setSplitType('am_pm_same');
+                    }}
+                    className="w-full p-3 rounded-xl text-left active:scale-[0.98] transition-all border-2"
+                    style={{
+                      background: splitType === 'am_pm_same' ? `${colors.accent}15` : colors.surface,
+                      borderColor: splitType === 'am_pm_same' ? colors.accent : colors.border,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span
+                          className="text-[14px] font-semibold block"
+                          style={{ color: splitType === 'am_pm_same' ? colors.accent : colors.textPrimary }}
+                        >
+                          Double Sessions
+                        </span>
+                        <span className="text-[12px]" style={{ color: colors.textMuted }}>
+                          AM & PM: Both full training
+                        </span>
+                      </div>
+                      {splitType === 'am_pm_same' && (
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: colors.accent }}>
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div
-            className="mt-2 pt-2 border-t"
-            style={{ borderColor: colors.border }}
-          >
-            <span className="text-[13px]" style={{ color: colors.textMuted }}>
-              Recommended: {recommendedSplit}
-            </span>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Session length */}
-      <div className="px-6 mb-8">
-        <label
-          className="block text-[15px] font-medium mb-3"
-          style={{ color: colors.textPrimary }}
-        >
-          How long per session?
-        </label>
-        <div className="flex gap-2">
-          {[30, 45, 60, 75, 90].map(mins => (
-            <button
-              key={mins}
-              onClick={() => {
-                haptic.light();
-                setSessionLength(mins);
-              }}
-              className="flex-1 h-12 rounded-xl text-[15px] font-medium active:scale-95 transition-all border-2"
-              style={{
-                background: sessionLength === mins ? colors.accent : colors.surface,
-                borderColor: sessionLength === mins ? colors.accent : colors.border,
-                color: sessionLength === mins ? '#FFFFFF' : colors.textPrimary,
-              }}
-            >
-              {mins}
-            </button>
-          ))}
-        </div>
-        <p
-          className="text-[13px] mt-2 text-center"
-          style={{ color: colors.textMuted }}
-        >
-          minutes
-        </p>
-      </div>
-
-      {/* 2-a-day option for competition prep */}
-      {path === 'competition' && (
-        <div className="px-6 mb-8">
+        {/* Experience */}
+        <div className="mb-6">
           <label
-            className="block text-[15px] font-medium mb-3"
+            className="block text-[15px] font-medium mb-2"
             style={{ color: colors.textPrimary }}
           >
-            Sessions per day
+            Experience level
           </label>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                haptic.light();
-                setSessionsPerDay('1');
-              }}
-              className="flex-1 h-14 px-4 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
-              style={{
-                background: sessionsPerDay === '1' ? `${colors.accent}10` : colors.surface,
-                borderColor: sessionsPerDay === '1' ? colors.accent : colors.border,
-              }}
-            >
-              <span
-                className="text-[17px] font-semibold"
-                style={{ color: sessionsPerDay === '1' ? colors.accent : colors.textPrimary }}
+          <div className="space-y-2">
+            {(['beginner', 'intermediate', 'advanced'] as Experience[]).map(exp => (
+              <button
+                key={exp}
+                onClick={() => {
+                  haptic.light();
+                  setExperience(exp);
+                }}
+                className="w-full h-12 px-4 rounded-xl text-left flex items-center justify-between active:scale-[0.98] transition-all border-2"
+                style={{
+                  background: experience === exp ? `${colors.accent}15` : colors.surface,
+                  borderColor: experience === exp ? colors.accent : colors.border,
+                }}
               >
-                1 session
-              </span>
-              <span
-                className="text-[12px] mt-0.5"
-                style={{ color: colors.textMuted }}
-              >
-                Standard
-              </span>
-            </button>
-            <button
-              onClick={() => {
-                haptic.light();
-                setSessionsPerDay('2');
-              }}
-              className="flex-1 h-14 px-4 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
-              style={{
-                background: sessionsPerDay === '2' ? `${colors.accent}10` : colors.surface,
-                borderColor: sessionsPerDay === '2' ? colors.accent : colors.border,
-              }}
-            >
-              <span
-                className="text-[17px] font-semibold"
-                style={{ color: sessionsPerDay === '2' ? colors.accent : colors.textPrimary }}
-              >
-                2 sessions
-              </span>
-              <span
-                className="text-[12px] mt-0.5"
-                style={{ color: colors.textMuted }}
-              >
-                AM/PM split
-              </span>
-            </button>
-          </div>
-          <p
-            className="text-[13px] mt-3"
-            style={{ color: colors.textMuted }}
-          >
-            {sessionsPerDay === '2'
-              ? 'Two-a-days split strength and sport-specific work across morning and afternoon sessions.'
-              : 'One daily session combining all training elements.'}
-          </p>
-        </div>
-      )}
-
-      {/* Experience */}
-      <div className="px-6 flex-1">
-        <label
-          className="block text-[15px] font-medium mb-3"
-          style={{ color: colors.textPrimary }}
-        >
-          Experience level
-        </label>
-        <div className="space-y-2">
-          {(['beginner', 'intermediate', 'advanced'] as Experience[]).map(exp => (
-            <button
-              key={exp}
-              onClick={() => {
-                haptic.light();
-                setExperience(exp);
-              }}
-              className="w-full h-14 px-4 rounded-xl text-left flex items-center justify-between active:scale-[0.98] transition-all border-2"
-              style={{
-                background: experience === exp ? `${colors.accent}10` : colors.surface,
-                borderColor: experience === exp ? colors.accent : colors.border,
-              }}
-            >
-              <span
-                className="text-[15px] font-medium capitalize"
-                style={{ color: experience === exp ? colors.accent : colors.textPrimary }}
-              >
-                {exp}
-              </span>
-              {experience === exp && (
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: colors.accent }}
+                <span
+                  className="text-[15px] font-medium capitalize"
+                  style={{ color: experience === exp ? colors.accent : colors.textPrimary }}
                 >
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          ))}
+                  {exp}
+                </span>
+                {experience === exp && (
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: colors.accent }}
+                  >
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Spacer for bottom button */}
+        <div className="h-20" />
       </div>
 
-      {/* Continue */}
-      <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+      {/* Fixed Continue Button */}
+      <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
         <button
           onClick={() => goToStep('body')}
           disabled={selectedDays.length === 0}

@@ -864,7 +864,7 @@ export default defineSchema({
     }),
 
     // Metadata
-    created_by_user: v.id("users"),
+    created_by_user: v.optional(v.id("users")), // Optional - can be populated by system
     last_updated: v.string(),
     confidence_score: v.number(), // Based on sample size
   })

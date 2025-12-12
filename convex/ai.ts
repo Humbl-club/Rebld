@@ -54,6 +54,7 @@ import {
 import { getExamplePlansPrompt, getCondensedExamplePrompt } from "./planExamples";
 import { validateWorkoutPlan, validateAndExplain, fixCardioTemplates } from "./planValidator";
 import { buildPainPointPrompt, getProtocolsForPainPoints } from "./rehab/injuryProtocolsData";
+import { buildSilverPrompt, type OnboardingData } from "./silverPrompt";
 
 // Type for cardio preferences
 interface CardioPreferences {
@@ -707,6 +708,7 @@ export const generateWorkoutPlan = action({
       _day1Context: v.optional(v.any()), // Progressive generation step 2
       _forceProModel: v.optional(v.boolean()), // Force Pro model (quality mode)
       _useFlashModel: v.optional(v.boolean()), // Force Flash model (fast mode)
+      _useSilverPrompt: v.optional(v.boolean()), // Use structured silver prompt (expert personas)
     }),
     // Optional supplement stack for personalized recommendations
     supplements: v.optional(v.array(v.object({
@@ -754,6 +756,7 @@ export const generateWorkoutPlan = action({
       _day1Context,
       _forceProModel,
       _useFlashModel,
+      _useSilverPrompt,
     } = args.preferences;
 
     // ═══════════════════════════════════════════════════════════
@@ -824,6 +827,77 @@ export const generateWorkoutPlan = action({
         cardio_duration_minutes: validatedCardioDuration,
       },
     } : training_split;
+
+    // ═══════════════════════════════════════════════════════════
+    // SILVER PROMPT: Structured JSON-based expert persona prompts
+    // This is the new, cleaner prompt system with sport-specific experts
+    // ═══════════════════════════════════════════════════════════
+    let silverPromptOutput: ReturnType<typeof buildSilverPrompt> | null = null;
+
+    if (_useSilverPrompt) {
+      // Map preferences to OnboardingData format
+      const trainingFreqNum = parseInt(training_frequency?.split('-')[0] || '4');
+
+      // Convert training frequency to array of days (0-6 = Mon-Sun)
+      // This is a simplification - ideally the onboarding would pass actual days
+      const trainingDays: number[] = [];
+      for (let i = 0; i < trainingFreqNum && i < 7; i++) {
+        // Spread days evenly: 0, 2, 4 for 3 days; 0, 1, 3, 4 for 4 days, etc.
+        if (trainingFreqNum <= 3) {
+          trainingDays.push(i * 2); // Mon, Wed, Fri
+        } else if (trainingFreqNum <= 5) {
+          trainingDays.push(i); // Mon through Fri
+        } else {
+          trainingDays.push(i); // Mon through Sat/Sun
+        }
+      }
+
+      // Map goal to OnboardingData format
+      const mapGoalToGeneral = (goal: string): 'muscle' | 'strength' | 'fat_loss' | 'wellness' => {
+        const goalMap: Record<string, 'muscle' | 'strength' | 'fat_loss' | 'wellness'> = {
+          'aesthetic': 'muscle',
+          'build_muscle': 'muscle',
+          'hypertrophy': 'muscle',
+          'strength': 'strength',
+          'build_strength': 'strength',
+          'powerlifting': 'strength',
+          'weight_loss': 'fat_loss',
+          'lose_weight': 'fat_loss',
+          'fat_loss': 'fat_loss',
+          'health': 'wellness',
+          'general_fitness': 'wellness',
+          'athletic': 'strength',
+        };
+        return goalMap[goal.toLowerCase().replace(/\s+/g, '_')] || 'muscle';
+      };
+
+      const onboardingData: OnboardingData = {
+        userId: args.userId,
+        age: age,
+        sex: sex as 'male' | 'female' | 'other' | undefined,
+        path: specific_goal?.event_type ? 'competition' : 'general',
+        sport: sport,
+        eventName: specific_goal?.event_name || undefined,
+        eventDate: specific_goal?.target_date || undefined,
+        generalGoal: mapGoalToGeneral(primary_goal),
+        experience: experience_level.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
+        trainingDays: trainingDays,
+        sessionLength: parseInt(preferred_session_length || '60'),
+        sessionsPerDay: training_split?.sessions_per_day || '1',
+        painPoints: pain_points || [],
+        currentStrength: current_strength ? {
+          bench_kg: current_strength.bench_kg,
+          squat_kg: current_strength.squat_kg,
+          deadlift_kg: current_strength.deadlift_kg,
+        } : undefined,
+        additionalNotes: additional_notes,
+      };
+
+      silverPromptOutput = buildSilverPrompt(onboardingData);
+      loggers.ai.info("🪙 Using SILVER PROMPT with expert persona");
+      loggers.ai.debug("Expert persona active, rehab exercises:", silverPromptOutput.rehabExercises.length);
+      loggers.ai.debug("Exercises to avoid:", silverPromptOutput.avoidExercises);
+    }
 
     // ═══════════════════════════════════════════════════════════
     // PERFORMANCE OPTIMIZATION: DeepSeek Model Selection
@@ -1213,11 +1287,24 @@ ${examplePlansPrompt}
 Generate a complete 7-day plan. Return ONLY valid JSON.`;
 
     // ═══════════════════════════════════════════════════════════
-    // PERFORMANCE OPTIMIZATION: Prompt Compression (60% reduction)
+    // PERFORMANCE OPTIMIZATION: Prompt Selection
+    // 1. Silver Prompt (expert personas, structured JSON) - NEW!
+    // 2. Compressed Prompt (60% token reduction)
+    // 3. Full Legacy Prompt (backwards compatibility)
     // ═══════════════════════════════════════════════════════════
     let finalPrompt = systemPrompt;
 
-    if (_useCompressedPrompt) {
+    // SILVER PROMPT: Expert persona-based structured prompts
+    if (_useSilverPrompt && silverPromptOutput) {
+      finalPrompt = `${silverPromptOutput.systemPrompt}
+
+---
+
+${silverPromptOutput.userPrompt}`;
+      loggers.ai.info("🪙 Final prompt: SILVER (expert persona, structured JSON)");
+    }
+    // COMPRESSED: 60% smaller, still robust
+    else if (_useCompressedPrompt) {
       // Compressed version (60% smaller, still robust)
       const freqNum = parseInt(training_frequency?.split('-')[0] || '4');
       finalPrompt = `Create 7-day workout plan. JSON output only.
@@ -1404,6 +1491,24 @@ Return JSON:
       }
 
       loggers.ai.info('Plan generated successfully with', fixedPlan.weeklyPlan.length, 'days');
+
+      // ═══════════════════════════════════════════════════════════
+      // PHASE 2: DATABASE ENRICHMENT (No Auth Required)
+      // We're spending tokens anyway - maximize data collection
+      // This runs in background, doesn't block plan return
+      // ═══════════════════════════════════════════════════════════
+      try {
+        await ctx.scheduler.runAfter(0, api.populateData.enrichPlanOnGeneration, {
+          plan: fixedPlan,
+          sport: sport || undefined,
+          painPoints: pain_points || undefined,
+        });
+        loggers.ai.info('📊 Phase 2 enrichment scheduled (background)');
+      } catch (enrichError) {
+        // Don't fail the generation if enrichment fails
+        loggers.ai.warn('Phase 2 enrichment scheduling failed:', enrichError);
+      }
+
       return fixedPlan;
     } catch (error: any) {
       loggers.ai.error("Gemini API error:", error);

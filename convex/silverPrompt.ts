@@ -917,18 +917,52 @@ ${JSON.stringify(structuredInput, null, 2)}
 
 Required JSON output structure:
 {
-  "name": "Personalized Plan for {firstName}",
+  "name": "Personalized Plan for ${data.firstName || 'User'}",
   "weeklyPlan": [
     {
       "day_of_week": 1,
-      "focus": "{split focus}",
+      "focus": "Upper Body",
       "estimated_duration": ${data.sessionLength},
-      ${data.sessionsPerDay === '2' ? '"sessions": [{ "session_name": "AM Strength", "time_of_day": "morning", "blocks": [...] }, { "session_name": "PM Conditioning", "time_of_day": "afternoon", "blocks": [...] }]' : '"blocks": [...]'}
+      "blocks": [
+        {
+          "type": "single",
+          "exercises": [
+            {
+              "exercise_name": "Cat-Cow Stretch",
+              "category": "warmup",
+              "metrics_template": { "type": "sets_reps_weight", "target_sets": 2, "target_reps": "10" }
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "exercises": [
+            {
+              "exercise_name": "Bench Press",
+              "category": "main",
+              "rpe": "7-8",
+              "metrics_template": { "type": "sets_reps_weight", "target_sets": 4, "target_reps": "8-10", "rest_period_s": 90 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "day_of_week": 2,
+      "focus": "Rest",
+      "estimated_duration": 0,
+      "blocks": []
     }
   ]
 }
 
-Exercise format:
+CRITICAL BLOCK FORMAT - EVERY exercise must be wrapped like this:
+{
+  "type": "single",
+  "exercises": [{ ... exercise object ... }]
+}
+
+Exercise object format:
 {
   "exercise_name": "Name",
   "category": "warmup|main|cooldown",
