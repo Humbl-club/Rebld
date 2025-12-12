@@ -184,6 +184,270 @@ const EXPERT_PERSONAS: Record<string, ExpertPersona> = {
     priorityExercises: ['Barbell Bench Press', 'Incline Dumbbell Press', 'Pull-ups', 'Barbell Rows', 'Squats', 'Romanian Deadlift', 'Lateral Raises', 'Bicep Curls', 'Tricep Extensions'],
   },
 
+  mma: {
+    title: 'Elite MMA Strength & Conditioning Coach',
+    expertise: 'Mixed martial arts conditioning, fight preparation, multi-discipline combat sports',
+    authorityBooks: [
+      'Ultimate MMA Conditioning by Joel Jamieson',
+      'Training for Warriors by Martin Rooney',
+      'Conditioning for Combat Sports by Stéfane Beloni Correa Dielle Dias',
+      'Complete Conditioning for Martial Arts by Sean Cochran',
+      'Periodization Training for Sports by Tudor Bompa',
+    ],
+    keyPrinciples: [
+      'Energy system development: Alactic, lactic, aerobic all critical',
+      'Multi-planar power: Rotational, linear, vertical explosiveness',
+      'Grip endurance: Critical for grappling exchanges',
+      'Neck conditioning: Whiplash prevention, takedown defense',
+      'Weight management: Maintain strength during cuts',
+      'Recovery optimization: High training volume requires smart programming',
+    ],
+    periodizationApproach: 'GPP: Build aerobic base + strength foundation → SPP: Sport-specific conditioning + sparring intensity → PEAKING: Reduce volume, maximize power output → FIGHT WEEK: Technical work only, weight management, recovery',
+    priorityExercises: ['Turkish Get-ups', 'Kettlebell Swings', 'Medicine Ball Slams', 'Pull-ups', 'Hip Escapes', 'Battle Ropes', 'Sprawl Drills', 'Neck Harness Work', 'Sled Drags'],
+  },
+
+  soccer: {
+    title: 'Elite Football (Soccer) Performance Coach',
+    expertise: 'Football conditioning, match fitness, injury prevention, European football methodology',
+    authorityBooks: [
+      'Periodization in Football by Raymond Verheijen',
+      'Football Conditioning by Jens Bangsbo',
+      'Soccer Science by Tony Strudwick',
+      'Athletic Development by Vern Gambetta',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+    ],
+    keyPrinciples: [
+      'High-intensity intermittent endurance: Match-specific 90+ minute capacity',
+      'Change of direction: Cutting, turning, deceleration mechanics',
+      'Sprint repeated ability: Recover between maximal efforts',
+      'Single-leg strength: Unilateral power for kicking, jumping',
+      'Hamstring protection: Nordic curls, eccentric loading essential',
+      'In-season load management: Balance training with match recovery',
+    ],
+    periodizationApproach: 'PRE-SEASON: Build aerobic base + strength foundation → EARLY SEASON: Maintain fitness, reduce volume → IN-SEASON: Match-day -2/+2 principles, tactical periodization → OFF-SEASON: Active recovery, address weaknesses',
+    priorityExercises: ['Nordic Curls', 'Single-Leg Squats', 'Box Jumps', 'Shuttle Runs', 'Copenhagen Adductors', 'Sled Pushes', 'Romanian Deadlifts', 'Core Anti-Rotation'],
+  },
+
+  basketball: {
+    title: 'Elite Basketball Performance Coach',
+    expertise: 'Basketball conditioning, vertical jump development, court speed, injury prevention',
+    authorityBooks: [
+      'Vertical Jump Training by Kelly Baggett',
+      'Athletic Development by Vern Gambetta',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+      'Complete Conditioning for Basketball by Bill Foran & Robin Pound',
+      'Science and Practice of Strength Training by Vladimir Zatsiorsky',
+    ],
+    keyPrinciples: [
+      'Vertical power: Jump training, reactive strength',
+      'Lateral quickness: Defensive slides, change of direction',
+      'Landing mechanics: ACL prevention, absorption training',
+      'Upper body durability: Contact absorption, rebounding',
+      'Repeat sprint ability: Fast break recovery',
+      'Ankle stability: Critical for court movement',
+    ],
+    periodizationApproach: 'OFF-SEASON: Max strength + power development → PRE-SEASON: Convert to court speed + game conditioning → IN-SEASON: Maintain strength, manage fatigue → PLAYOFFS: Reduce volume, peak performance',
+    priorityExercises: ['Trap Bar Deadlift', 'Box Jumps', 'Depth Jumps', 'Lateral Bounds', 'Single-Leg RDL', 'Core Rotations', 'Band Resisted Shuffles', 'Pull-ups'],
+  },
+
+  handball: {
+    title: 'Elite Handball Performance Coach',
+    expertise: 'Team handball conditioning, throwing power, contact preparation, European handball methodology',
+    authorityBooks: [
+      'Handball: Steps to Success by Frantisek Táborský',
+      'Periodization Training for Sports by Tudor Bompa',
+      'Athletic Development by Vern Gambetta',
+      'Strength Training for Team Handball by DOSB (German Olympic Sports Confederation)',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+    ],
+    keyPrinciples: [
+      'Throwing velocity: Rotational power, shoulder stability',
+      'Contact tolerance: Body preparation for physical play',
+      'Repeat sprint ability: Court coverage, fast breaks',
+      'Jump height: Shot blocking, elevated throws',
+      'Landing mechanics: Knee protection during jumps',
+      'Grip strength: Ball control, opponent manipulation',
+    ],
+    periodizationApproach: 'OFF-SEASON: Max strength + power base → PRE-SEASON: Convert to throwing power + game fitness → IN-SEASON: Maintain, manage Bundesliga schedule → PLAYOFFS: Peak for tournament performance',
+    priorityExercises: ['Medicine Ball Rotational Throws', 'Landmine Press', 'Pull-ups', 'Box Jumps', 'Single-Leg Squats', 'Face Pulls', 'Farmers Carry', 'Hip Throws'],
+  },
+
+  tennis: {
+    title: 'Elite Tennis Performance Coach',
+    expertise: 'Tennis conditioning, rotational power, movement efficiency, tournament preparation',
+    authorityBooks: [
+      'Complete Conditioning for Tennis by Paul Roetert & Todd Ellenbecker',
+      'Tennis Science by Elliott Machar & Bruce Elliott',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+      'Periodization Training for Sports by Tudor Bompa',
+      'Athletic Development by Vern Gambetta',
+    ],
+    keyPrinciples: [
+      'Rotational power: Core-driven strokes, hip-shoulder separation',
+      'First-step quickness: Split step, explosive court coverage',
+      'Shoulder health: Rotator cuff balance, serve durability',
+      'Repeat effort capacity: 3-5 set match fitness',
+      'Lateral movement: Side-to-side efficiency',
+      'Recovery between points: Phosphocreatine replenishment',
+    ],
+    periodizationApproach: 'OFF-SEASON: Build strength base + address weaknesses → PRE-SEASON: Convert to court speed + match fitness → TOURNAMENT: Maintain, manage recovery between matches → RECOVERY: Active rest between tournament blocks',
+    priorityExercises: ['Medicine Ball Rotational Throws', 'Cable Rotations', 'Lateral Bounds', 'Split Squats', 'Face Pulls', 'Wrist Curls', 'Agility Ladder', 'Single-Leg RDL'],
+  },
+
+  swimming: {
+    title: 'Elite Swimming Performance Coach',
+    expertise: 'Competitive swimming, dryland training, stroke efficiency, taper protocols',
+    authorityBooks: [
+      'Swimming Science by G. John Mullen',
+      'Dryland Training for Swimmers by ASCA',
+      'Science of Swimming Faster by Scott Riewald & Scott Rodeo',
+      'The Swim Coaching Bible by Dick Hannula',
+      'Periodization Training for Sports by Tudor Bompa',
+    ],
+    keyPrinciples: [
+      'Shoulder stability: Rotator cuff endurance, scapular control',
+      'Core connection: Transfer power from kick to pull',
+      'Lat strength: Primary pulling muscles for all strokes',
+      'Ankle flexibility: Effective kick propulsion',
+      'Streamline position: Core stability in extension',
+      'Taper science: Peak performance at championships',
+    ],
+    periodizationApproach: 'BASE: Build aerobic capacity + dryland strength → BUILD: Increase intensity, race-pace work → TAPER: 2-3 week volume reduction → COMPETITION: Sharp, race-ready',
+    priorityExercises: ['Pull-ups', 'Lat Pulldowns', 'Medicine Ball Throws', 'Core Stability Work', 'Resistance Band Pull-Aparts', 'Ankle Mobility', 'Streamline Holds', 'Vertical Kicking'],
+  },
+
+  cycling: {
+    title: 'Elite Cycling Performance Coach',
+    expertise: 'Road cycling, time trial preparation, power development, European cycling methodology',
+    authorityBooks: [
+      'Training and Racing with a Power Meter by Hunter Allen & Andrew Coggan',
+      'The Cyclist\'s Training Bible by Joe Friel',
+      'Fast After 50 by Joe Friel',
+      'Periodization Training for Sports by Tudor Bompa',
+      'Racing Tactics for Cyclists by Thomas Prehn',
+    ],
+    keyPrinciples: [
+      'FTP development: Functional threshold power progression',
+      'VO2max intervals: High-intensity capacity',
+      'Pedaling efficiency: Smooth, powerful cadence',
+      'Core stability: Power transfer, aero position',
+      'Heat/altitude adaptation: Race environment preparation',
+      'Taper for events: Peak at key races (La Vuelta, Tour, etc.)',
+    ],
+    periodizationApproach: 'BASE: Build aerobic foundation + leg strength → BUILD: Increase intensity, threshold work → PEAK: Race-specific intervals → TAPER: Volume reduction, sharpening → RACE: Execute strategy',
+    priorityExercises: ['Single-Leg Press', 'Step-ups', 'Core Planks', 'Hip Flexor Work', 'Leg Curls', 'Calf Raises', 'Foam Rolling', 'Stretching'],
+  },
+
+  climbing: {
+    title: 'Elite Climbing & Bouldering Coach',
+    expertise: 'Rock climbing, bouldering, finger strength, movement efficiency',
+    authorityBooks: [
+      'Training for Climbing by Eric Hörst',
+      'The Self-Coached Climber by Dan Hague & Douglas Hunter',
+      '9 Out of 10 Climbers Make the Same Mistakes by Dave MacLeod',
+      'Rock Climbing Technique by John Kettle',
+      'Make or Break by Dave MacLeod (injury prevention)',
+    ],
+    keyPrinciples: [
+      'Finger strength: Hangboard training, crimp/open hand',
+      'Pull strength: Lock-off ability, one-arm progression',
+      'Core tension: Body positioning, overhang performance',
+      'Antagonist training: Push muscles for balance',
+      'Flexibility: Hip mobility, high steps',
+      'Injury prevention: Pulley protection, elbow health',
+    ],
+    periodizationApproach: 'BASE: Build general strength + technique → STRENGTH: Max hangs, campus training → POWER: Dynamic movements, limit bouldering → ENDURANCE: Route climbing, pump tolerance → PERFORMANCE: Peak for projects/competitions',
+    priorityExercises: ['Hangboard Training', 'Pull-ups', 'Lock-offs', 'Core Compression', 'Push-ups', 'Shoulder Press', 'Hip Mobility', 'Wrist Curls'],
+  },
+
+  golf: {
+    title: 'Elite Golf Performance Coach',
+    expertise: 'Golf fitness, rotational power, mobility, injury prevention',
+    authorityBooks: [
+      'Golf Anatomy by Craig Davies & Vince DiSaia',
+      'Fit for Golf by Mike Carroll',
+      'The Golfer\'s Guide to Fitness by Kai Fusser',
+      'Golf Fitness by Karen Palacios-Jansen',
+      'Periodization Training for Sports by Tudor Bompa',
+    ],
+    keyPrinciples: [
+      'Hip-shoulder separation: X-factor for power',
+      'Thoracic rotation: Full backswing capacity',
+      'Glute activation: Ground force production',
+      'Core stability: Protect spine during rotation',
+      'Single-leg balance: Weight transfer efficiency',
+      'Wrist/forearm strength: Club control',
+    ],
+    periodizationApproach: 'OFF-SEASON: Build strength + address mobility limitations → PRE-SEASON: Convert to power + on-course practice → IN-SEASON: Maintain fitness, manage tournament schedule → POST-SEASON: Recovery, correct imbalances',
+    priorityExercises: ['Cable Rotations', 'Medicine Ball Throws', 'Single-Leg RDL', 'Hip Mobility Work', 'Thoracic Spine Rotation', 'Pallof Press', 'Glute Bridges', 'Wrist Curls'],
+  },
+
+  rugby: {
+    title: 'Elite Rugby Performance Coach',
+    expertise: 'Rugby union/league conditioning, contact preparation, position-specific training',
+    authorityBooks: [
+      'The Rugby Fitness Handbook by Rhodri Bown',
+      'Complete Conditioning for Rugby by Dan Luger',
+      'Rugby: Steps to Success by Tony Biscombe',
+      'Periodization Training for Sports by Tudor Bompa',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+    ],
+    keyPrinciples: [
+      'Contact tolerance: Tackle preparation, collision absorption',
+      'Power endurance: Repeated high-intensity efforts',
+      'Acceleration: First 10m explosion',
+      'Neck strength: Scrum safety, tackle protection',
+      'Upper body power: Tackle breaking, ball carrying',
+      'Position-specific: Forwards vs backs different demands',
+    ],
+    periodizationApproach: 'OFF-SEASON: Max strength + hypertrophy → PRE-SEASON: Convert to power + game fitness → IN-SEASON: Maintain, manage match recovery → KNOCKOUT: Peak for finals',
+    priorityExercises: ['Power Cleans', 'Trap Bar Deadlift', 'Bench Press', 'Neck Harness Work', 'Sled Pushes', 'Prowler Sprints', 'Farmers Carry', 'Box Jumps'],
+  },
+
+  volleyball: {
+    title: 'Elite Volleyball Performance Coach',
+    expertise: 'Volleyball conditioning, vertical jump, lateral movement, shoulder health',
+    authorityBooks: [
+      'Complete Conditioning for Volleyball by Steve Fleck & Tom Comyns',
+      'Vertical Jump Training by Kelly Baggett',
+      'Volleyball: Steps to Success by Barbara Viera',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+      'Athletic Development by Vern Gambetta',
+    ],
+    keyPrinciples: [
+      'Vertical power: Approach jump, block jump differentiation',
+      'Landing mechanics: Knee and ankle protection',
+      'Shoulder durability: Spiking volume management',
+      'Lateral quickness: Defensive positioning',
+      'Core stability: Mid-air body control',
+      'Repeat jump ability: Set-to-set recovery',
+    ],
+    periodizationApproach: 'OFF-SEASON: Max strength + jump training → PRE-SEASON: Convert to court explosiveness → IN-SEASON: Maintain, manage match volume → PLAYOFFS: Peak vertical power',
+    priorityExercises: ['Trap Bar Deadlift', 'Box Jumps', 'Depth Jumps', 'Single-Leg Squats', 'Lateral Bounds', 'Face Pulls', 'Core Anti-Rotation', 'Rotator Cuff Work'],
+  },
+
+  icehockey: {
+    title: 'Elite Ice Hockey Performance Coach',
+    expertise: 'Hockey conditioning, skating power, contact preparation, DEL/NHL methodology',
+    authorityBooks: [
+      'Ultimate Hockey Training by Kevin Neeld',
+      'Complete Conditioning for Ice Hockey by Peter Twist',
+      'Athletic Development by Vern Gambetta',
+      'Periodization Training for Sports by Tudor Bompa',
+      'High-Performance Training for Sports by David Joyce & Daniel Lewindon',
+    ],
+    keyPrinciples: [
+      'Hip mobility: Skating stride efficiency',
+      'Single-leg power: Push-off strength',
+      'Core rotational strength: Shot power, checking',
+      'Grip strength: Stick control, battles',
+      'Contact tolerance: Physical play preparation',
+      'Shift recovery: 45-second high-intensity repeated',
+    ],
+    periodizationApproach: 'OFF-SEASON: Build strength + address skating weaknesses → PRE-SEASON: Convert to ice-specific power → IN-SEASON: Maintain, manage game schedule → PLAYOFFS: Peak for postseason',
+    priorityExercises: ['Single-Leg Squats', 'Lateral Lunges', 'Hip Mobility Work', 'Rotational Medicine Ball', 'Sled Pushes', 'Pull-ups', 'Core Anti-Rotation', 'Neck Work'],
+  },
+
   // ─────────────────────────────────────────────────────────────────────────
   // GENERAL FITNESS GOALS
   // ─────────────────────────────────────────────────────────────────────────
@@ -280,11 +544,49 @@ const EXPERT_PERSONAS: Record<string, ExpertPersona> = {
  * Get expert persona for a given sport or goal
  */
 function getExpertPersona(sport?: string, goal?: string): ExpertPersona {
+  // Sport name aliases (handle variations)
+  const sportAliases: Record<string, string> = {
+    // Football/Soccer variations
+    'football': 'soccer',
+    'fussball': 'soccer',
+    'fußball': 'soccer',
+    'futbol': 'soccer',
+    // Ice Hockey variations
+    'hockey': 'icehockey',
+    'eishockey': 'icehockey',
+    // Combat sports
+    'mixedmartialarts': 'mma',
+    'ufc': 'mma',
+    'kickboxing': 'mma',
+    'muaythai': 'mma',
+    'bjj': 'mma',
+    'jiujitsu': 'mma',
+    // Climbing variations
+    'rockclimbing': 'climbing',
+    'bouldering': 'climbing',
+    'klettern': 'climbing',
+    // Running variations
+    'running': 'marathon',
+    'laufen': 'marathon',
+    'halfmarathon': 'marathon',
+    '10k': 'marathon',
+    '5k': 'marathon',
+    // Triathlon variations
+    'ironman': 'triathlon',
+    // German sport names
+    'radfahren': 'cycling',
+    'schwimmen': 'swimming',
+    'turnen': 'crossfit',
+    'ringen': 'mma',
+    'gewichtheben': 'powerlifting',
+  };
+
   // First try sport-specific persona
   if (sport) {
     const sportKey = sport.toLowerCase().replace(/[^a-z]/g, '');
-    if (EXPERT_PERSONAS[sportKey]) {
-      return EXPERT_PERSONAS[sportKey];
+    const mappedSport = sportAliases[sportKey] || sportKey;
+    if (EXPERT_PERSONAS[mappedSport]) {
+      return EXPERT_PERSONAS[mappedSport];
     }
   }
 
