@@ -56,7 +56,7 @@ const colors = {
 type Path = 'competition' | 'general' | null;
 type GeneralGoal = 'muscle' | 'strength' | 'fat_loss' | 'wellness';
 type Experience = 'beginner' | 'intermediate' | 'advanced';
-type Step = 'welcome' | 'path' | 'goal' | 'schedule' | 'body' | 'strength' | 'generating' | 'complete';
+type Step = 'welcome' | 'path' | 'goal' | 'schedule' | 'body' | 'strength' | 'final' | 'generating' | 'complete';
 
 // Competition sports
 const SPORTS = [
@@ -148,6 +148,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   const [sessionsPerDay, setSessionsPerDay] = useState<'1' | '2'>('1');
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [benchmarks, setBenchmarks] = useState<Record<string, number>>({});
+  const [age, setAge] = useState<number | undefined>(undefined);
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -260,6 +262,9 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             event_name: eventName || undefined,
           } : undefined,
           sport: path === 'competition' ? sport || undefined : undefined,
+          // Personalization fields
+          age: age,
+          additional_notes: additionalNotes || undefined,
           // PERFORMANCE: Use compressed prompt (60% smaller, same quality)
           _useCompressedPrompt: true,
           // PERFORMANCE: Use fast model (deepseek-chat, ~30 seconds)
@@ -291,7 +296,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       setError(e.message || 'Something went wrong. Please try again.');
       setIsGenerating(false);
     }
-  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, painPoints, benchmarks, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
+  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, painPoints, benchmarks, age, additionalNotes, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER: WELCOME
@@ -1167,24 +1172,18 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           </p>
         </div>
 
-        {/* Generate */}
+        {/* Continue */}
         <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
           <button
-            onClick={() => {
-              goToStep('generating');
-              setTimeout(generatePlan, 300);
-            }}
+            onClick={() => goToStep('final')}
             className="w-full h-14 rounded-2xl font-semibold text-[17px] active:scale-[0.98] transition-all"
             style={{ background: colors.accent, color: '#FFFFFF' }}
           >
-            Generate My Plan
+            Continue
           </button>
           {filledCount === 0 && (
             <button
-              onClick={() => {
-                goToStep('generating');
-                setTimeout(generatePlan, 300);
-              }}
+              onClick={() => goToStep('final')}
               className="w-full h-12 mt-2 text-[15px] font-medium"
               style={{ color: colors.textSecondary }}
             >
@@ -1195,6 +1194,129 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       </div>
     );
   };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RENDER: FINAL (Age + Additional Notes)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const renderFinal = () => (
+    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
+      {/* Header */}
+      <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+        <button
+          onClick={() => goToStep('strength')}
+          className="flex items-center gap-2 mb-6"
+          style={{ color: colors.textSecondary }}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="text-[15px]">Back</span>
+        </button>
+
+        <h1
+          className="text-[28px] font-bold leading-[1.2] tracking-tight"
+          style={{ color: colors.textPrimary }}
+        >
+          Final touches
+        </h1>
+        <p
+          className="text-[17px] mt-2"
+          style={{ color: colors.textSecondary }}
+        >
+          Optional — make your plan even more personal.
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 px-6 space-y-6">
+        {/* Age */}
+        <div>
+          <label
+            className="block text-[15px] font-medium mb-2"
+            style={{ color: colors.textPrimary }}
+          >
+            Your age
+          </label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={age || ''}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              setAge(val > 0 && val < 120 ? val : undefined);
+            }}
+            placeholder="e.g. 28"
+            className="w-full h-14 px-4 rounded-xl text-[17px] border-2 outline-none placeholder:opacity-30"
+            style={{
+              background: colors.surface,
+              borderColor: age ? colors.accent : colors.border,
+              color: colors.textPrimary,
+            }}
+          />
+          <p
+            className="text-[13px] mt-2"
+            style={{ color: colors.textMuted }}
+          >
+            Helps us adjust recovery time and exercise selection.
+          </p>
+        </div>
+
+        {/* Additional Notes */}
+        <div>
+          <label
+            className="block text-[15px] font-medium mb-2"
+            style={{ color: colors.textPrimary }}
+          >
+            Anything else?
+          </label>
+          <textarea
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+            placeholder="Tell us about specific exercises you love, equipment you have access to, things you want to focus on, or any other details that would help personalize your plan..."
+            rows={5}
+            className="w-full px-4 py-3 rounded-xl text-[17px] border-2 outline-none placeholder:opacity-40 resize-none"
+            style={{
+              background: colors.surface,
+              borderColor: additionalNotes ? colors.accent : colors.border,
+              color: colors.textPrimary,
+              lineHeight: 1.5,
+            }}
+          />
+          <p
+            className="text-[13px] mt-2"
+            style={{ color: colors.textMuted }}
+          >
+            Examples: "I love sled work", "No barbells at my gym", "Focus on explosiveness"
+          </p>
+        </div>
+      </div>
+
+      {/* Generate */}
+      <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+        <button
+          onClick={() => {
+            goToStep('generating');
+            setTimeout(generatePlan, 300);
+          }}
+          className="w-full h-14 rounded-2xl font-semibold text-[17px] active:scale-[0.98] transition-all"
+          style={{ background: colors.accent, color: '#FFFFFF' }}
+        >
+          Generate My Plan
+        </button>
+        <button
+          onClick={() => {
+            goToStep('generating');
+            setTimeout(generatePlan, 300);
+          }}
+          className="w-full h-12 mt-2 text-[15px] font-medium"
+          style={{ color: colors.textSecondary }}
+        >
+          Skip — generate now
+        </button>
+      </div>
+    </div>
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER: GENERATING
@@ -1277,6 +1399,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       {step === 'schedule' && renderSchedule()}
       {step === 'body' && renderBody()}
       {step === 'strength' && renderStrength()}
+      {step === 'final' && renderFinal()}
       {step === 'generating' && renderGenerating()}
     </div>
   );
