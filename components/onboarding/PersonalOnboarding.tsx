@@ -862,7 +862,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             >
               Sessions per day
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   haptic.light();
@@ -870,19 +870,19 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 }}
                 className="h-14 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
                 style={{
-                  background: sessionsPerDay === '1' ? `${colors.accent}15` : colors.surface,
+                  background: sessionsPerDay === '1' ? colors.accent : colors.surface,
                   borderColor: sessionsPerDay === '1' ? colors.accent : colors.border,
                 }}
               >
                 <span
                   className="text-[15px] font-semibold"
-                  style={{ color: sessionsPerDay === '1' ? colors.accent : colors.textPrimary }}
+                  style={{ color: sessionsPerDay === '1' ? '#FFFFFF' : colors.textPrimary }}
                 >
                   1 session
                 </span>
                 <span
                   className="text-[11px] mt-0.5"
-                  style={{ color: colors.textMuted }}
+                  style={{ color: sessionsPerDay === '1' ? 'rgba(255,255,255,0.7)' : colors.textMuted }}
                 >
                   Standard
                 </span>
@@ -894,19 +894,19 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 }}
                 className="h-14 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
                 style={{
-                  background: sessionsPerDay === '2' ? `${colors.accent}15` : colors.surface,
+                  background: sessionsPerDay === '2' ? colors.accent : colors.surface,
                   borderColor: sessionsPerDay === '2' ? colors.accent : colors.border,
                 }}
               >
                 <span
                   className="text-[15px] font-semibold"
-                  style={{ color: sessionsPerDay === '2' ? colors.accent : colors.textPrimary }}
+                  style={{ color: sessionsPerDay === '2' ? '#FFFFFF' : colors.textPrimary }}
                 >
                   2 sessions
                 </span>
                 <span
                   className="text-[11px] mt-0.5"
-                  style={{ color: colors.textMuted }}
+                  style={{ color: sessionsPerDay === '2' ? 'rgba(255,255,255,0.7)' : colors.textMuted }}
                 >
                   AM/PM split
                 </span>
