@@ -6,11 +6,308 @@
  * - JSON in → JSON out = reliable parsing
  * - Pain points trigger BOTH avoidance AND rehabilitation
  * - Two-phase: Fast generation → Background enrichment
+ * - EXPERT PERSONAS: LLM acts as world-class expert in user's specific sport/goal
  *
  * This replaces the massive prose prompts with structured data.
  */
 
 import { INJURY_PROTOCOLS } from "./rehab/injuryProtocolsData";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPERT KNOWLEDGE BASE - Top 5 Books per Sport/Goal
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface ExpertPersona {
+  title: string;
+  expertise: string;
+  authorityBooks: string[];
+  keyPrinciples: string[];
+  periodizationApproach: string;
+  priorityExercises: string[];
+}
+
+const EXPERT_PERSONAS: Record<string, ExpertPersona> = {
+  // ─────────────────────────────────────────────────────────────────────────
+  // COMPETITION SPORTS
+  // ─────────────────────────────────────────────────────────────────────────
+  hyrox: {
+    title: 'Elite Hyrox Performance Coach',
+    expertise: 'Hybrid fitness racing, functional fitness competition, running + functional fitness integration',
+    authorityBooks: [
+      'Tactical Barbell I & II by K. Black (concurrent training)',
+      'The Hybrid Athlete by Alex Viada (endurance + strength)',
+      'Training for the Uphill Athlete by Kílian Jornet & Steve House',
+      'Endure by Alex Hutchinson (limits of human performance)',
+      'Science and Application of High-Intensity Interval Training by Laursen & Buchheit',
+    ],
+    keyPrinciples: [
+      'Race simulation: 8km running + 8 functional stations',
+      'Concurrent training: Build running base WITHOUT sacrificing strength',
+      'Station-specific prep: Sled push/pull, SkiErg, rowing, burpee broad jumps, wall balls, farmers carry, lunges',
+      'Pacing strategy: Negative split running, consistent station times',
+      'Grip endurance: Critical for sled, farmers, and SkiErg',
+      'Lactate threshold work: Sustain 85-90% effort for 60-90 minutes',
+    ],
+    periodizationApproach: 'BASE: Aerobic foundation + strength maintenance → BUILD: Race-pace intervals + station drills → PEAK: Full race simulations → TAPER: Volume reduction, intensity maintenance',
+    priorityExercises: ['Sled Push', 'Sled Pull', 'SkiErg', 'Rowing', 'Wall Balls', 'Burpee Broad Jumps', 'Farmers Carry', 'Weighted Lunges', 'Running Intervals'],
+  },
+
+  powerlifting: {
+    title: 'Elite Powerlifting Coach',
+    expertise: 'Competition powerlifting, maximal strength development, peaking protocols',
+    authorityBooks: [
+      'Scientific Principles of Strength Training by Mike Israetel, James Hoffmann, Chad Wesley Smith',
+      'Supertraining by Mel Siff (biomechanics & periodization)',
+      'The Sheiko Method by Boris Sheiko',
+      'Westside Barbell Book of Methods by Louie Simmons',
+      'Starting Strength by Mark Rippetoe (foundational)',
+    ],
+    keyPrinciples: [
+      'Competition lifts: Squat, Bench Press, Deadlift (SBD)',
+      'Specificity: Train the competition lifts with competition technique',
+      'Progressive overload with strategic deloads every 4th week',
+      'Accessory work: Address weak points in main lifts',
+      'Meet prep: Opener selection, attempt strategy, weight cuts',
+      'RPE-based training: Autoregulate based on daily readiness',
+    ],
+    periodizationApproach: 'HYPERTROPHY: Higher volume, moderate intensity → STRENGTH: Moderate volume, high intensity → PEAKING: Low volume, maximal intensity → MEET WEEK: Openers only, recovery focus',
+    priorityExercises: ['Back Squat', 'Bench Press', 'Deadlift', 'Pause Squat', 'Close-Grip Bench', 'Deficit Deadlift', 'Romanian Deadlift', 'Barbell Row'],
+  },
+
+  marathon: {
+    title: 'Elite Marathon Running Coach',
+    expertise: 'Distance running, marathon preparation, endurance periodization',
+    authorityBooks: [
+      'Daniels\' Running Formula by Jack Daniels (VDOT training)',
+      'Advanced Marathoning by Pete Pfitzinger',
+      '80/20 Running by Matt Fitzgerald',
+      'Run Faster from the 5K to the Marathon by Brad Hudson',
+      'The Science of Running by Steve Magness',
+    ],
+    keyPrinciples: [
+      'Polarized training: 80% easy, 20% hard (no junk miles)',
+      'Long runs: Build to 20-22 miles, practice race nutrition',
+      'Tempo runs: Lactate threshold development at marathon pace + 10-15s/mi',
+      'VO2max intervals: 1000m-1600m repeats at 3K-5K pace',
+      'Taper: 2-3 weeks, reduce volume 40-60%, maintain intensity',
+      'Strength: Running-specific, injury prevention focus',
+    ],
+    periodizationApproach: 'BASE: Build mileage + aerobic base → BUILD: Introduce tempo + intervals → PEAK: Race-specific workouts, goal pace → TAPER: Volume reduction, sharpening workouts',
+    priorityExercises: ['Easy Runs', 'Long Runs', 'Tempo Runs', 'Interval Training', 'Hill Repeats', 'Single-Leg Squats', 'Hip Stability Work', 'Core Anti-Rotation'],
+  },
+
+  triathlon: {
+    title: 'Elite Triathlon Coach',
+    expertise: 'Multi-sport endurance, swim-bike-run integration, transition training',
+    authorityBooks: [
+      'The Triathlete\'s Training Bible by Joe Friel',
+      'Total Triathlon Training by Michael Saunders',
+      '80/20 Triathlon by Matt Fitzgerald',
+      'Triathlon Science by Joe Friel & Jim Vance',
+      'Swim Speed Secrets by Sheila Taormina',
+    ],
+    keyPrinciples: [
+      'Sport-specific periodization: Swim, Bike, Run balance',
+      'Brick workouts: Bike-to-run transitions',
+      'Aerobic base: 80% Zone 2 across all disciplines',
+      'Open water skills: Sighting, drafting, mass starts',
+      'Nutrition strategy: Practice race-day fueling',
+      'Recovery management: High training volume requires smart recovery',
+    ],
+    periodizationApproach: 'BASE: Build volume in each discipline → BUILD: Sport-specific intensity + bricks → PEAK: Race simulation, taper swim/bike before run → TAPER: Proportional reduction, maintain sharpness',
+    priorityExercises: ['Swimming Drills', 'Bike Intervals', 'Running Intervals', 'Brick Workouts', 'Core Stability', 'Hip Mobility', 'Shoulder Stability'],
+  },
+
+  crossfit: {
+    title: 'Elite CrossFit Coach',
+    expertise: 'Functional fitness, GPP, competition CrossFit',
+    authorityBooks: [
+      'Becoming a Supple Leopard by Kelly Starrett',
+      'Freestyle by Carl Paoli (gymnastics for CrossFit)',
+      'Olympic Weightlifting by Greg Everett',
+      'Power Speed Endurance by Brian MacKenzie',
+      'Unbroken by Ben Bergeron',
+    ],
+    keyPrinciples: [
+      '10 general physical skills: Cardiovascular, stamina, strength, flexibility, power, speed, coordination, agility, balance, accuracy',
+      'Constantly varied, functional movements, high intensity',
+      'Olympic lifting proficiency: Snatch, Clean & Jerk',
+      'Gymnastics skills: Pull-ups, muscle-ups, handstands',
+      'Engine building: MetCons, interval work',
+      'Competition prep: Practice unknown workouts',
+    ],
+    periodizationApproach: 'STRENGTH: Focus on compound lifts → SKILL: Gymnastics and Olympic lifting → CONDITIONING: MetCon capacity → COMPETITION: Sport-specific prep',
+    priorityExercises: ['Back Squat', 'Deadlift', 'Clean & Jerk', 'Snatch', 'Pull-ups', 'Muscle-ups', 'Thrusters', 'Box Jumps', 'Rowing', 'Double-unders'],
+  },
+
+  boxing: {
+    title: 'Elite Boxing Strength & Conditioning Coach',
+    expertise: 'Combat sports conditioning, power development, fight preparation',
+    authorityBooks: [
+      'Complete Conditioning for Martial Arts by Sean Cochran',
+      'Training for Warriors by Martin Rooney',
+      'Ultimate MMA Conditioning by Joel Jamieson',
+      'Championship Fighting by Jack Dempsey',
+      'The Science of Martial Arts Training by Charles Staley',
+    ],
+    keyPrinciples: [
+      'Rotational power: Core-driven punching power',
+      'Alactic capacity: Explosive combinations without fatigue',
+      'Aerobic base: Sustain output over 12 rounds',
+      'Footwork conditioning: Lateral movement, pivot drills',
+      'Neck & shoulder stability: Punch absorption',
+      'Weight management: Maintain strength during cuts',
+    ],
+    periodizationApproach: 'GPP: General conditioning + strength base → SPP: Fight-specific conditioning + sparring → PEAKING: Reduce volume, maximize sharpness → FIGHT WEEK: Technical work only, weight management',
+    priorityExercises: ['Medicine Ball Throws', 'Rotational Core Work', 'Shadow Boxing', 'Heavy Bag Work', 'Jump Rope', 'Sled Pushes', 'Battle Ropes', 'Neck Harness Work'],
+  },
+
+  bodybuilding: {
+    title: 'Elite Bodybuilding Coach',
+    expertise: 'Hypertrophy training, contest prep, physique development',
+    authorityBooks: [
+      'Scientific Principles of Hypertrophy Training by Mike Israetel',
+      'The Muscle and Strength Pyramid by Eric Helms',
+      'Bodybuilding: The Complete Contest Preparation Handbook by Peter Fitschen',
+      'Encyclopedia of Bodybuilding by Robert Kennedy',
+      'Renaissance Periodization Hypertrophy Guide by Mike Israetel',
+    ],
+    keyPrinciples: [
+      'Volume landmarks: MEV → MAV → MRV progression',
+      'Mind-muscle connection: Quality contractions > heavy weight',
+      'Progressive overload: Add sets, reps, or weight weekly',
+      'Weak point prioritization: Train lagging parts first',
+      'Deload every 4-6 weeks: Allow adaptation',
+      'Contest prep: Gradual caloric deficit, maintain muscle',
+    ],
+    periodizationApproach: 'ACCUMULATION: Build volume, add sets weekly → INTENSIFICATION: Increase intensity techniques → DELOAD: Reduce to MEV → REPEAT or PEAK for contest',
+    priorityExercises: ['Barbell Bench Press', 'Incline Dumbbell Press', 'Pull-ups', 'Barbell Rows', 'Squats', 'Romanian Deadlift', 'Lateral Raises', 'Bicep Curls', 'Tricep Extensions'],
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GENERAL FITNESS GOALS
+  // ─────────────────────────────────────────────────────────────────────────
+  muscle: {
+    title: 'Hypertrophy & Muscle Building Specialist',
+    expertise: 'Natural muscle building, hypertrophy optimization, body recomposition',
+    authorityBooks: [
+      'Scientific Principles of Hypertrophy Training by Mike Israetel',
+      'The Muscle and Strength Pyramid by Eric Helms',
+      'Strength Training Anatomy by Frédéric Delavier',
+      'Bigger Leaner Stronger by Michael Matthews',
+      'The New Encyclopedia of Modern Bodybuilding by Arnold Schwarzenegger',
+    ],
+    keyPrinciples: [
+      'Progressive overload: Add weight, reps, or sets over time',
+      'Volume: 10-20 hard sets per muscle group per week',
+      'Frequency: Each muscle 2x per week minimum',
+      'Time under tension: 40-60 seconds per set',
+      'Recovery: Sleep, nutrition, deload weeks',
+      'Compound focus: Big lifts drive most growth',
+    ],
+    periodizationApproach: 'VOLUME: Start at MEV, progress to MAV → OVERREACH: Push to MRV → DELOAD: Recover → REPEAT with higher baseline',
+    priorityExercises: ['Bench Press', 'Overhead Press', 'Barbell Row', 'Pull-ups', 'Squats', 'Romanian Deadlift', 'Lunges', 'Dumbbell Work'],
+  },
+
+  strength: {
+    title: 'Strength & Performance Coach',
+    expertise: 'Maximal strength development, neural adaptations, general strength',
+    authorityBooks: [
+      'Starting Strength by Mark Rippetoe',
+      'Practical Programming for Strength Training by Mark Rippetoe & Andy Baker',
+      '5/3/1 Forever by Jim Wendler',
+      'The Juggernaut Method by Chad Wesley Smith',
+      'Easy Strength by Dan John & Pavel Tsatsouline',
+    ],
+    keyPrinciples: [
+      'Compound movements: Squat, Hinge, Push, Pull, Carry',
+      'Lower rep ranges: 1-5 reps for strength, 6-12 for hypertrophy support',
+      'Progressive overload: Add weight systematically',
+      'Rest adequately: 3-5 minutes between heavy sets',
+      'Deload every 4th week: Prevent overtraining',
+      'Technique first: Perfect form before adding weight',
+    ],
+    periodizationApproach: 'LINEAR: Add weight each session (beginners) → WEEKLY: Progress weekly (intermediate) → BLOCK: Volume → Intensity → Peaking (advanced)',
+    priorityExercises: ['Back Squat', 'Deadlift', 'Bench Press', 'Overhead Press', 'Barbell Row', 'Pull-ups', 'Farmers Carry'],
+  },
+
+  fat_loss: {
+    title: 'Body Transformation & Fat Loss Specialist',
+    expertise: 'Fat loss, metabolic conditioning, body recomposition',
+    authorityBooks: [
+      'The Renaissance Diet 2.0 by Mike Israetel',
+      'Burn the Fat, Feed the Muscle by Tom Venuto',
+      'The Rapid Fat Loss Handbook by Lyle McDonald',
+      'Metabolic Conditioning by Josh Bryant',
+      'The New Rules of Lifting by Lou Schuler',
+    ],
+    keyPrinciples: [
+      'Caloric deficit: 500-750 kcal below maintenance',
+      'Protein priority: 1g per pound bodyweight to preserve muscle',
+      'Resistance training: Maintain muscle mass during deficit',
+      'NEAT: Non-exercise activity for additional calorie burn',
+      'Cardio: Strategic, not excessive (preserve muscle)',
+      'Sleep & stress: Cortisol management for fat loss',
+    ],
+    periodizationApproach: 'PHASE 1: Establish deficit, begin training → PHASE 2: Progressive overload despite deficit → DIET BREAK: Maintenance calories every 6-8 weeks → REPEAT until goal',
+    priorityExercises: ['Compound Lifts', 'Supersets', 'Circuit Training', 'HIIT', 'Walking', 'Metabolic Finishers'],
+  },
+
+  wellness: {
+    title: 'Health & Wellness Coach',
+    expertise: 'General health, longevity, sustainable fitness',
+    authorityBooks: [
+      'Outlive by Peter Attia (longevity medicine)',
+      'Built to Move by Kelly Starrett',
+      'Atomic Habits by James Clear (behavior change)',
+      'Lifespan by David Sinclair (aging science)',
+      'The 4-Hour Body by Tim Ferriss (minimum effective dose)',
+    ],
+    keyPrinciples: [
+      'Zone 2 cardio: 150-180 minutes per week for metabolic health',
+      'Strength training: 2-3x per week for muscle mass preservation',
+      'Mobility: Daily movement practice for joint health',
+      'Balance & stability: Fall prevention, functional capacity',
+      'Consistency > intensity: Sustainable long-term habits',
+      'Sleep, nutrition, stress: Holistic approach',
+    ],
+    periodizationApproach: 'No aggressive periodization. Focus on CONSISTENCY: Regular movement → VARIETY: Rotate activities → PROGRESSION: Gradual improvement over months/years',
+    priorityExercises: ['Walking', 'Zone 2 Cardio', 'Goblet Squats', 'Push-ups', 'Rows', 'Planks', 'Hip Hinges', 'Stretching', 'Balance Work'],
+  },
+};
+
+/**
+ * Get expert persona for a given sport or goal
+ */
+function getExpertPersona(sport?: string, goal?: string): ExpertPersona {
+  // First try sport-specific persona
+  if (sport) {
+    const sportKey = sport.toLowerCase().replace(/[^a-z]/g, '');
+    if (EXPERT_PERSONAS[sportKey]) {
+      return EXPERT_PERSONAS[sportKey];
+    }
+  }
+
+  // Then try goal-based persona
+  if (goal) {
+    const goalKey = goal.toLowerCase().replace(/[^a-z_]/g, '');
+    // Map common goal names
+    const goalMap: Record<string, string> = {
+      'aestheticphysique': 'muscle',
+      'strengthpower': 'strength',
+      'healthlongevity': 'wellness',
+      'athleticperformance': 'strength',
+      'generalfitness': 'wellness',
+    };
+    const mappedKey = goalMap[goalKey] || goalKey;
+    if (EXPERT_PERSONAS[mappedKey]) {
+      return EXPERT_PERSONAS[mappedKey];
+    }
+  }
+
+  // Default to general strength coach
+  return EXPERT_PERSONAS.strength;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -284,18 +581,34 @@ export function buildSilverPrompt(data: OnboardingData): SilverPromptOutput {
     },
   };
 
-  // 5. Create the system prompt (concise, structured)
-  const systemPrompt = `You are an elite fitness coach. Generate a personalized 7-day workout plan.
+  // 5. Get expert persona based on sport/goal
+  const expert = getExpertPersona(data.sport, data.path === 'competition' ? data.sport : data.generalGoal);
+
+  // 6. Create the system prompt (concise, structured) with EXPERT PERSONA
+  const systemPrompt = `You are a ${expert.title} with deep expertise in ${expert.expertise}.
+
+YOUR KNOWLEDGE BASE (apply this expertise):
+${expert.authorityBooks.map((book, i) => `${i + 1}. ${book}`).join('\n')}
+
+KEY PRINCIPLES YOU APPLY:
+${expert.keyPrinciples.map(p => `• ${p}`).join('\n')}
+
+PERIODIZATION APPROACH:
+${expert.periodizationApproach}
+
+PRIORITY EXERCISES (use these when appropriate):
+${expert.priorityExercises.join(', ')}
 
 CRITICAL RULES:
-1. Pain points trigger BOTH avoidance AND rehabilitation
-2. User's additional notes are HIGHEST priority
+1. Pain points trigger BOTH avoidance AND rehabilitation exercises
+2. User's additional notes are HIGHEST priority - honor their specific requests
 3. Every exercise needs: exercise_name, category, metrics_template
 4. Rest days have focus: "Rest" and empty blocks: []
+5. Apply your expert knowledge to create a plan that would impress any coach in this field
 
 OUTPUT: Valid JSON only. No markdown, no explanation.`;
 
-  // 6. Create the user prompt (structured JSON input)
+  // 7. Create the user prompt (structured JSON input)
   const userPrompt = `Generate workout plan for this user:
 
 ${JSON.stringify(structuredInput, null, 2)}
@@ -338,7 +651,7 @@ USER'S SPECIFIC REQUESTS (HIGHEST PRIORITY):
 
 Generate the complete 7-day plan now.`;
 
-  // 7. Define expected output schema (for validation)
+  // 8. Define expected output schema (for validation)
   const outputSchema = {
     name: 'string',
     weeklyPlan: [{
@@ -376,4 +689,17 @@ Generate the complete 7-day plan now.`;
 // EXPORTS FOR PHASE 2 (Background Processing)
 // ═══════════════════════════════════════════════════════════════════════════
 
-export { calculatePeriodization, getTrainingSplit, getRehabProtocol };
+export {
+  calculatePeriodization,
+  getTrainingSplit,
+  getRehabProtocol,
+  getExpertPersona,
+  EXPERT_PERSONAS,
+};
+
+export type {
+  ExpertPersona,
+  OnboardingData,
+  SilverPromptOutput,
+  RehabExercise,
+};
