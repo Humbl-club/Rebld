@@ -145,6 +145,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   const [experience, setExperience] = useState<Experience>('intermediate');
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 2, 4]); // Mon, Wed, Fri
   const [sessionLength, setSessionLength] = useState<number>(60);
+  const [sessionsPerDay, setSessionsPerDay] = useState<'1' | '2'>('1');
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [benchmarks, setBenchmarks] = useState<Record<string, number>>({});
 
@@ -226,31 +227,42 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
     setGenerationProgress(0);
 
     try {
-      // Build preferences
-      const preferences = {
-        goal: path === 'competition' ? 'Athletic Performance' :
-              generalGoal === 'muscle' ? 'Aesthetic Physique' :
-              generalGoal === 'strength' ? 'Strength & Power' :
-              generalGoal === 'fat_loss' ? 'Health & Longevity' :
-              'Health & Longevity',
-        experience_level: experience,
-        training_frequency: selectedDays.length,
-        session_length: sessionLength,
-        equipment: 'commercial_gym',
-        pain_points: painPoints,
-        current_strength: benchmarks,
-        training_split: {
-          sessions_per_day: '1' as const,
-          training_type: 'combined' as const,
+      // Map goal to API expected values
+      const primaryGoal = path === 'competition' ? 'Athletic Performance' :
+            generalGoal === 'muscle' ? 'Aesthetic Physique' :
+            generalGoal === 'strength' ? 'Strength & Power' :
+            generalGoal === 'fat_loss' ? 'Health & Longevity' :
+            'Health & Longevity';
+
+      // Build preferences matching API validator schema
+      const apiPayload = {
+        preferences: {
+          primary_goal: primaryGoal,
+          experience_level: experience,
+          training_frequency: String(selectedDays.length),
+          preferred_session_length: String(sessionLength),
+          equipment: 'commercial_gym',
+          pain_points: painPoints,
+          current_strength: Object.keys(benchmarks).length > 0 ? {
+            bench_kg: benchmarks.bench_kg,
+            squat_kg: benchmarks.squat_kg,
+            deadlift_kg: benchmarks.deadlift_kg,
+          } : undefined,
+          training_split: {
+            sessions_per_day: sessionsPerDay,
+            training_type: path === 'competition' ? 'combined' as const : 'strength_only' as const,
+          },
+          specific_goal: path === 'competition' ? {
+            event_type: sport || undefined,
+            target_date: eventDate || undefined,
+            event_name: eventName || undefined,
+          } : undefined,
+          sport: path === 'competition' ? sport || undefined : undefined,
         },
-        specific_goal: path === 'competition' ? {
-          event_type: sport,
-          target_date: eventDate,
-          event_name: eventName,
-        } : undefined,
+        userId: user?.id,
       };
 
-      const result = await generatePlanAction(preferences);
+      const result = await generatePlanAction(apiPayload);
 
       if (result.success && result.plan) {
         setGeneratedPlan(result.plan);
@@ -273,7 +285,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       setError(e.message || 'Something went wrong. Please try again.');
       setIsGenerating(false);
     }
-  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, painPoints, benchmarks, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
+  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, painPoints, benchmarks, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER: WELCOME
@@ -826,6 +838,76 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           minutes
         </p>
       </div>
+
+      {/* 2-a-day option for competition prep */}
+      {path === 'competition' && (
+        <div className="px-6 mb-8">
+          <label
+            className="block text-[15px] font-medium mb-3"
+            style={{ color: colors.textPrimary }}
+          >
+            Sessions per day
+          </label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                haptic.light();
+                setSessionsPerDay('1');
+              }}
+              className="flex-1 h-14 px-4 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
+              style={{
+                background: sessionsPerDay === '1' ? `${colors.accent}10` : colors.surface,
+                borderColor: sessionsPerDay === '1' ? colors.accent : colors.border,
+              }}
+            >
+              <span
+                className="text-[17px] font-semibold"
+                style={{ color: sessionsPerDay === '1' ? colors.accent : colors.textPrimary }}
+              >
+                1 session
+              </span>
+              <span
+                className="text-[12px] mt-0.5"
+                style={{ color: colors.textMuted }}
+              >
+                Standard
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                haptic.light();
+                setSessionsPerDay('2');
+              }}
+              className="flex-1 h-14 px-4 rounded-xl flex flex-col items-center justify-center active:scale-[0.98] transition-all border-2"
+              style={{
+                background: sessionsPerDay === '2' ? `${colors.accent}10` : colors.surface,
+                borderColor: sessionsPerDay === '2' ? colors.accent : colors.border,
+              }}
+            >
+              <span
+                className="text-[17px] font-semibold"
+                style={{ color: sessionsPerDay === '2' ? colors.accent : colors.textPrimary }}
+              >
+                2 sessions
+              </span>
+              <span
+                className="text-[12px] mt-0.5"
+                style={{ color: colors.textMuted }}
+              >
+                AM/PM split
+              </span>
+            </button>
+          </div>
+          <p
+            className="text-[13px] mt-3"
+            style={{ color: colors.textMuted }}
+          >
+            {sessionsPerDay === '2'
+              ? 'Two-a-days split strength and sport-specific work across morning and afternoon sessions.'
+              : 'One daily session combining all training elements.'}
+          </p>
+        </div>
+      )}
 
       {/* Experience */}
       <div className="px-6 flex-1">
