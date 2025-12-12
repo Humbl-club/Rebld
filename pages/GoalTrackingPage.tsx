@@ -8,18 +8,19 @@ import LogbookPage from './LogbookPage';
 import { usePageBackground, BackgroundOverlay } from '../hooks/usePageBackground';
 
 /* ═══════════════════════════════════════════════════════════════
-   GOAL TRACKING PAGE - Clean, Sophisticated Design
+   GOAL TRACKING PAGE - Premium iOS Typography
 
-   - Rich red accent (#E54D42)
-   - Clean system typography
-   - Proper visual hierarchy
-   - Easy on the eyes
+   Typography principles:
+   - Inter/SF Pro for legibility on dark backgrounds
+   - Heavier weights (500-700) for better contrast
+   - Proper letter-spacing on labels
+   - No display fonts for content text
    ═══════════════════════════════════════════════════════════════ */
 
 // Accent color - rich red, distinct but not harsh
-const ACCENT = '#E54D42';
-const ACCENT_SOFT = 'rgba(229, 77, 66, 0.15)';
-const ACCENT_GLOW = 'rgba(229, 77, 66, 0.25)';
+const ACCENT = '#EF4444';
+const ACCENT_SOFT = 'rgba(239, 68, 68, 0.12)';
+const ACCENT_GLOW = 'rgba(239, 68, 68, 0.3)';
 
 interface GoalTrackingPageProps {
   logs: WorkoutLog[];
@@ -72,7 +73,10 @@ const ProgressRing: React.FC<{ progress: number; size?: number }> = ({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-white text-2xl font-semibold tabular-nums">
+        <span
+          className="text-[32px] font-bold tabular-nums tracking-tight"
+          style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+        >
           {Math.round(progress)}%
         </span>
       </div>
@@ -92,28 +96,39 @@ const StatCard: React.FC<{
 }> = ({ label, value, icon, highlight }) => (
   <div
     className={cn(
-      "flex-1 p-4 rounded-xl",
+      "flex-1 p-4 rounded-2xl",
       highlight
         ? "border"
-        : "bg-white/[0.02] border border-white/[0.04]"
+        : "bg-[#141414] border border-white/[0.06]"
     )}
     style={highlight ? {
       backgroundColor: ACCENT_SOFT,
-      borderColor: 'rgba(240, 114, 92, 0.25)'
+      borderColor: 'rgba(239, 68, 68, 0.2)'
     } : {}}
   >
-    <div className="flex items-center gap-2 mb-2">
-      <span style={{ color: highlight ? ACCENT : 'rgba(255,255,255,0.4)' }}>
+    <div className="flex items-center gap-2 mb-3">
+      <span style={{ color: highlight ? ACCENT : '#71717A' }}>
         {icon}
       </span>
-      <span className="text-[10px] uppercase tracking-wider text-white/40 font-medium">
+      <span
+        className="text-[11px] uppercase font-semibold"
+        style={{
+          color: '#A1A1AA',
+          letterSpacing: '0.08em',
+          fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
+        }}
+      >
         {label}
       </span>
     </div>
-    <span className={cn(
-      "text-xl font-semibold tabular-nums",
-      highlight ? "" : "text-white"
-    )} style={highlight ? { color: ACCENT } : {}}>
+    <span
+      className="text-[28px] font-bold tabular-nums block"
+      style={{
+        color: highlight ? ACCENT : '#F5F5F5',
+        fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
+        letterSpacing: '-0.02em'
+      }}
+    >
       {value}
     </span>
   </div>
@@ -126,46 +141,64 @@ const StatCard: React.FC<{
 const PRCard: React.FC<{ pr: PersonalRecord; isLatest?: boolean }> = ({ pr, isLatest }) => (
   <div
     className={cn(
-      "p-4 rounded-xl transition-all",
+      "p-4 rounded-2xl transition-all",
       isLatest
         ? "border"
-        : "bg-white/[0.02] border border-white/[0.04]"
+        : "bg-[#141414] border border-white/[0.06]"
     )}
     style={isLatest ? {
       backgroundColor: ACCENT_SOFT,
-      borderColor: 'rgba(240, 114, 92, 0.25)'
+      borderColor: 'rgba(239, 68, 68, 0.2)'
     } : {}}
   >
     <div className="flex items-center justify-between">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <p className="text-[15px] font-medium text-white/90 truncate">
+          <p
+            className="text-[15px] font-semibold truncate"
+            style={{ color: '#E5E5E5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+          >
             {pr.exercise_name}
           </p>
           {isLatest && (
             <span
-              className="px-2 py-0.5 rounded text-[9px] font-medium uppercase"
-              style={{ backgroundColor: ACCENT, color: 'white' }}
+              className="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+              style={{
+                backgroundColor: ACCENT,
+                color: 'white',
+                letterSpacing: '0.04em',
+                fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
+              }}
             >
               New
             </span>
           )}
         </div>
-        <p className="text-lg font-semibold tabular-nums" style={{ color: ACCENT }}>
+        <p
+          className="text-[20px] font-bold tabular-nums"
+          style={{
+            color: ACCENT,
+            fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
+            letterSpacing: '-0.02em'
+          }}
+        >
           {pr.weight}kg × {pr.reps}
         </p>
         {pr.previousBest && (
-          <p className="text-[11px] text-white/30 mt-1 flex items-center gap-1">
+          <p
+            className="text-[12px] font-medium mt-1.5 flex items-center gap-1"
+            style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+          >
             <TrendingUpIcon className="w-3 h-3" />
             was {pr.previousBest.weight}kg × {pr.previousBest.reps}
           </p>
         )}
       </div>
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ml-3"
-        style={{ backgroundColor: isLatest ? 'rgba(240, 114, 92, 0.2)' : 'rgba(255,255,255,0.04)' }}
+        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ml-3"
+        style={{ backgroundColor: isLatest ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.04)' }}
       >
-        <TrophyIcon className="w-5 h-5" style={{ color: isLatest ? ACCENT : 'rgba(255,255,255,0.3)' }} />
+        <TrophyIcon className="w-5 h-5" style={{ color: isLatest ? ACCENT : '#71717A' }} />
       </div>
     </div>
   </div>
@@ -272,10 +305,16 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
           mounted ? "opacity-100" : "opacity-0"
         )}
       >
-        <p className="text-white/40 text-sm font-medium mb-1">
+        <p
+          className="text-[13px] font-medium mb-1"
+          style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+        >
           {t('goals.yourProgress')}
         </p>
-        <h1 className="text-white text-2xl font-semibold tracking-tight">
+        <h1
+          className="text-[28px] font-bold tracking-tight"
+          style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+        >
           {t('goals.title')}
         </h1>
       </header>
@@ -283,8 +322,8 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
       {/* Tab Navigation */}
       <div
         className={cn(
-          "flex gap-1 p-1 rounded-xl mb-6 relative z-10",
-          "bg-white/[0.02] border border-white/[0.04]",
+          "flex gap-1 p-1.5 rounded-2xl mb-6 relative z-10",
+          "bg-[#141414] border border-white/[0.06]",
           "transition-all duration-500 delay-50",
           mounted ? "opacity-100" : "opacity-0"
         )}
@@ -293,11 +332,15 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
           <button
             key={tab}
             onClick={() => setActiveTab(tab as 'goals' | 'history')}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+            className="flex-1 py-3 rounded-xl transition-all duration-200"
             style={{
               backgroundColor: activeTab === tab ? ACCENT : 'transparent',
-              color: activeTab === tab ? 'white' : 'rgba(255,255,255,0.4)',
-              boxShadow: activeTab === tab ? `0 2px 12px ${ACCENT_GLOW}` : 'none'
+              color: activeTab === tab ? '#FFFFFF' : '#A1A1AA',
+              boxShadow: activeTab === tab ? `0 2px 12px ${ACCENT_GLOW}` : 'none',
+              fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
+              fontSize: '14px',
+              fontWeight: 600,
+              letterSpacing: '-0.01em'
             }}
           >
             {tab === 'goals' ? 'Goals & PRs' : 'History'}
@@ -314,14 +357,27 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
           )}
         >
           {/* Goal Card */}
-          <div className="rounded-2xl p-5 bg-white/[0.02] border border-white/[0.04]">
+          <div className="rounded-2xl p-5 bg-[#141414] border border-white/[0.06]">
             <div className="flex items-center gap-5">
-              <ProgressRing progress={goalProgress} />
+              <ProgressRing progress={goalProgress} size={120} />
               <div className="flex-1">
-                <h2 className="text-lg font-semibold text-white mb-1">
+                <h2
+                  className="text-[18px] font-bold mb-1"
+                  style={{
+                    color: '#F5F5F5',
+                    fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
+                    letterSpacing: '-0.02em'
+                  }}
+                >
                   {primaryGoal.title}
                 </h2>
-                <p className="text-white/40 text-sm">
+                <p
+                  className="text-[14px] font-medium"
+                  style={{
+                    color: '#71717A',
+                    fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
+                  }}
+                >
                   {primaryGoal.current} of {primaryGoal.target} workouts
                 </p>
               </div>
@@ -332,7 +388,10 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
                 className="mt-4 p-3 rounded-xl text-center"
                 style={{ backgroundColor: ACCENT_SOFT }}
               >
-                <p className="text-sm font-medium" style={{ color: ACCENT }}>
+                <p
+                  className="text-[14px] font-semibold"
+                  style={{ color: ACCENT, fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+                >
                   Goal achieved!
                 </p>
               </div>
@@ -364,7 +423,10 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
             <div>
               <div className="flex items-center gap-2 mb-3 px-1">
                 <TrophyIcon className="w-4 h-4" style={{ color: ACCENT }} />
-                <h3 className="text-white/90 text-sm font-medium">
+                <h3
+                  className="text-[14px] font-semibold"
+                  style={{ color: '#E5E5E5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+                >
                   Personal Records
                 </h3>
               </div>
@@ -378,17 +440,23 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
 
           {/* Empty state */}
           {analytics.totalWorkouts === 0 && (
-            <div className="text-center py-12 px-6 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+            <div className="text-center py-12 px-6 rounded-2xl bg-[#141414] border border-white/[0.06]">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                 style={{ backgroundColor: ACCENT_SOFT }}
               >
                 <TrendingUpIcon className="w-7 h-7" style={{ color: ACCENT }} />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <h3
+                className="text-[18px] font-bold mb-2"
+                style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+              >
                 {t('goals.startTraining')}
               </h3>
-              <p className="text-sm text-white/40 max-w-[240px] mx-auto">
+              <p
+                className="text-[14px] font-medium max-w-[240px] mx-auto"
+                style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
+              >
                 {t('goals.firstWorkoutMessage')}
               </p>
             </div>

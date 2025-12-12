@@ -86,11 +86,13 @@
      Preferred uses viewport width for fluid scaling
      ───────────────────────────────────────────────────────────── */
 
-  /* Font Families - Contemporary stack */
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Font Families - iOS-Native Premium Stack
+     Inter is the primary font for excellent legibility on dark backgrounds
+     SF Pro fallback ensures native iOS feel */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   --font-mono: 'SF Mono', ui-monospace, monospace;
-  --font-display: 'Syne', 'Manrope', -apple-system, system-ui, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
 
   /* ═══════════════════════════════════════════════════════════════
      FLUID FONT SIZES - Adaptive scaling across iPhone sizes

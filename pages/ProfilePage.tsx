@@ -24,18 +24,18 @@ import { PRHistoryChart } from '../components/ui/PRHistoryChart';
 import { getAllPRs } from '../services/prService';
 
 /* ═══════════════════════════════════════════════════════════════
-   PROFILE PAGE - Clean, Sophisticated Design
+   PROFILE PAGE - Premium iOS Typography
 
-   - Rich red accent (#E54D42)
-   - Clean system typography
-   - Proper visual hierarchy
-   - Easy on the eyes
+   Typography principles:
+   - Inter/SF Pro for legibility on dark backgrounds
+   - Heavier weights (500-700) for better contrast
+   - Proper letter-spacing on labels
    ═══════════════════════════════════════════════════════════════ */
 
-// Accent color - rich red, distinct but not harsh
-const ACCENT = '#E54D42';
-const ACCENT_SOFT = 'rgba(229, 77, 66, 0.15)';
-const ACCENT_GLOW = 'rgba(229, 77, 66, 0.25)';
+// Accent color - matching app-wide red
+const ACCENT = '#EF4444';
+const ACCENT_SOFT = 'rgba(239, 68, 68, 0.12)';
+const ACCENT_GLOW = 'rgba(239, 68, 68, 0.3)';
 
 interface ProfilePageProps {
   logs: WorkoutLog[];
