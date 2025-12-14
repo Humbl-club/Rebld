@@ -375,12 +375,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   // ═══════════════════════════════════════════════════════════════════════════
 
   const renderPath = () => (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      {/* Header */}
-      <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+    <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
         <button
           onClick={() => goToStep('welcome')}
-          className="flex items-center gap-2 mb-6"
+          className="flex items-center gap-2 mb-4"
           style={{ color: colors.textSecondary }}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -403,8 +403,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
         </p>
       </div>
 
-      {/* Options */}
-      <div className="flex-1 px-6 space-y-4">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 space-y-4">
         {/* Competition */}
         <button
           onClick={() => {
@@ -494,9 +494,10 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             </p>
           </div>
         </button>
-      </div>
 
-      <div className="h-[max(24px,env(safe-area-inset-bottom))]" />
+        {/* Spacer for bottom safe area */}
+        <div className="h-[max(24px,env(safe-area-inset-bottom))]" />
+      </div>
     </div>
   );
 
@@ -507,12 +508,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   const renderGoal = () => {
     if (path === 'competition') {
       return (
-        <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-          {/* Header */}
-          <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+        <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
             <button
               onClick={() => goToStep('path')}
-              className="flex items-center gap-2 mb-6"
+              className="flex items-center gap-2 mb-4"
               style={{ color: colors.textSecondary }}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -529,8 +530,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             </h1>
           </div>
 
-          {/* Sport selection */}
-          <div className="flex-1 px-6 overflow-y-auto">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6">
             <div className="grid grid-cols-2 gap-3 mb-6">
               {SPORTS.map(s => (
                 <button
@@ -616,10 +617,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 />
               </div>
             )}
+
+            {/* Spacer for bottom button */}
+            <div className="h-20" />
           </div>
 
-          {/* Continue */}
-          <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+          {/* Fixed Continue Button */}
+          <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
             <button
               onClick={() => goToStep('schedule')}
               disabled={!sport || !eventDate}
@@ -638,12 +642,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
 
     // General path
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-        {/* Header */}
-        <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+      <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
           <button
             onClick={() => goToStep('path')}
-            className="flex items-center gap-2 mb-6"
+            className="flex items-center gap-2 mb-4"
             style={{ color: colors.textSecondary }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -660,8 +664,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           </h1>
         </div>
 
-        {/* Goals */}
-        <div className="flex-1 px-6 space-y-3">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 space-y-3">
           {GENERAL_GOALS.map(g => (
             <button
               key={g.id}
@@ -711,10 +715,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
               )}
             </button>
           ))}
+
+          {/* Spacer for bottom button */}
+          <div className="h-20" />
         </div>
 
-        {/* Continue */}
-        <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+        {/* Fixed Continue Button */}
+        <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
           <button
             onClick={() => goToStep('schedule')}
             disabled={!generalGoal}
@@ -1099,12 +1106,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   // ═══════════════════════════════════════════════════════════════════════════
 
   const renderBody = () => (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      {/* Header */}
-      <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+    <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
         <button
           onClick={() => goToStep('schedule')}
-          className="flex items-center gap-2 mb-6"
+          className="flex items-center gap-2 mb-4"
           style={{ color: colors.textSecondary }}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1127,8 +1134,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
         </p>
       </div>
 
-      {/* Body areas */}
-      <div className="flex-1 px-6">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6">
         <div className="grid grid-cols-2 gap-3">
           {BODY_AREAS.map(area => {
             const isSelected = painPoints.includes(area.id);
@@ -1186,10 +1193,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             </p>
           </div>
         )}
+
+        {/* Spacer for bottom button */}
+        <div className="h-20" />
       </div>
 
-      {/* Continue */}
-      <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+      {/* Fixed Continue Button */}
+      <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
         <button
           onClick={() => goToStep('strength')}
           className="w-full h-14 rounded-2xl font-semibold text-[17px] active:scale-[0.98] transition-all"
@@ -1209,12 +1219,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
     const filledCount = Object.values(benchmarks).filter((v): v is number => typeof v === 'number' && v > 0).length;
 
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-        {/* Header */}
-        <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+      <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
           <button
             onClick={() => goToStep('body')}
-            className="flex items-center gap-2 mb-6"
+            className="flex items-center gap-2 mb-4"
             style={{ color: colors.textSecondary }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1237,8 +1247,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           </p>
         </div>
 
-        {/* Benchmarks */}
-        <div className="flex-1 px-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-4">
             {BENCHMARKS.map(b => (
               <div key={b.id}>
@@ -1284,10 +1294,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
               ? "Skip this — we'll start conservative"
               : `${filledCount} of ${BENCHMARKS.length} provided`}
           </p>
+
+          {/* Spacer for bottom button */}
+          <div className="h-24" />
         </div>
 
-        {/* Continue */}
-        <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+        {/* Fixed Continue Button */}
+        <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
           <button
             onClick={() => goToStep('final')}
             className="w-full h-14 rounded-2xl font-semibold text-[17px] active:scale-[0.98] transition-all"
@@ -1314,12 +1327,12 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   // ═══════════════════════════════════════════════════════════════════════════
 
   const renderFinal = () => (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      {/* Header */}
-      <div className="pt-[max(60px,env(safe-area-inset-top))] px-6 pb-6">
+    <div className="h-screen flex flex-col" style={{ background: colors.bg }}>
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 pt-[max(60px,env(safe-area-inset-top))] px-6 pb-4">
         <button
           onClick={() => goToStep('strength')}
-          className="flex items-center gap-2 mb-6"
+          className="flex items-center gap-2 mb-4"
           style={{ color: colors.textSecondary }}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1342,8 +1355,8 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
         </p>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-6 space-y-6">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 space-y-6">
         {/* Age */}
         <div>
           <label
@@ -1404,10 +1417,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             Examples: "I love sled work", "No barbells at my gym", "Focus on explosiveness"
           </p>
         </div>
+
+        {/* Spacer for bottom button */}
+        <div className="h-24" />
       </div>
 
-      {/* Generate */}
-      <div className="px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+      {/* Fixed Generate Button */}
+      <div className="flex-shrink-0 px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-4" style={{ background: colors.bg }}>
         <button
           onClick={() => {
             goToStep('generating');
