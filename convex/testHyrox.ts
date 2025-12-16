@@ -119,13 +119,17 @@ export const seedTestHyroxUser = mutation({
 
 /**
  * Run full Hyrox generation test
+ * @param weekNumber - Which week to generate (default: 1)
+ * @param useReasoner - Use DeepSeek reasoner model instead of chat
  */
 export const runHyroxTest = action({
   args: {
+    weekNumber: v.optional(v.number()),
     useReasoner: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const testUserId = "hyrox-test-user";
+    const weekNumber = args.weekNumber || 1;
 
     // Step 1: Check readiness
     const readiness = await ctx.runAction(api.hyroxActions.checkGenerationReadiness, {
@@ -144,7 +148,7 @@ export const runHyroxTest = action({
     // Step 2: Generate plan
     const result = await ctx.runAction(api.hyroxActions.generateHyroxPlan, {
       userId: testUserId,
-      weekNumber: 1,
+      weekNumber,
       forceModel: args.useReasoner ? "reasoner" : "chat",
     });
 
@@ -165,6 +169,62 @@ export const runHyroxTest = action({
         daysCount: result.plan.days?.length,
         weeklyTotals: result.plan.weekly_totals,
       } : null,
+    };
+  },
+});
+
+/**
+ * Test multi-week generation (Week 1 → Week 2 back-to-back)
+ * Note: Without a stored plan, week 2 won't have previous week context,
+ * but we can verify the generation flow works.
+ */
+export const testMultiWeekGeneration = action({
+  args: {},
+  handler: async (ctx) => {
+    const testUserId = "hyrox-test-user";
+
+    // Generate Week 1
+    console.log("[Test] Generating Week 1...");
+    const week1Result = await ctx.runAction(api.hyroxActions.generateHyroxPlan, {
+      userId: testUserId,
+      weekNumber: 1,
+    });
+
+    // Generate Week 2
+    console.log("[Test] Generating Week 2...");
+    const week2Result = await ctx.runAction(api.hyroxActions.generateHyroxPlan, {
+      userId: testUserId,
+      weekNumber: 2,
+    });
+
+    return {
+      overall: {
+        week1Success: week1Result.success,
+        week2Success: week2Result.success,
+        bothSucceeded: week1Result.success && week2Result.success,
+      },
+      week1: {
+        success: week1Result.success,
+        weekInPlan: week1Result.plan?.week_number,
+        running: week1Result.plan?.weekly_totals?.running_km,
+        phase: week1Result.plan?.phase,
+        errors: week1Result.validation?.errors,
+        warnings: week1Result.validation?.warnings,
+      },
+      week2: {
+        success: week2Result.success,
+        weekInPlan: week2Result.plan?.week_number,
+        running: week2Result.plan?.weekly_totals?.running_km,
+        phase: week2Result.plan?.phase,
+        errors: week2Result.validation?.errors,
+        warnings: week2Result.validation?.warnings,
+      },
+      // Show if LLM correctly generates different weeks
+      weekProgression: {
+        week1Number: week1Result.plan?.week_number,
+        week2Number: week2Result.plan?.week_number,
+        correctProgression: week1Result.plan?.week_number === 1 && week2Result.plan?.week_number === 2,
+      },
     };
   },
 });
@@ -506,6 +566,61 @@ export const debugValidationVolume = action({
       runningExercises,
       allExercises: runningDetails,
     };
+  },
+});
+
+/**
+ * Save test plan (bypasses auth for testing)
+ */
+export const saveTestPlan = mutation({
+  args: {
+    userId: v.string(),
+    weeklyPlan: v.array(v.any()),
+  },
+  handler: async (ctx, args) => {
+    // Only allow for test user
+    if (args.userId !== "hyrox-test-user") {
+      throw new Error("This mutation is only for test user");
+    }
+
+    // Check if test plan already exists
+    const existing = await ctx.db
+      .query("workoutPlans")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+
+    if (existing) {
+      // Update existing plan
+      await ctx.db.patch(existing._id, {
+        weeklyPlan: args.weeklyPlan,
+      });
+      return existing._id;
+    }
+
+    // Create new plan
+    const planId = await ctx.db.insert("workoutPlans", {
+      userId: args.userId,
+      name: "Test Hyrox Plan",
+      weeklyPlan: args.weeklyPlan,
+      periodization: {
+        total_weeks: 12,
+        current_week: 1,
+        phase: "build",
+        phase_description: "Building race-specific fitness",
+      },
+    });
+
+    // Update user's activePlanId
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (user) {
+      await ctx.db.patch(user._id, { activePlanId: planId });
+    }
+
+    return planId;
   },
 });
 

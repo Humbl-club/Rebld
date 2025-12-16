@@ -282,10 +282,10 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
     try {
       // Map goal to API expected values
       const primaryGoal = path === 'competition' ? 'Athletic Performance' :
-            generalGoal === 'muscle' ? 'Aesthetic Physique' :
-            generalGoal === 'strength' ? 'Strength & Power' :
+        generalGoal === 'muscle' ? 'Aesthetic Physique' :
+          generalGoal === 'strength' ? 'Strength & Power' :
             generalGoal === 'fat_loss' ? 'Health & Longevity' :
-            'Health & Longevity';
+              'Health & Longevity';
 
       // Build preferences matching API validator schema
       const apiPayload = {
@@ -307,7 +307,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
             training_type: sessionsPerDay === '2'
               ? (splitType === 'strength_cardio' ? 'strength_plus_cardio' as const
                 : splitType === 'technique_conditioning' ? 'combined' as const
-                : 'strength_only' as const)  // am_pm_same
+                  : 'strength_only' as const)  // am_pm_same
               : (path === 'competition' ? 'combined' as const : 'strength_only' as const),
           },
           specific_goal: path === 'competition' ? {
@@ -327,10 +327,10 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
         userId: user?.id,
       };
 
-      const result = await generatePlanAction(apiPayload);
+      const plan = await generatePlanAction(apiPayload);
 
-      if (result.success && result.plan) {
-        setGeneratedPlan(result.plan);
+      if (plan) {
+        setGeneratedPlan(plan);
         setGenerationProgress(100);
 
         // Increment usage
@@ -340,10 +340,10 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
 
         // Brief delay then complete
         setTimeout(() => {
-          onPlanGenerated(result.plan);
+          onPlanGenerated(plan);
         }, 1500);
       } else {
-        throw new Error(result.error || 'Failed to generate plan');
+        throw new Error('Failed to generate plan');
       }
     } catch (e: any) {
       console.error('Generation error:', e);

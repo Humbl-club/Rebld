@@ -768,10 +768,12 @@ ${injuryProtocols.length > 0 ? '□ No exercises that violate injury constraints
   // ==========================================================================
   sections.push(`# OUTPUT SCHEMA
 
+⚠️ CRITICAL: You are generating WEEK ${weekNumber}. The "week_number" field MUST be exactly ${weekNumber}.
+
 Generate a JSON object matching this structure:
 
 {
-  "week_number": ${weekNumber},
+  "week_number": ${weekNumber},  // MUST BE ${weekNumber} - DO NOT CHANGE THIS
   "phase": "${phase}",
   "focus": "string describing this week's primary focus",
   "days": [

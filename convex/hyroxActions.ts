@@ -341,6 +341,16 @@ export const generateHyroxPlan = action({
           let generatedPlan: GeneratedPlan;
           try {
             generatedPlan = extractAndParseJSON(generatedText) as GeneratedPlan;
+
+            // Post-process: Ensure week_number matches requested week
+            // LLM sometimes ignores week instructions, so we enforce it here
+            if (generatedPlan.week_number !== weekNumber) {
+              loggers.ai.warn(
+                `[Hyrox] Correcting week_number from ${generatedPlan.week_number} to ${weekNumber}`
+              );
+              generatedPlan.week_number = weekNumber;
+            }
+
             lastGeneratedPlan = generatedPlan;
           } catch (parseError: any) {
             loggers.ai.warn(`[Hyrox] Attempt ${attempt} - JSON parse failed: ${parseError.message}`);
