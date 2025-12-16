@@ -985,6 +985,28 @@ USER'S SPECIFIC REQUESTS (HIGHEST PRIORITY):
 "${data.additionalNotes}"
 ` : ''}
 
+PROGRAMMING RULES (MUST FOLLOW):
+1. EXACT DAY COUNT: Generate exactly ${data.trainingDays.length} training days + ${7 - data.trainingDays.length} rest days = 7 total days
+2. EVERY strength exercise MUST have "target_weight_kg" specified (calculate from user's strength levels)
+3. EVERY training day MUST end with a cooldown block (stretches, foam rolling, or rehab exercises)
+4. Block type MUST be: "single", "superset", "circuit", "amrap", or "emom" (NOT "warmup", "strength", etc.)
+5. Category MUST be: "warmup", "main", or "cooldown" (NOT "strength", "conditioning", "cardio", etc.)
+6. For cardio/distance exercises use: "distance_time" (NOT "time_distance")
+${data.sport?.toLowerCase() === 'hyrox' ? `
+HYROX-SPECIFIC REQUIREMENTS:
+- ALL 8 STATIONS must be introduced across the week: SkiErg, Sled Push, Sled Pull, Rowing, Farmers Carry, Sandbag Lunges, Wall Balls, Burpee Broad Jumps
+- MINIMUM weekly running: 15km in base phase (broken into Zone 2 runs + tempo work)
+- MINIMUM weekly SkiErg: 2,500m (varied intensities)
+- Sled work: Both push AND pull patterns weekly
+- Race-specific circuits: Include at least one session mimicking station-to-running transitions
+` : ''}
+${data.currentStrength ? `
+LOAD CALCULATION (use these as reference):
+- User's squat: ${data.currentStrength.squat_kg}kg → Goblet squat should be ~${Math.round((data.currentStrength.squat_kg || 100) * 0.4)}-${Math.round((data.currentStrength.squat_kg || 100) * 0.5)}kg
+- User's bench: ${data.currentStrength.bench_kg}kg → DB press should be ~${Math.round((data.currentStrength.bench_kg || 80) * 0.35)}-${Math.round((data.currentStrength.bench_kg || 80) * 0.45)}kg each
+- User's deadlift: ${data.currentStrength.deadlift_kg}kg → Trap bar DL should be ~${Math.round((data.currentStrength.deadlift_kg || 120) * 0.7)}-${Math.round((data.currentStrength.deadlift_kg || 120) * 0.85)}kg
+` : ''}
+
 Generate the complete 7-day plan now.`;
 
   // 8. Define expected output schema (for validation)

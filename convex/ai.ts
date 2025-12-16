@@ -24,7 +24,8 @@ import {
   addDurationEstimates,
   getHeartRateGuidance,
   getDurationConstraintPrompt,
-  createDeepSeekClient
+  createDeepSeekClient,
+  createGeminiClient
 } from "./utils/aiHelpers";
 import {
   buildBriefMasterPrompt,
@@ -1407,23 +1408,65 @@ Return JSON:
       loggers.ai.info(`Generating plan with ${selectedModel} (with retry logic)...`);
       const startTime = Date.now();
 
-      // Use generateWithRetry for robust generation with automatic validation
-      const generatedPlan = await generateWithRetry(
-        ai.models,
-        {
-          model: selectedModel,
-          contents: finalPrompt,
-          config: {
-            responseMimeType: "application/json",
-          }
-        },
-        validateWorkoutPlan,
-        2, // Reduced from 3 to 2 - 3rd attempt rarely succeeds
-        parseInt(preferred_session_length || '60') // Pass session duration for cardio fixing
-      );
+      // Try DeepSeek first, fall back to Gemini if it fails
+      let generatedPlan;
+      let usedFallback = false;
+
+      try {
+        // Primary: DeepSeek
+        generatedPlan = await generateWithRetry(
+          ai.models,
+          {
+            model: selectedModel,
+            contents: finalPrompt,
+            config: {
+              responseMimeType: "application/json",
+            }
+          },
+          validateWorkoutPlan,
+          2, // Reduced from 3 to 2 - 3rd attempt rarely succeeds
+          parseInt(preferred_session_length || '60') // Pass session duration for cardio fixing
+        );
+      } catch (deepseekError: any) {
+        // DeepSeek failed - try Gemini fallback
+        const isTimeout = deepseekError.message?.includes('timeout');
+        const isOutage = deepseekError.message?.includes('503') || deepseekError.message?.includes('502') || deepseekError.message?.includes('overloaded');
+
+        loggers.ai.warn(`⚠️ DeepSeek failed (${isTimeout ? 'timeout' : 'error'}): ${deepseekError.message}`);
+        loggers.ai.info('🔄 Attempting Gemini fallback...');
+
+        const geminiKey = process.env.GEMINI_API_KEY;
+        if (!geminiKey) {
+          loggers.ai.error('❌ Gemini API key not configured - cannot fallback');
+          throw deepseekError; // Re-throw original error
+        }
+
+        try {
+          const geminiClient = await createGeminiClient(geminiKey);
+          generatedPlan = await generateWithRetry(
+            geminiClient.models,
+            {
+              model: 'gemini-2.5-flash',
+              contents: finalPrompt,
+              config: {
+                responseMimeType: "application/json",
+              }
+            },
+            validateWorkoutPlan,
+            2,
+            parseInt(preferred_session_length || '60')
+          );
+          usedFallback = true;
+          loggers.ai.info('✅ Gemini fallback succeeded!');
+        } catch (geminiError: any) {
+          loggers.ai.error(`❌ Gemini fallback also failed: ${geminiError.message}`);
+          // Throw a combined error
+          throw new Error(`Plan generation failed. DeepSeek: ${deepseekError.message}. Gemini fallback: ${geminiError.message}`);
+        }
+      }
 
       const elapsedMs = Date.now() - startTime;
-      loggers.ai.info(`⏱️  Generation completed in ${(elapsedMs / 1000).toFixed(2)}s`);
+      loggers.ai.info(`⏱️  Generation completed in ${(elapsedMs / 1000).toFixed(2)}s${usedFallback ? ' (via Gemini fallback)' : ''}`);
       loggers.ai.info('✅ Plan validation passed! All metrics templates are correct.');
 
       // Validate plan has required structure

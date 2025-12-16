@@ -115,6 +115,58 @@ export default defineSchema({
           leg_press_kg: v.optional(v.number()),
           lat_pulldown_kg: v.optional(v.number()),
         })),
+
+        // NEW: Hyrox-specific profile for sport-specific plan generation
+        hyrox_profile: v.optional(v.object({
+          // Running fitness assessment
+          comfortable_5k_minutes: v.number(),
+          weekly_running_km: v.number(),
+          running_experience: v.union(
+            v.literal("new"),           // < 1 year running
+            v.literal("1_2_years"),     // 1-2 years running
+            v.literal("3_plus_years")   // 3+ years running
+          ),
+          five_k_source: v.union(
+            v.literal("known"),         // Actual race/test time
+            v.literal("estimated"),     // From other race distance
+            v.literal("self_assessed")  // From comfort level picker
+          ),
+          five_k_confidence: v.union(
+            v.literal("high"),          // Recent race or time trial
+            v.literal("medium"),        // Estimated from other distance
+            v.literal("low")            // Self-assessed, needs validation
+          ),
+
+          // Station proficiency
+          weak_stations: v.array(v.string()),       // e.g., ["sled_push", "wall_balls"]
+          strong_stations: v.array(v.string()),     // e.g., ["rowing", "skierg"]
+          never_done_stations: v.array(v.string()), // Stations they've literally never tried
+
+          // Competition details
+          target_time_minutes: v.optional(v.number()),
+          previous_best_minutes: v.optional(v.number()),
+          division: v.union(
+            v.literal("open_men"),
+            v.literal("open_women"),
+            v.literal("pro_men"),
+            v.literal("pro_women"),
+            v.literal("doubles")
+          ),
+          is_first_race: v.boolean(),
+
+          // Equipment access
+          gym_type: v.union(
+            v.literal("commercial"),
+            v.literal("crossfit_box"),
+            v.literal("hyrox_affiliate"),
+            v.literal("home")
+          ),
+          missing_equipment: v.array(v.string()), // e.g., ["skierg", "sled"]
+
+          // Metadata
+          created_at: v.string(),
+          updated_at: v.string(),
+        })),
       }),
       v.null()
     )),
@@ -1246,4 +1298,46 @@ export default defineSchema({
     .index("by_userId_createdAt", ["userId", "createdAt"])  // NEW: For user activity over time
     .index("by_eventType_createdAt", ["eventType", "createdAt"])  // NEW: For event trends
     .index("by_userId_timestamp", ["userId", "timestamp"]),  // NEW: For time-based user queries
+
+  // Week Summary - Tracks week-to-week adaptation data for Hyrox (and future sports)
+  weekSummary: defineTable({
+    userId: v.string(),
+    planId: v.id("workoutPlans"),
+    weekNumber: v.number(),
+    phase: v.union(
+      v.literal("BASE"),
+      v.literal("BUILD"),
+      v.literal("PEAK"),
+      v.literal("TAPER"),
+      v.literal("RACE_WEEK")
+    ),
+
+    // Session completion tracking
+    sessionsPlanned: v.number(),
+    sessionsCompleted: v.number(),
+    sessionsMissed: v.array(v.string()),  // ["Monday", "Thursday"] - which days were missed
+
+    // User feeling (collected at week end)
+    overallFeeling: v.optional(v.union(
+      v.literal("too_easy"),
+      v.literal("just_right"),
+      v.literal("challenging"),
+      v.literal("too_hard")
+    )),
+
+    // Optional freeform feedback
+    anythingToAdjust: v.optional(v.string()),
+
+    // Computed volumes (populated from workout logs if available)
+    actualRunningKm: v.optional(v.number()),
+
+    // Timestamps
+    weekStartDate: v.string(),   // ISO date
+    weekEndDate: v.string(),     // ISO date
+    submittedAt: v.optional(v.string()), // When user submitted feedback
+  })
+    .index("by_userId", ["userId"])
+    .index("by_planId", ["planId"])
+    .index("by_userId_weekNumber", ["userId", "weekNumber"])
+    .index("by_userId_weekStartDate", ["userId", "weekStartDate"]),
 });

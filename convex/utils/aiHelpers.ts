@@ -390,6 +390,10 @@ This helps users track intensity with heart rate monitors.
 /**
  * DeepSeek client wrapper - compatible with our AIModel interface
  * Uses OpenAI-compatible API format
+ *
+ * Timeout handling:
+ * - deepseek-chat: 90 seconds (should complete in 10-30s)
+ * - deepseek-reasoner: 180 seconds (can take 2-5 minutes)
  */
 export function createDeepSeekClient(apiKey: string) {
   const baseUrl = 'https://api.deepseek.com/chat/completions';
@@ -410,46 +414,130 @@ export function createDeepSeekClient(apiKey: string) {
           messageContent = String(config.contents);
         }
 
-        const response = await fetch(baseUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are an elite fitness coach and workout planner. Always respond with valid JSON when asked for workout plans.'
-              },
-              {
-                role: 'user',
-                content: messageContent
-              }
-            ],
-            stream: false,
-            // DeepSeek-specific: request JSON output
-            response_format: { type: 'json_object' },
-          }),
-        });
+        // Set timeout based on model (reasoner needs more time)
+        const timeoutMs = model === 'deepseek-reasoner' ? 180000 : 90000; // 3 min for reasoner, 90s for chat
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
+        try {
+          console.log(`[DeepSeek] Starting API call with ${timeoutMs / 1000}s timeout (model: ${model})`);
+          const startTime = Date.now();
+
+          const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are an elite fitness coach and workout planner. Always respond with valid JSON when asked for workout plans.'
+                },
+                {
+                  role: 'user',
+                  content: messageContent
+                }
+              ],
+              stream: false,
+              // DeepSeek-specific: request JSON output
+              response_format: { type: 'json_object' },
+              // CRITICAL: Set max_tokens high enough for full workout plan JSON
+              // A 7-day plan with 5+ exercises per day = ~8000 tokens
+              max_tokens: 8192,
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+          const elapsedMs = Date.now() - startTime;
+          console.log(`[DeepSeek] API responded in ${(elapsedMs / 1000).toFixed(2)}s`);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
+          }
+
+          const data = await response.json();
+
+          // Extract text from OpenAI-compatible response format
+          const text = data.choices?.[0]?.message?.content || '';
+
+          // Log reasoning content if present (deepseek-reasoner returns this)
+          if (data.choices?.[0]?.message?.reasoning_content) {
+            console.log('[DeepSeek] Reasoning:', data.choices[0].message.reasoning_content.substring(0, 200) + '...');
+          }
+
+          return { text };
+        } catch (error: any) {
+          clearTimeout(timeoutId);
+
+          if (error.name === 'AbortError') {
+            throw new Error(`DeepSeek API timeout after ${timeoutMs / 1000}s. The service may be overloaded. Please try again.`);
+          }
+          throw error;
+        }
+      }
+    }
+  };
+}
+
+/**
+ * Create a Gemini client wrapper - compatible with our AIModel interface
+ * Used as fallback when DeepSeek is unavailable
+ *
+ * @param apiKey - Gemini API key
+ * @returns AIModel-compatible client
+ */
+export async function createGeminiClient(apiKey: string) {
+  const { GoogleGenAI } = await import("@google/genai");
+  const genAI = new GoogleGenAI({ apiKey });
+
+  return {
+    models: {
+      generateContent: async (config: GenerationConfig): Promise<GenerationResult> => {
+        // Use gemini-2.5-flash for fast responses
+        const modelName = config.model || 'gemini-2.5-flash';
+
+        // Convert contents to Gemini format
+        let messageContent: string;
+        if (typeof config.contents === 'string') {
+          messageContent = config.contents;
+        } else if (Array.isArray(config.contents) && config.contents[0]?.parts) {
+          messageContent = config.contents[0].parts.map((p: { text: string }) => p.text).join('\n');
+        } else {
+          messageContent = String(config.contents);
         }
 
-        const data = await response.json();
+        // 60 second timeout for Gemini
+        const timeoutMs = 60000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-        // Extract text from OpenAI-compatible response format
-        const text = data.choices?.[0]?.message?.content || '';
+        try {
+          console.log(`[Gemini] Starting API call with ${timeoutMs / 1000}s timeout (model: ${modelName})`);
+          const startTime = Date.now();
 
-        // Log reasoning content if present (deepseek-reasoner returns this)
-        if (data.choices?.[0]?.message?.reasoning_content) {
-          console.log('[DeepSeek] Reasoning:', data.choices[0].message.reasoning_content.substring(0, 200) + '...');
+          const result = await genAI.models.generateContent({
+            model: modelName,
+            contents: messageContent,
+            config: {
+              responseMimeType: "application/json",
+            }
+          });
+
+          clearTimeout(timeoutId);
+          const elapsedMs = Date.now() - startTime;
+          console.log(`[Gemini] API responded in ${(elapsedMs / 1000).toFixed(2)}s`);
+
+          const text = result.text || '';
+          return { text };
+        } catch (error: any) {
+          clearTimeout(timeoutId);
+          throw error;
         }
-
-        return { text };
       }
     }
   };

@@ -627,42 +627,181 @@ export function fixCardioTemplates(plan: Plan, sessionDurationMinutes?: number):
     exercises.forEach(exercise => {
       if (!exercise.exercise_name || !exercise.metrics_template) return;
 
+      // ═══════════════════════════════════════════════════════════
+      // FIX: Invalid exercise categories
+      // AI sometimes uses 'accessory', 'core', 'conditioning' etc.
+      // Valid categories are: warmup, main, cooldown
+      // ═══════════════════════════════════════════════════════════
+      const validCategories = ['warmup', 'main', 'cooldown'];
+      if (exercise.category && !validCategories.includes(exercise.category)) {
+        const oldCategory = exercise.category;
+        // Map to appropriate category
+        if (exercise.category === 'warmup' || exercise.category.includes('warm')) {
+          exercise.category = 'warmup';
+        } else if (exercise.category === 'cooldown' || exercise.category.includes('cool') || exercise.category.includes('stretch')) {
+          exercise.category = 'cooldown';
+        } else {
+          // accessory, core, conditioning, etc. → main
+          exercise.category = 'main';
+        }
+        console.log(`[planValidator] Fixed category: "${oldCategory}" → "${exercise.category}" for "${exercise.exercise_name}"`);
+      }
+
       const template = exercise.metrics_template;
 
       // ═══════════════════════════════════════════════════════════
-      // FIX 1: sets_distance_rest missing required fields
+      // FIX 0: Common AI typos in template type names
+      // These are minor variations that AI models sometimes generate
+      // ═══════════════════════════════════════════════════════════
+      const templateTypeFixes: Record<string, string> = {
+        // Distance/time variations
+        'time_distance': 'distance_time',       // Gemini uses this sometimes
+        'distance_time_only': 'distance_time',  // Variant
+        'duration_distance': 'distance_time',   // Variant
+        'duration_distance_intensity': 'duration_only', // Gemini cardio variant → just duration
+        'time': 'duration_only',                // Just "time" → duration_only
+        'time_only': 'duration_only',           // Alternate name
+        'duration': 'duration_only',            // Shortened version
+        // Sets + time variations
+        'sets_time': 'sets_duration',           // Common mistake
+        'sets_time_rest': 'sets_duration_rest', // Common mistake
+        'sets_time_distance': 'sets_duration_rest', // SkiErg/Rowing - use duration_rest
+        // Distance with weight (sled work, farmers carry)
+        'sets_distance_weight': 'sets_distance_rest', // Sled push/pull - use distance_rest
+        // Gemini interval/circuit variations
+        'intervals_distance': 'sets_duration_rest',   // Intervals → sets_duration_rest
+        'sets_circuit_reps_distance': 'sets_reps',    // Circuit → sets_reps
+        'sets_reps_distance': 'sets_reps',            // Distance reps → sets_reps
+        'sets_distance_duration': 'sets_distance_rest', // SkiErg/Rower → sets_distance_rest
+        'sets_time_intensity': 'duration_only',       // Cardio with intensity → duration_only
+        'sets_circuit': 'sets_reps',                  // Circuit → sets_reps
+        'circuit': 'sets_reps',                       // Just circuit → sets_reps
+        // Wrong order
+        'reps_sets_weight': 'sets_reps_weight', // Wrong order
+        'weight_sets_reps': 'sets_reps_weight', // Wrong order
+      };
+
+      if (templateTypeFixes[template.type]) {
+        const oldType = template.type;
+        template.type = templateTypeFixes[template.type];
+        console.log(`[planValidator] Fixed template type: "${oldType}" → "${template.type}" for "${exercise.exercise_name}"`);
+      }
+
+      // CATCH-ALL: If template type is STILL not valid, convert to sensible default
+      const VALID_TYPES = ['sets_reps_weight', 'sets_reps', 'duration_only', 'distance_time', 'sets_duration_rest', 'sets_distance_rest', 'sets_duration', 'sets_duration_weight', 'tempo'];
+      if (!VALID_TYPES.includes(template.type)) {
+        const oldType = template.type;
+        const name = exercise.exercise_name.toLowerCase();
+
+        // Determine best type based on exercise name
+        if (name.includes('walk') || name.includes('run') || name.includes('cardio') ||
+            name.includes('elliptical') || name.includes('bike') || name.includes('row') ||
+            name.includes('stretch') || name.includes('mobility') || name.includes('warm') ||
+            name.includes('cool') || name.includes('foam') || name.includes('yoga')) {
+          template.type = 'duration_only';
+          if (!template.duration_minutes) template.duration_minutes = 10;
+        } else if (name.includes('sled') || name.includes('carry') || name.includes('farmer')) {
+          template.type = 'sets_distance_rest';
+        } else if (name.includes('interval') || name.includes('hiit') || name.includes('circuit')) {
+          template.type = 'sets_duration_rest';
+        } else {
+          // Default to sets_reps for strength exercises
+          template.type = 'sets_reps';
+          if (!template.sets && !template.target_sets) template.sets = 3;
+          if (!template.target_reps) template.target_reps = '8-12';
+        }
+        console.log(`[planValidator] CATCH-ALL: "${oldType}" → "${template.type}" for "${exercise.exercise_name}"`);
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // FIX 0.5: Add missing required fields for each template type
+      // ═══════════════════════════════════════════════════════════
+
+      // duration_only needs duration_minutes
+      if (template.type === 'duration_only') {
+        if (!template.duration_minutes && template.duration_minutes !== 0) {
+          // Try to extract from other fields
+          if (template.duration_seconds) {
+            template.duration_minutes = Math.ceil(Number(template.duration_seconds) / 60);
+          } else if (template.target_duration_minutes) {
+            template.duration_minutes = Number(template.target_duration_minutes);
+          } else {
+            template.duration_minutes = 10; // Default 10 minutes
+          }
+          console.log(`[planValidator] Added duration_minutes: ${template.duration_minutes} for "${exercise.exercise_name}"`);
+        }
+      }
+
+      // distance_time needs distance_km or distance_m as valid numbers
+      if (template.type === 'distance_time') {
+        // Check if we have a valid distance value (number > 0)
+        let distKm = template.distance_km ?? template.target_distance_km;
+        let distM = template.distance_m ?? template.target_distance_m;
+        if (typeof distKm === 'string') distKm = parseFloat(distKm);
+        if (typeof distM === 'string') distM = parseFloat(distM);
+
+        const hasValidDistance = (typeof distKm === 'number' && !isNaN(distKm) && distKm > 0) ||
+                                 (typeof distM === 'number' && !isNaN(distM) && distM > 0);
+
+        if (!hasValidDistance) {
+          // Default based on exercise type
+          const name = exercise.exercise_name.toLowerCase();
+          if (name.includes('walk') || name.includes('elliptical')) {
+            template.distance_km = 1; // 1km for walking/elliptical
+          } else if (name.includes('row') || name.includes('erg') || name.includes('ski')) {
+            template.distance_m = 500; // 500m for rowing/erg
+          } else if (name.includes('run') || name.includes('jog') || name.includes('sprint')) {
+            template.distance_km = 2; // 2km for running
+          } else {
+            template.distance_km = 1; // Default 1km
+          }
+          console.log(`[planValidator] Added default distance for "${exercise.exercise_name}"`);
+        } else {
+          // Ensure the value is stored as a number
+          if (distKm && typeof template.distance_km !== 'number') template.distance_km = distKm;
+          if (distM && typeof template.distance_m !== 'number') template.distance_m = distM;
+        }
+      }
+
+      // sets_duration needs duration_seconds
+      if (template.type === 'sets_duration') {
+        if (!template.duration_seconds && !template.target_duration_s) {
+          template.duration_seconds = 30; // Default 30 seconds
+          console.log(`[planValidator] Added duration_seconds: 30 for "${exercise.exercise_name}"`);
+        }
+        if (!template.sets && !template.target_sets) {
+          template.sets = 3; // Default 3 sets
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // FIX 1: sets_distance_rest missing/invalid required fields
       // Common issue with Sled Push/Pull and track sprints
+      // ALWAYS ensure these fields exist as valid NUMBERS
       // ═══════════════════════════════════════════════════════════
       if (template.type === 'sets_distance_rest') {
-        let wasFixed = false;
-
-        // Add missing 'sets' field (default 4 sets)
-        const hasSets = template.sets !== undefined || template.target_sets !== undefined;
-        if (!hasSets) {
+        // Convert strings to numbers or add defaults
+        let sets = template.sets ?? template.target_sets;
+        if (typeof sets === 'string') sets = parseInt(sets, 10);
+        if (typeof sets !== 'number' || isNaN(sets) || sets <= 0) {
           template.sets = 4;
-          wasFixed = true;
+          console.log(`[planValidator] Fixed sets: 4 for "${exercise.exercise_name}" (was: ${template.sets})`);
+        } else if (template.sets !== sets) {
+          template.sets = sets; // Ensure it's stored as number
         }
 
-        // Add missing 'rest_seconds' field (default 90s)
-        const hasRest = template.rest_seconds !== undefined ||
-                        template.target_rest_s !== undefined ||
-                        template.rest_period_s !== undefined;
-        if (!hasRest) {
+        let restSec = template.rest_seconds ?? template.target_rest_s ?? template.rest_period_s;
+        if (typeof restSec === 'string') restSec = parseInt(restSec, 10);
+        if (typeof restSec !== 'number' || isNaN(restSec) || restSec < 0) {
           template.rest_seconds = 90;
-          wasFixed = true;
+          console.log(`[planValidator] Fixed rest_seconds: 90 for "${exercise.exercise_name}" (was: ${template.rest_seconds})`);
+        } else if (template.rest_seconds !== restSec) {
+          template.rest_seconds = restSec;
         }
 
-        // Add missing distance if not present (default 50m for sled work)
-        const hasDistance = template.distance_km !== undefined ||
-                           template.distance_m !== undefined ||
-                           template.target_distance_m !== undefined;
-        if (!hasDistance) {
+        if (!template.distance_km && !template.distance_m && !template.target_distance_m) {
           template.distance_m = 50;
-          wasFixed = true;
-        }
-
-        if (wasFixed) {
-          console.log(`[planValidator] Fixed sets_distance_rest for "${exercise.exercise_name}": added missing fields (sets: ${template.sets}, distance_m: ${template.distance_m}, rest_seconds: ${template.rest_seconds})`);
+          console.log(`[planValidator] Added distance_m: 50 for "${exercise.exercise_name}"`);
         }
       }
 
@@ -734,6 +873,50 @@ export function fixCardioTemplates(plan: Plan, sessionDurationMinutes?: number):
 
   const processBlocks = (blocks: Block[]) => {
     blocks.forEach(block => {
+      // ═══════════════════════════════════════════════════════════
+      // FIX: Block type typos (AI sometimes uses plural or wrong names)
+      // ═══════════════════════════════════════════════════════════
+      const blockTypeFixes: Record<string, string> = {
+        // Plural → singular
+        'supersets': 'superset',
+        'circuits': 'circuit',
+        'amraps': 'amrap',
+        'emoms': 'emom',
+        'singles': 'single',
+        // DeepSeek often uses descriptive block types instead of structural ones
+        'warmup': 'single',
+        'warm-up': 'single',
+        'warm_up': 'single',
+        'strength': 'single',
+        'conditioning': 'single',
+        'sport_specific': 'single',
+        'sport-specific': 'single',
+        'cooldown': 'single',
+        'cool-down': 'single',
+        'cool_down': 'single',
+        'cardio': 'single',
+        'main': 'single',
+        'accessory': 'single',
+        'core': 'single',
+        'mobility': 'single',
+        'activation': 'single',
+        'finisher': 'single',
+      };
+      if (blockTypeFixes[block.type]) {
+        const oldType = block.type;
+        block.type = blockTypeFixes[block.type];
+        console.log(`[planValidator] Fixed block type: "${oldType}" → "${block.type}"`);
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // FIX: Supersets/circuits missing 'rounds' field
+      // AI sometimes forgets to add rounds for superset/circuit blocks
+      // ═══════════════════════════════════════════════════════════
+      if ((block.type === 'superset' || block.type === 'circuit') && !block.rounds) {
+        block.rounds = 3; // Default to 3 rounds for supersets/circuits
+        console.log(`[planValidator] Added missing 'rounds: 3' to ${block.type} block`);
+      }
+
       if (block.exercises && Array.isArray(block.exercises)) {
         processExercises(block.exercises);
       }
