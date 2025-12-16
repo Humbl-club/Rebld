@@ -121,7 +121,7 @@ export interface AssembledPrompt {
     phase: Phase;
     experienceLevel: ExperienceLevel;
     weekNumber: number;
-    volumeTargets: ReturnType<typeof getVolumeTargets>;
+    volumeTargets: ReturnType<typeof getVolumeTargets> & { runningMin?: number; runningMax?: number };
     runningPaces?: ReturnType<typeof calculateRunningPaces>;
     injuryModifications: string[];
     equipmentSubstitutions: string[];
@@ -174,7 +174,7 @@ export function calculateExperienceLevel(fitness: UserProfile['fitness']): Exper
 /**
  * Get division-specific weights
  */
-function getDivisionWeights(division: Division): {
+export function getDivisionWeights(division: Division): {
   sled_push_kg: number;
   sled_pull_kg: number;
   farmers_carry_kg_per_hand: number;
@@ -229,7 +229,7 @@ function getDivisionWeights(division: Division): {
 export function getAdjustedVolumeTargets(
   baseTargets: ReturnType<typeof getVolumeTargets>,
   userProfile: UserProfile,
-): ReturnType<typeof getVolumeTargets> {
+): ReturnType<typeof getVolumeTargets> & { runningMin?: number; runningMax?: number } {
   const adjusted = JSON.parse(JSON.stringify(baseTargets)); // Deep clone
 
   // Parse running range from string like "35-50km/week"
@@ -524,10 +524,12 @@ ${userProfile.fitness.weeklyRunningKm ? `- Current weekly running: ${userProfile
 ${userProfile.fitness.comfortable5kTimeMinutes ? `- 5K time: ${formatTime(userProfile.fitness.comfortable5kTimeMinutes)}` : ''}
 ${userProfile.fitness.trainingYears ? `- Training experience: ${userProfile.fitness.trainingYears} years` : ''}
 
-## Schedule
-- Training days: ${userProfile.schedule.trainingDays} per week
+## Schedule (CRITICAL CONSTRAINT)
+⚠️ EXACTLY ${userProfile.schedule.trainingDays} TRAINING DAYS - NO MORE, NO LESS
+- The "days" array MUST contain exactly ${userProfile.schedule.trainingDays} day objects
+- Do NOT generate 7 days. Generate ONLY ${userProfile.schedule.trainingDays} days.
 ${userProfile.schedule.availableDays?.length ? `- Available days: ${userProfile.schedule.availableDays.join(', ')}` : '- Available days: Flexible (assign to any days)'}
-- Session length: ${userProfile.schedule.sessionLengthMinutes} minutes
+- Session length: ${userProfile.schedule.sessionLengthMinutes} minutes MAX per session
 ${userProfile.schedule.canDoTwoADay ? '- Can do two-a-day sessions if beneficial' : ''}
 
 ## Equipment Access
@@ -841,16 +843,4 @@ function formatTime(minutes: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export {
-  calculateWeeksOut,
-  calculateExperienceLevel,
-  getAdjustedVolumeTargets,
-  buildInjuryProtocol,
-  buildEquipmentSubstitutions,
-  buildStationFocus,
-  getDivisionWeights,
-};
+// Note: Functions are exported inline with their declarations above

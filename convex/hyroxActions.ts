@@ -36,9 +36,11 @@ import {
 
 import {
   validateAndFix,
+  generateRegenerationFeedback,
   type ValidationConstraints,
   type GeneratedPlan,
   type GenerationResult as ValidationGenerationResult,
+  type ValidationResult,
 } from "./sportKnowledge/validateHyroxPlan";
 
 import {
@@ -272,7 +274,7 @@ export const generateHyroxPlan = action({
       );
 
       // =========================================================================
-      // STEP 6: Generate plan via DeepSeek
+      // STEP 6: Set up generation infrastructure
       // =========================================================================
       const apiKey = process.env.DEEPSEEK_API_KEY;
       if (!apiKey) {
@@ -287,44 +289,13 @@ export const generateHyroxPlan = action({
         ? "deepseek-reasoner"
         : "deepseek-chat";
 
-      loggers.ai.info(`[Hyrox] Generating with ${selectedModel}...`);
+      const basePrompt = `${assembledPrompt.systemPrompt}\n\n${assembledPrompt.userPrompt}`;
 
-      const fullPrompt = `${assembledPrompt.systemPrompt}\n\n${assembledPrompt.userPrompt}`;
-
-      // Generate without built-in validation (we'll use our own)
-      const response = await ai.models.generateContent({
-        model: selectedModel,
-        contents: fullPrompt,
-      });
-
-      const generatedText = response.text || '';
-      let generatedPlan: GeneratedPlan;
-
-      try {
-        generatedPlan = extractAndParseJSON(generatedText) as GeneratedPlan;
-      } catch (parseError: any) {
-        return {
-          success: false,
-          error: `Failed to parse generated plan: ${parseError.message}`,
-          metadata: {
-            phase: assembledPrompt.metadata.phase,
-            weekNumber,
-            generationTimeMs: Date.now() - startTime,
-            model: selectedModel,
-          },
-        };
-      }
-
-      // =========================================================================
-      // STEP 7: Build validation constraints and validate
-      // =========================================================================
+      // Build validation constraints (needed for all attempts)
       const experienceLevel = assembledPrompt.metadata.experienceLevel;
-      const baseVolumeTargets = getVolumeTargets(phase, experienceLevel);
-
-      // Parse volume targets from the string format
-      const runningMatch = baseVolumeTargets.running.match(/(\d+)-(\d+)/);
-      const runningMin = runningMatch ? parseInt(runningMatch[1]) : 25;
-      const runningMax = runningMatch ? parseInt(runningMatch[2]) : 50;
+      const adjustedTargets = assembledPrompt.metadata.volumeTargets;
+      const runningMin = adjustedTargets.runningMin || 15;
+      const runningMax = adjustedTargets.runningMax || 50;
 
       const validationConstraints: ValidationConstraints = {
         volumeTargets: {
@@ -345,38 +316,113 @@ export const generateHyroxPlan = action({
         previousWeeksStationsCovered: previousWeeksStationsCovered as any[],
       };
 
-      // Use the combined validate-and-fix helper
-      const result = validateAndFix(generatedPlan, validationConstraints);
+      // =========================================================================
+      // STEP 7: Generate with retry loop
+      // =========================================================================
+      const MAX_GENERATION_ATTEMPTS = 3;
+      let currentPrompt = basePrompt;
+      let lastResult: ReturnType<typeof validateAndFix> | null = null;
+      let lastGeneratedPlan: GeneratedPlan | null = null;
+      let successfulResult: ReturnType<typeof validateAndFix> | null = null;
 
-      // Extract errors and warnings from issues
-      const errors = result.validationResult?.issues
-        .filter(i => i.type === 'error')
-        .map(i => i.message) || [];
+      for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
+        loggers.ai.info(`[Hyrox] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS} with ${selectedModel}...`);
 
-      const warnings = result.validationResult?.issues
-        .filter(i => i.type === 'warning')
-        .map(i => i.message) || [];
+        try {
+          // Generate
+          const response = await ai.models.generateContent({
+            model: selectedModel,
+            contents: currentPrompt,
+          });
 
-      loggers.ai.info(
-        `[Hyrox] Validation: ${result.success ? 'PASSED' : 'FAILED'} ` +
-        `(${errors.length} errors, ${warnings.length} warnings)`
-      );
+          const generatedText = response.text || '';
+          
+          // Parse JSON
+          let generatedPlan: GeneratedPlan;
+          try {
+            generatedPlan = extractAndParseJSON(generatedText) as GeneratedPlan;
+            lastGeneratedPlan = generatedPlan;
+          } catch (parseError: any) {
+            loggers.ai.warn(`[Hyrox] Attempt ${attempt} - JSON parse failed: ${parseError.message}`);
+            
+            if (attempt < MAX_GENERATION_ATTEMPTS) {
+              currentPrompt = basePrompt + "\n\n---\n\nPREVIOUS ATTEMPT FAILED: Response was not valid JSON. You MUST respond with ONLY valid JSON matching the schema. No markdown, no explanations.";
+              continue;
+            }
+            // Last attempt failed to parse
+            break;
+          }
+
+          // Validate and auto-fix
+          const result = validateAndFix(generatedPlan, validationConstraints);
+          lastResult = result;
+
+          const errors = result.validationResult?.issues
+            .filter(i => i.type === 'error')
+            .map(i => i.message) || [];
+
+          const warnings = result.validationResult?.issues
+            .filter(i => i.type === 'warning')
+            .map(i => i.message) || [];
+
+          loggers.ai.info(
+            `[Hyrox] Attempt ${attempt} validation: ${result.success ? 'PASSED' : 'FAILED'} ` +
+            `(${errors.length} errors, ${warnings.length} warnings)`
+          );
+
+          if (result.success) {
+            successfulResult = result;
+            break; // Success! Exit loop
+          }
+
+          // Failed - prepare for retry with feedback
+          if (attempt < MAX_GENERATION_ATTEMPTS && result.validationResult) {
+            const feedback = generateRegenerationFeedback(result.validationResult);
+            currentPrompt = basePrompt + "\n\n---\n\n" + feedback;
+            loggers.ai.info(`[Hyrox] Retrying with validation feedback...`);
+          }
+
+        } catch (genError: any) {
+          loggers.ai.error(`[Hyrox] Attempt ${attempt} generation error: ${genError.message}`);
+          
+          if (attempt < MAX_GENERATION_ATTEMPTS) {
+            // Wait briefly before retry on API errors
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          // Last attempt had API error
+          throw genError;
+        }
+      }
 
       // =========================================================================
       // STEP 8: Return result
       // =========================================================================
       const generationTimeMs = Date.now() - startTime;
 
-      if (!result.success) {
+      // Success case
+      if (successfulResult) {
+        const warnings = successfulResult.validationResult?.issues
+          .filter(i => i.type === 'warning')
+          .map(i => i.message) || [];
+
+        loggers.ai.info(`[Hyrox] Generation complete in ${generationTimeMs}ms`);
+
         return {
-          success: false,
+          success: true,
+          plan: successfulResult.plan,
           validation: {
-            valid: false,
-            errors,
+            valid: true,
+            errors: [],
             warnings,
-            autoFixed: false,
+            autoFixed: successfulResult.validationResult?.issues.some(i => i.autoFixable) || false,
           },
-          error: result.error?.message || `Plan validation failed: ${errors.join('; ')}`,
+          conflicts: conflicts.length > 0
+            ? {
+                blocking: false,
+                summary: summarizeConflicts(conflicts.filter(c => c.severity === 'warning')),
+              }
+            : undefined,
           metadata: {
             phase: assembledPrompt.metadata.phase,
             weekNumber,
@@ -386,23 +432,25 @@ export const generateHyroxPlan = action({
         };
       }
 
-      loggers.ai.info(`[Hyrox] Generation complete in ${generationTimeMs}ms`);
+      // Failure case - all attempts exhausted
+      const errors = lastResult?.validationResult?.issues
+        .filter(i => i.type === 'error')
+        .map(i => i.message) || ['Generation failed after all retry attempts'];
+
+      const warnings = lastResult?.validationResult?.issues
+        .filter(i => i.type === 'warning')
+        .map(i => i.message) || [];
 
       return {
-        success: true,
-        plan: result.plan,
+        success: false,
+        plan: lastResult?.plan || lastGeneratedPlan || undefined,
         validation: {
-          valid: true,
-          errors: [],
+          valid: false,
+          errors,
           warnings,
-          autoFixed: result.validationResult?.issues.some(i => i.autoFixable) || false,
+          autoFixed: false,
         },
-        conflicts: conflicts.length > 0
-          ? {
-              blocking: false,
-              summary: summarizeConflicts(conflicts.filter(c => c.severity === 'warning')),
-            }
-          : undefined,
+        error: `Plan generation failed after ${MAX_GENERATION_ATTEMPTS} attempts: ${errors.join('; ')}`,
         metadata: {
           phase: assembledPrompt.metadata.phase,
           weekNumber,

@@ -267,9 +267,10 @@ export function validateHyroxPlan(
   // CALCULATE ACTUAL VOLUMES
   // ==========================================================================
 
-  // Calculate running volume
+  // Calculate running volume (accounting for sets/intervals)
   const calculatedRunningKm = allExercises.reduce((sum, ex) => {
-    return sum + extractRunningVolumeKm({
+    const sets = ex.sets || 1; // Default to 1 if no sets specified
+    const baseVolume = extractRunningVolumeKm({
       name: ex.name,
       metrics_template: {
         target_distance_km: ex.distance_km,
@@ -278,6 +279,7 @@ export function validateHyroxPlan(
       },
       intensity_notes: ex.notes,
     });
+    return sum + (baseVolume * sets);
   }, 0);
 
   // Calculate SkiErg volume

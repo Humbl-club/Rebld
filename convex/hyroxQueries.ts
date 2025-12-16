@@ -85,10 +85,8 @@ export const getUserHyroxProfile = query({
       return null;
     }
 
-    // Ensure we have a competition date
-    const competitionDate = prefs.specific_goal?.target_date
-      ? new Date(prefs.specific_goal.target_date)
-      : null;
+    // Ensure we have a competition date (keep as ISO string for Convex serialization)
+    const competitionDate = prefs.specific_goal?.target_date || null;
 
     if (!competitionDate) {
       // Hyrox profile exists but no competition date set

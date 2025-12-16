@@ -311,11 +311,24 @@ const STATION_PATTERNS: Record<HyroxStation, { patterns: string[]; excludePatter
 // =============================================================================
 
 const RUNNING_PATTERNS = {
-  patterns: ['run', 'running', 'jog', 'jogging', 'sprint', 'sprinting'],
+  patterns: [
+    'run', 'running', 'jog', 'jogging', 'sprint', 'sprinting',
+    // Distance-based patterns (common in Hyrox plans)
+    '1km interval', '800m interval', '400m interval',
+    '1km repeat', '800m repeat', '400m repeat',
+    'km interval', 'km repeat',
+  ],
+  // Also check standalone distance patterns (with careful exclusions)
+  distancePatterns: ['1km', '800m', '400m', '200m', '5km', '10km', '15km', '20km'],
   excludePatterns: [
     'burpee', // Burpee broad jumps involve jumping, not running
     'jump',   // Broad jumps
     'sled',   // Sled runs (push/pull)
+    'row',    // 2000m row, 500m row
+    'ski',    // 1000m ski
+    'swim',   // swimming distances
+    'carry',  // farmers carry distances
+    'lunge',  // sandbag lunge distances
   ],
   subtypePatterns: {
     easy: ['easy run', 'recovery run', 'zone 2', 'z2', 'conversational'],
@@ -435,14 +448,18 @@ export function categorizeExercise(exerciseName: string): ExerciseCategory {
   }
 
   // 3. Check running (before general cardio)
+  // Use ORIGINAL lowercase name for distance patterns (normalization strips them)
+  const originalLower = exerciseName.toLowerCase();
   const isRunning = RUNNING_PATTERNS.patterns.some(p => name.includes(p));
-  const isExcludedFromRunning = RUNNING_PATTERNS.excludePatterns.some(p => name.includes(p));
+  // Check distance patterns against ORIGINAL name (e.g., "1km Intervals" - normalized strips "1km")
+  const isDistanceRunning = RUNNING_PATTERNS.distancePatterns?.some(p => originalLower.includes(p)) ?? false;
+  const isExcludedFromRunning = RUNNING_PATTERNS.excludePatterns.some(p => originalLower.includes(p));
 
-  if (isRunning && !isExcludedFromRunning) {
-    // Determine subtype
+  if ((isRunning || isDistanceRunning) && !isExcludedFromRunning) {
+    // Determine subtype (check both normalized and original for best match)
     let subtype: 'easy' | 'tempo' | 'interval' | 'long' | undefined;
     for (const [type, patterns] of Object.entries(RUNNING_PATTERNS.subtypePatterns)) {
-      if (patterns.some(p => name.includes(p))) {
+      if (patterns.some(p => name.includes(p) || originalLower.includes(p))) {
         subtype = type as 'easy' | 'tempo' | 'interval' | 'long';
         break;
       }
