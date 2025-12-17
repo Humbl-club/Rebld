@@ -335,7 +335,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
 
         // Increment usage
         if (user?.id) {
-          await incrementPlanUsageMutation({ clerkUserId: user.id });
+          await incrementPlanUsageMutation({ userId: user.id });
         }
 
         // Brief delay then complete
