@@ -102,46 +102,55 @@ const radius = {
 
 // Types
 type Path = 'competition' | 'general' | null;
-type GeneralGoal = 'muscle' | 'strength' | 'fat_loss' | 'wellness';
+type GeneralGoal = 'aesthetic' | 'strong' | 'athletic' | 'shredded' | 'curves' | 'balanced';
 type Experience = 'beginner' | 'intermediate' | 'advanced';
 type Step = 'welcome' | 'path' | 'goal' | 'schedule' | 'body' | 'strength' | 'final' | 'generating' | 'complete';
 
-// Competition sports
+// Competition sports (simplified - keeping well-supported ones)
 const SPORTS = [
-  { id: 'hyrox', name: 'Hyrox', desc: 'Functional fitness racing' },
-  { id: 'powerlifting', name: 'Powerlifting', desc: 'Squat, bench, deadlift' },
-  { id: 'marathon', name: 'Marathon', desc: 'Long distance running' },
-  { id: 'triathlon', name: 'Triathlon', desc: 'Swim, bike, run' },
-  { id: 'crossfit', name: 'CrossFit', desc: 'Functional fitness' },
-  { id: 'bodybuilding', name: 'Bodybuilding', desc: 'Physique competition' },
-  { id: 'other', name: 'Other', desc: 'Custom event' },
+  { id: 'hyrox', name: 'Hyrox', desc: 'Hybrid fitness racing', emoji: '🏃‍♂️' },
+  { id: 'crossfit', name: 'CrossFit', desc: 'Functional fitness comp', emoji: '🏋️' },
+  { id: 'powerlifting', name: 'Powerlifting', desc: 'Squat, bench, deadlift', emoji: '🦾' },
+  { id: 'other', name: 'Other Event', desc: 'Custom competition', emoji: '🎯' },
 ];
 
-// General goals with descriptions
+// General goals - fun, engaging personas
 const GENERAL_GOALS = [
   {
-    id: 'muscle' as const,
-    title: 'Build Muscle',
-    desc: 'Increase muscle size and definition',
-    detail: '8-12 reps, moderate rest, progressive volume',
+    id: 'aesthetic' as const,
+    title: 'Look Amazing',
+    desc: 'Build the body you've always wanted',
+    emoji: '✨',
   },
   {
-    id: 'strength' as const,
-    title: 'Get Stronger',
-    desc: 'Maximize force production',
-    detail: '3-6 reps, longer rest, heavy compounds',
+    id: 'strong' as const,
+    title: 'Get Strong AF',
+    desc: 'Raw power, heavy lifts',
+    emoji: '💪',
   },
   {
-    id: 'fat_loss' as const,
-    title: 'Lose Fat',
-    desc: 'Preserve muscle while cutting',
-    detail: 'Strength + conditioning hybrid',
+    id: 'athletic' as const,
+    title: 'Be an Athlete',
+    desc: 'Fast, powerful, explosive',
+    emoji: '⚡',
   },
   {
-    id: 'wellness' as const,
-    title: 'General Wellness',
-    desc: 'Balanced fitness and health',
-    detail: 'Varied training, sustainable approach',
+    id: 'shredded' as const,
+    title: 'Get Shredded',
+    desc: 'Lean, defined, and cut',
+    emoji: '🔥',
+  },
+  {
+    id: 'curves' as const,
+    title: 'Build Curves',
+    desc: 'Glutes, legs, and shape',
+    emoji: '🍑',
+  },
+  {
+    id: 'balanced' as const,
+    title: 'Feel Great',
+    desc: 'Balanced strength & energy',
+    emoji: '🌟',
   },
 ];
 
@@ -284,11 +293,17 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
 
     try {
       // Map goal to API expected values
-      const primaryGoal = path === 'competition' ? 'Athletic Performance' :
-        generalGoal === 'muscle' ? 'Aesthetic Physique' :
-          generalGoal === 'strength' ? 'Strength & Power' :
-            generalGoal === 'fat_loss' ? 'Health & Longevity' :
-              'Health & Longevity';
+      const goalMap: Record<string, string> = {
+        aesthetic: 'Aesthetic Physique',
+        strong: 'Strength & Power',
+        athletic: 'Athletic Performance',
+        shredded: 'Fat Loss & Definition',
+        curves: 'Aesthetic Physique',  // Glute/leg focused hypertrophy
+        balanced: 'Health & Longevity',
+      };
+      const primaryGoal = path === 'competition'
+        ? 'Athletic Performance'
+        : goalMap[generalGoal || 'balanced'] || 'Health & Longevity';
 
       // Build preferences matching API validator schema
       const apiPayload = {
@@ -545,7 +560,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 className="leading-relaxed"
                 style={{ fontSize: typography.secondary, color: colors.textSecondary, marginTop: spacing.smallGap }}
               >
-                Hyrox, marathon, powerlifting meet, or other event with a specific date.
+                Hyrox, CrossFit, powerlifting, or any event with a target date.
               </p>
             </div>
             <div
@@ -591,13 +606,13 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="font-semibold" style={{ fontSize: typography.body, color: colors.textPrimary }}>
-                I want to get fitter
+                Build my best body
               </p>
               <p
                 className="leading-relaxed"
                 style={{ fontSize: typography.secondary, color: colors.textSecondary, marginTop: spacing.smallGap }}
               >
-                Build muscle, get stronger, lose fat, or improve overall fitness.
+                Get jacked, shredded, athletic — whatever your vibe.
               </p>
             </div>
             <div
@@ -609,7 +624,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 background: `${colors.accent}15`
               }}
             >
-              <span style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>💪</span>
+              <span style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>🔥</span>
             </div>
           </div>
           <div
@@ -725,13 +740,16 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                     borderColor: sport === s.id ? colors.accent : colors.border,
                   }}
                 >
-                  <p
-                    className="font-semibold"
-                    style={{ fontSize: typography.secondary, color: sport === s.id ? colors.accent : colors.textPrimary }}
-                  >
-                    {s.name}
-                  </p>
-                  <p style={{ fontSize: typography.small, color: colors.textMuted, marginTop: spacing.smallGap }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)' }}>{s.emoji}</span>
+                    <p
+                      className="font-semibold"
+                      style={{ fontSize: typography.secondary, color: sport === s.id ? colors.accent : colors.textPrimary }}
+                    >
+                      {s.name}
+                    </p>
+                  </div>
+                  <p style={{ fontSize: typography.small, color: colors.textMuted }}>
                     {s.desc}
                   </p>
                 </button>
@@ -839,8 +857,21 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 borderColor: generalGoal === g.id ? colors.accent : colors.border,
               }}
             >
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center gap-3">
+                {/* Emoji */}
+                <div
+                  className="flex items-center justify-center rounded-xl flex-shrink-0"
+                  style={{
+                    width: 'clamp(44px, 12vw, 52px)',
+                    height: 'clamp(44px, 12vw, 52px)',
+                    background: generalGoal === g.id ? `${colors.accent}20` : `${colors.accent}10`,
+                    fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
+                  }}
+                >
+                  {g.emoji}
+                </div>
+                {/* Text */}
+                <div className="flex-1 min-w-0">
                   <p
                     className="font-semibold"
                     style={{ fontSize: typography.body, color: generalGoal === g.id ? colors.accent : colors.textPrimary }}
@@ -851,6 +882,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                     {g.desc}
                   </p>
                 </div>
+                {/* Checkmark when selected */}
                 {generalGoal === g.id && (
                   <div
                     className="flex items-center justify-center rounded-full flex-shrink-0"
@@ -862,19 +894,6 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                   </div>
                 )}
               </div>
-              {generalGoal === g.id && (
-                <p
-                  style={{
-                    fontSize: typography.small,
-                    color: colors.textMuted,
-                    marginTop: spacing.elementGap,
-                    paddingTop: spacing.elementGap,
-                    borderTop: `1px solid ${colors.border}`,
-                  }}
-                >
-                  {g.detail}
-                </p>
-              )}
             </button>
           ))}
 

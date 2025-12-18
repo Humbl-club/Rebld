@@ -856,6 +856,13 @@ export const generateWorkoutPlan = action({
       // Map goal to OnboardingData format
       const mapGoalToGeneral = (goal: string): 'muscle' | 'strength' | 'fat_loss' | 'wellness' => {
         const goalMap: Record<string, 'muscle' | 'strength' | 'fat_loss' | 'wellness'> = {
+          // New onboarding goal types
+          'aesthetic_physique': 'muscle',
+          'strength_&_power': 'strength',
+          'athletic_performance': 'strength',
+          'fat_loss_&_definition': 'fat_loss',
+          'health_&_longevity': 'wellness',
+          // Legacy mappings
           'aesthetic': 'muscle',
           'build_muscle': 'muscle',
           'hypertrophy': 'muscle',
