@@ -853,17 +853,24 @@ export const generateWorkoutPlan = action({
         }
       }
 
-      // Map goal to OnboardingData format
-      const mapGoalToGeneral = (goal: string): 'muscle' | 'strength' | 'fat_loss' | 'wellness' => {
-        const goalMap: Record<string, 'muscle' | 'strength' | 'fat_loss' | 'wellness'> = {
-          // New onboarding goal types
+      // Map goal to OnboardingData format (now includes athletic & curves)
+      type GoalType = 'muscle' | 'strength' | 'fat_loss' | 'wellness' | 'athletic' | 'curves';
+      const mapGoalToGeneral = (goal: string): GoalType => {
+        const goalMap: Record<string, GoalType> = {
+          // New onboarding goal types (from PersonalOnboarding)
           'aesthetic_physique': 'muscle',
           'strength_&_power': 'strength',
-          'athletic_performance': 'strength',
+          'athletic_performance': 'athletic',  // Now maps to athletic persona!
           'fat_loss_&_definition': 'fat_loss',
           'health_&_longevity': 'wellness',
-          // Legacy mappings
+          // Direct new goal types
+          'athletic': 'athletic',
+          'curves': 'curves',
+          'shredded': 'fat_loss',
+          'balanced': 'wellness',
+          'strong': 'strength',
           'aesthetic': 'muscle',
+          // Legacy mappings
           'build_muscle': 'muscle',
           'hypertrophy': 'muscle',
           'strength': 'strength',
@@ -874,7 +881,6 @@ export const generateWorkoutPlan = action({
           'fat_loss': 'fat_loss',
           'health': 'wellness',
           'general_fitness': 'wellness',
-          'athletic': 'strength',
         };
         return goalMap[goal.toLowerCase().replace(/\s+/g, '_')] || 'muscle';
       };

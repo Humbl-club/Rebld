@@ -538,6 +538,71 @@ const EXPERT_PERSONAS: Record<string, ExpertPersona> = {
     periodizationApproach: 'No aggressive periodization. Focus on CONSISTENCY: Regular movement → VARIETY: Rotate activities → PROGRESSION: Gradual improvement over months/years',
     priorityExercises: ['Walking', 'Zone 2 Cardio', 'Goblet Squats', 'Push-ups', 'Rows', 'Planks', 'Hip Hinges', 'Stretching', 'Balance Work'],
   },
+
+  // NEW: Athletic/Power Persona - For explosive, hybrid athletes
+  athletic: {
+    title: 'Elite Athletic Performance Coach',
+    expertise: 'Explosive power, speed development, athletic transfer, hybrid training',
+    authorityBooks: [
+      'Triphasic Training by Cal Dietz (eccentric/isometric/concentric phases)',
+      'Triphasic Training II by Cal Dietz (14 advanced methods, 2024)',
+      'Westside Barbell Book of Methods by Louie Simmons (conjugate system)',
+      'Strength Training and Coordination by Frans Bosch (transfer training)',
+      'Running: Biomechanics and Exercise Physiology by Frans Bosch',
+      'Easy Strength by Dan John & Pavel Tsatsouline',
+    ],
+    keyPrinciples: [
+      'Triphasic phases: Train eccentric → isometric → concentric separately for max power',
+      'Conjugate rotation: Max effort (1RM) + Dynamic effort (speed) in same week',
+      'French Contrast: Heavy lift → plyometric → speed movement for potentiation',
+      'Transfer: Strength is coordination against resistance - train movement patterns, not muscles',
+      'Rate of force development: How FAST you produce force matters more than max force',
+      'Accommodating resistance: Bands and chains teach acceleration through full ROM',
+      'Velocity-based intent: Move submaximal loads (50-85%) as FAST as possible',
+      'Special exercises: Variations that target weak points and prevent accommodation',
+    ],
+    periodizationApproach: 'CONJUGATE: Rotate max effort exercises weekly to prevent accommodation. 3-week waves for dynamic effort (increase band/chain tension). Block: Accumulation (volume) → Transmutation (intensity) → Realization (peaking). Cal Dietz phases: Eccentric block → Isometric block → Concentric/reactive block.',
+    priorityExercises: [
+      'Box Squats (with bands/chains)', 'Trap Bar Deadlift', 'Safety Bar Squat',
+      'Speed Pulls', 'Dynamic Effort Bench', 'Box Jumps', 'Broad Jumps',
+      'Med Ball Throws', 'Sled Drags (heavy)', 'Prowler Sprints',
+      'Reverse Hypers', 'GHR/Nordic Curls', 'Power Cleans', 'Hang Snatches',
+      'Depth Jumps', 'Bounding', 'Single-Leg RDL', 'Split Squats'
+    ],
+  },
+
+  // NEW: Curves/Glute-Focused Persona - Evidence-based lower body aesthetics
+  curves: {
+    title: 'Glute & Lower Body Specialist',
+    expertise: 'Glute hypertrophy, hip mechanics, lower body aesthetics, evidence-based training',
+    authorityBooks: [
+      'Glute Lab by Bret Contreras (the definitive glute training guide)',
+      'Strong Curves by Bret Contreras & Kellie Davis',
+      'Science and Development of Muscle Hypertrophy by Brad Schoenfeld',
+      'The Glute Guy research papers (hip thrust EMG studies)',
+      'Renaissance Periodization Women\'s Book by Mike Israetel',
+    ],
+    keyPrinciples: [
+      'Hip thrust is king: Highest glute EMG activation at lockout (posterior pelvic tilt)',
+      'Stretched-position training: Lunges, RDLs, Bulgarian splits for muscle lengthening stimulus',
+      'Glute-mind connection: Squeeze hard at lockout, feel the muscle working',
+      'Horizontal + vertical loading: Hip thrusts (horizontal) AND squats/lunges (vertical)',
+      'High frequency: Glutes recover fast - train 3-4x per week',
+      'Progressive overload: Add weight to hip thrust systematically',
+      'Variety of hip angles: Abduction, external rotation, extension all matter',
+      'Don\'t neglect hamstrings: RDLs, Nordic curls, leg curls for complete posterior chain',
+    ],
+    periodizationApproach: 'GLUTE-FOCUSED: 3-4 glute sessions per week. Day 1: Heavy hip thrusts + compounds. Day 2: Pump work, high reps, bands. Day 3: Unilateral focus (lunges, step-ups). Day 4: Stretch-focused (RDLs, Bulgarians). Deload every 4-6 weeks.',
+    priorityExercises: [
+      'Barbell Hip Thrust', 'B-Stance Hip Thrust', 'Frog Pumps',
+      'Romanian Deadlift', 'Sumo Deadlift', 'Cable Pull-Throughs',
+      'Bulgarian Split Squat', 'Walking Lunges', 'Reverse Lunges',
+      'Goblet Squat (wide stance)', 'Sumo Squat', 'Leg Press (feet high)',
+      'Glute Bridges', 'Single-Leg Glute Bridge', 'Banded Clamshells',
+      'Hip Abduction Machine', 'Cable Kickbacks', 'Step-Ups',
+      'Back Extensions (glute focus)', 'Reverse Hyper', 'Nordic Curls'
+    ],
+  },
 };
 
 /**
@@ -593,13 +658,22 @@ function getExpertPersona(sport?: string, goal?: string): ExpertPersona {
   // Then try goal-based persona
   if (goal) {
     const goalKey = goal.toLowerCase().replace(/[^a-z_]/g, '');
-    // Map common goal names
+    // Map common goal names to personas
     const goalMap: Record<string, string> = {
+      // New onboarding goals
       'aestheticphysique': 'muscle',
       'strengthpower': 'strength',
       'healthlongevity': 'wellness',
-      'athleticperformance': 'strength',
+      'athleticperformance': 'athletic',  // NEW: maps to athletic persona
+      'fatlossdefinition': 'fat_loss',
       'generalfitness': 'wellness',
+      // Direct persona mappings
+      'athletic': 'athletic',
+      'curves': 'curves',
+      'shredded': 'fat_loss',
+      'balanced': 'wellness',
+      'strong': 'strength',
+      'aesthetic': 'muscle',
     };
     const mappedKey = goalMap[goalKey] || goalKey;
     if (EXPERT_PERSONAS[mappedKey]) {
@@ -630,8 +704,8 @@ export interface OnboardingData {
   eventName?: string;       // 'Cologne Hyrox 2026'
   eventDate?: string;       // '2026-04-12'
 
-  // General-specific
-  generalGoal?: 'muscle' | 'strength' | 'fat_loss' | 'wellness';
+  // General-specific (expanded with new personas)
+  generalGoal?: 'muscle' | 'strength' | 'fat_loss' | 'wellness' | 'athletic' | 'curves';
 
   // Training Config
   experience: 'beginner' | 'intermediate' | 'advanced';
