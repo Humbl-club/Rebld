@@ -636,8 +636,12 @@ export interface OnboardingData {
   // Training Config
   experience: 'beginner' | 'intermediate' | 'advanced';
   trainingDays: number[];   // [0,1,2,3,4,5,6] = Mon-Sun
-  sessionLength: number;    // 30, 45, 60, 75, 90
+  sessionLength: number;    // 30, 45, 60, 75, 90 (strength session)
   sessionsPerDay: '1' | '2';
+
+  // Cardio Config (for 2x daily)
+  cardioTypes?: string[];   // ['running', 'cycling', 'rowing']
+  cardioDuration?: number;  // 20, 30, 45, 60
 
   // Physical State
   painPoints: string[];     // ['lower_back', 'knees', 'shoulders']
@@ -851,9 +855,16 @@ export function buildSilverPrompt(data: OnboardingData): SilverPromptOutput {
     training: {
       daysPerWeek: data.trainingDays.length,
       activeDays: data.trainingDays.map(d => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]),
-      sessionLength: data.sessionLength,
+      strengthSessionLength: data.sessionLength,
       sessionsPerDay: data.sessionsPerDay,
       split: trainingSplit,
+      // Cardio config (for 2x daily)
+      ...(data.sessionsPerDay === '2' && {
+        cardio: {
+          types: data.cardioTypes || ['running'],
+          durationMinutes: data.cardioDuration || 30,
+        },
+      }),
     },
     periodization: {
       currentPhase: periodization.currentPhase,
@@ -911,12 +922,76 @@ CRITICAL RULES:
 OUTPUT: Valid JSON only. No markdown, no explanation.`;
 
   // 7. Create the user prompt (structured JSON input)
-  const userPrompt = `Generate workout plan for this user:
+  const isTwoADay = data.sessionsPerDay === '2';
+  const cardioTypesStr = (data.cardioTypes && data.cardioTypes.length > 0)
+    ? data.cardioTypes.join(', ')
+    : 'running';
+  const cardioDurationMin = data.cardioDuration || 30;
 
-${JSON.stringify(structuredInput, null, 2)}
-
-Required JSON output structure:
-{
+  // Different output schema for 1x vs 2x daily
+  const outputSchemaExample = isTwoADay
+    ? `{
+  "name": "Personalized Plan for ${data.firstName || 'User'}",
+  "weeklyPlan": [
+    {
+      "day_of_week": 1,
+      "focus": "Upper Body + Cardio",
+      "sessions": [
+        {
+          "session_name": "AM Strength",
+          "time_of_day": "morning",
+          "estimated_duration": ${data.sessionLength},
+          "blocks": [
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "exercise_name": "Cat-Cow Stretch",
+                  "category": "warmup",
+                  "metrics_template": { "type": "sets_reps_weight", "target_sets": 2, "target_reps": "10" }
+                }
+              ]
+            },
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "exercise_name": "Bench Press",
+                  "category": "main",
+                  "rpe": "7-8",
+                  "metrics_template": { "type": "sets_reps_weight", "target_sets": 4, "target_reps": "8-10", "rest_period_s": 90, "target_weight_kg": 60 }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "session_name": "PM Cardio",
+          "time_of_day": "evening",
+          "estimated_duration": ${cardioDurationMin},
+          "blocks": [
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "exercise_name": "Easy Run",
+                  "category": "main",
+                  "metrics_template": { "type": "distance_time", "target_distance_km": 5, "target_duration_minutes": ${cardioDurationMin} }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "day_of_week": 2,
+      "focus": "Rest",
+      "sessions": []
+    }
+  ]
+}`
+    : `{
   "name": "Personalized Plan for ${data.firstName || 'User'}",
   "weeklyPlan": [
     {
@@ -954,7 +1029,14 @@ Required JSON output structure:
       "blocks": []
     }
   ]
-}
+}`;
+
+  const userPrompt = `Generate workout plan for this user:
+
+${JSON.stringify(structuredInput, null, 2)}
+
+Required JSON output structure:
+${outputSchemaExample}
 
 CRITICAL BLOCK FORMAT - EVERY exercise must be wrapped like this:
 {
@@ -992,6 +1074,15 @@ PROGRAMMING RULES (MUST FOLLOW):
 4. Block type MUST be: "single", "superset", "circuit", "amrap", or "emom" (NOT "warmup", "strength", etc.)
 5. Category MUST be: "warmup", "main", or "cooldown" (NOT "strength", "conditioning", "cardio", etc.)
 6. For cardio/distance exercises use: "distance_time" (NOT "time_distance")
+${isTwoADay ? `
+**2X DAILY SESSIONS (CRITICAL - THIS USER HAS AM/PM SPLIT):**
+- Each training day MUST have "sessions" array with 2 sessions
+- AM session: "time_of_day": "morning", strength focus, duration: ${data.sessionLength} min
+- PM session: "time_of_day": "evening", cardio focus, duration: ${cardioDurationMin} min
+- PM cardio MUST use ONLY these types: ${cardioTypesStr}
+- Rest days have "sessions": [] (empty array)
+- DO NOT use "blocks" at day level - use "sessions" array with blocks inside each session
+` : ''}
 ${data.sport?.toLowerCase() === 'hyrox' ? `
 HYROX-SPECIFIC REQUIREMENTS:
 - ALL 8 STATIONS must be introduced across the week: SkiErg, Sled Push, Sled Pull, Rowing, Farmers Carry, Sandbag Lunges, Wall Balls, Burpee Broad Jumps

@@ -195,6 +195,9 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
   const [sessionLength, setSessionLength] = useState<number>(60);
   const [sessionsPerDay, setSessionsPerDay] = useState<'1' | '2'>('1');
   const [splitType, setSplitType] = useState<'strength_cardio' | 'technique_conditioning' | 'am_pm_same'>('strength_cardio');
+  // Cardio preferences (for 2x daily with cardio)
+  const [cardioTypes, setCardioTypes] = useState<string[]>([]);
+  const [cardioDuration, setCardioDuration] = useState<number>(30);
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [benchmarks, setBenchmarks] = useState<Record<string, number>>({});
   const [age, setAge] = useState<number | undefined>(undefined);
@@ -309,6 +312,11 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                 : splitType === 'technique_conditioning' ? 'combined' as const
                   : 'strength_only' as const)  // am_pm_same
               : (path === 'competition' ? 'combined' as const : 'strength_only' as const),
+            // Cardio preferences (when 2x daily with cardio split)
+            cardio_preferences: (sessionsPerDay === '2' && splitType !== 'am_pm_same') ? {
+              preferred_types: cardioTypes.length > 0 ? cardioTypes : ['running'],
+              cardio_duration_minutes: cardioDuration,
+            } : undefined,
           },
           specific_goal: path === 'competition' ? {
             event_type: sport || undefined,
@@ -350,7 +358,7 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
       setError(e.message || 'Something went wrong. Please try again.');
       setIsGenerating(false);
     }
-  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, splitType, painPoints, benchmarks, age, additionalNotes, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
+  }, [path, sport, eventDate, eventName, generalGoal, experience, selectedDays, sessionLength, sessionsPerDay, splitType, cardioTypes, cardioDuration, painPoints, benchmarks, age, additionalNotes, generatePlanAction, incrementPlanUsageMutation, user?.id, onPlanGenerated]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER: WELCOME
@@ -1195,7 +1203,98 @@ export default function PersonalOnboarding({ onPlanGenerated }: PersonalOnboardi
                   ))}
                 </div>
               </div>
-            )}
+
+              {/* Cardio Type & Duration - Only show for strength_cardio or technique_conditioning */}
+              {splitType !== 'am_pm_same' && (
+                <>
+                  {/* Cardio Type Selection */}
+                  <div style={{ marginTop: spacing.elementGap }}>
+                    <label
+                      className="block font-medium"
+                      style={{
+                        fontSize: typography.secondary,
+                        color: colors.textPrimary,
+                        marginBottom: spacing.smallGap,
+                      }}
+                    >
+                      Cardio types (select all that apply)
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.smallGap }}>
+                      {[
+                        { id: 'running', label: 'Running' },
+                        { id: 'cycling', label: 'Cycling' },
+                        { id: 'rowing', label: 'Rowing' },
+                        { id: 'swimming', label: 'Swimming' },
+                        { id: 'stairmaster', label: 'Stairmaster' },
+                        { id: 'elliptical', label: 'Elliptical' },
+                        { id: 'jump_rope', label: 'Jump Rope' },
+                      ].map(cardio => (
+                        <button
+                          key={cardio.id}
+                          onClick={() => {
+                            haptic.light();
+                            setCardioTypes(prev =>
+                              prev.includes(cardio.id)
+                                ? prev.filter(c => c !== cardio.id)
+                                : [...prev, cardio.id]
+                            );
+                          }}
+                          className="active:scale-[0.98] transition-all border-2"
+                          style={{
+                            padding: `${spacing.smallGap} ${spacing.elementGap}`,
+                            borderRadius: radius.standard,
+                            background: cardioTypes.includes(cardio.id) ? colors.accent : colors.surface,
+                            borderColor: cardioTypes.includes(cardio.id) ? colors.accent : colors.border,
+                            color: cardioTypes.includes(cardio.id) ? '#FFFFFF' : colors.textPrimary,
+                            fontSize: typography.secondary,
+                          }}
+                        >
+                          {cardio.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cardio Duration */}
+                  <div style={{ marginTop: spacing.elementGap }}>
+                    <label
+                      className="block font-medium"
+                      style={{
+                        fontSize: typography.secondary,
+                        color: colors.textPrimary,
+                        marginBottom: spacing.smallGap,
+                      }}
+                    >
+                      Cardio session length
+                    </label>
+                    <div style={{ display: 'flex', gap: spacing.smallGap }}>
+                      {[20, 30, 45, 60].map(mins => (
+                        <button
+                          key={mins}
+                          onClick={() => {
+                            haptic.light();
+                            setCardioDuration(mins);
+                          }}
+                          className="flex-1 active:scale-[0.98] transition-all border-2 font-semibold"
+                          style={{
+                            minHeight: touchTargets.compact,
+                            borderRadius: radius.standard,
+                            fontSize: typography.secondary,
+                            background: cardioDuration === mins ? colors.accent : colors.surface,
+                            borderColor: cardioDuration === mins ? colors.accent : colors.border,
+                            color: cardioDuration === mins ? '#FFFFFF' : colors.textPrimary,
+                          }}
+                        >
+                          {mins}m
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: typography.small, color: colors.textMuted, marginTop: '4px' }}>
+                      Strength: {sessionLength}min • Cardio: {cardioDuration}min
+                    </p>
+                  </div>
+                </>
+              )}
           </div>
         )}
 

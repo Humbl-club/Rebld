@@ -885,6 +885,9 @@ export const generateWorkoutPlan = action({
         trainingDays: trainingDays,
         sessionLength: parseInt(preferred_session_length || '60'),
         sessionsPerDay: training_split?.sessions_per_day || '1',
+        // Cardio config (for 2x daily)
+        cardioTypes: validatedTrainingSplit?.cardio_preferences?.preferred_types,
+        cardioDuration: validatedTrainingSplit?.cardio_preferences?.cardio_duration_minutes,
         painPoints: pain_points || [],
         currentStrength: current_strength ? {
           bench_kg: current_strength.bench_kg,
