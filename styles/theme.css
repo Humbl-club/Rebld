@@ -25,15 +25,38 @@
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Map old variables to new semantic tokens */
+  /* ─────────────────────────────────────────────────────────────
+     LEGACY MAPPING (Noir Adaptation)
+     Ensures un-refactored components inherit the new aesthetic
+     ───────────────────────────────────────────────────────────── */
+
+  /* Surfaces */
+  --surface-primary: var(--bg-primary);
+  /* Black */
+  --surface-secondary: var(--bg-secondary);
+  /* Obsidian */
+  --surface-tertiary: var(--bg-tertiary);
+  /* Charcoal */
+  --surface-hover: var(--bg-tertiary);
+
+  /* Backgrounds */
   --background: var(--bg-primary);
   --background-primary: var(--bg-primary);
   --background-secondary: var(--bg-secondary);
   --background-tertiary: var(--bg-tertiary);
-  --surface: var(--surface-primary);
-  /* --surface-secondary and --surface-hover already defined in tokens.css */
+  --surface: var(--bg-primary);
 
-  /* Old color mappings */
+  /* Brand Colors (Monochromatic) */
+  --brand-primary: var(--color-white);
+  /* Primary Action -> White */
+  --brand-primary-hover: var(--color-ash);
+  /* Hover -> Grey */
+  --brand-primary-active: var(--color-steel);
+  /* Active -> Darker Grey */
+  --brand-primary-subtle: var(--color-charcoal);
+  /* Subtle -> Dark Grey */
+
+  /* Legacy Color Aliases */
   --primary: var(--brand-primary);
   --primary-hover: var(--brand-primary-hover);
   --primary-light: var(--brand-primary-subtle);
@@ -42,15 +65,14 @@
   --accent-hover: var(--brand-primary-hover);
   --accent-light: var(--brand-primary-subtle);
 
-  /* Text colors are already defined in tokens.css - no legacy mapping needed */
+  /* Status Colors (Mapped to Signal Colors) */
+  --status-success-bg: var(--color-signal-green);
+  --status-success-subtle: rgba(34, 197, 94, 0.1);
+  --status-error-bg: var(--color-signal-red);
+  --status-error-subtle: rgba(239, 68, 68, 0.1);
+  --status-warning-bg: var(--color-signal-amber);
+  --status-warning-subtle: rgba(245, 158, 11, 0.1);
 
-  /* Border legacy mapping */
-  --border: var(--border-default);
-  /* --border-strong already defined in tokens.css */
-  --border-card: var(--border-default);
-  --border-card-hover: var(--border-focus);
-
-  /* Semantic color legacy */
   --success: var(--status-success-bg);
   --success-light: var(--status-success-subtle);
   --error: var(--status-error-bg);
@@ -58,44 +80,59 @@
   --warning: var(--status-warning-bg);
   --warning-light: var(--status-warning-subtle);
 
-  /* Workout accent legacy */
-  --accent-strength: var(--workout-strength);
-  --accent-cardio: var(--workout-cardio);
-  --accent-mobility: var(--workout-mobility);
-  --accent-recovery: var(--workout-rest);
-  --accent-power: var(--workout-power);
+  /* Borders */
+  --border-default: var(--border-subtle);
+  --border-focus: var(--color-white);
+  --border: var(--border-default);
+  --border-card: var(--border-default);
+  --border-card-hover: var(--color-white);
 
-  /* Legacy font variables */
-  --font-body: var(--font-sans);
-  /* --font-display already defined in tokens.css */
+  /* Text (Already defined in tokens, but ensuring Aliases) */
+  --text-base: var(--font-body);
+  /* --text-primary etc are in tokens.css */
 
-  /* Legacy transition */
-  --transition-fast: var(--duration-fast) var(--ease-smooth);
-  --transition-base: var(--duration-normal) var(--ease-smooth);
-  --transition-slow: var(--duration-slow) var(--ease-smooth);
+  /* Workout Accents (Mapped to Noir/White for simplicity or kept functional) */
+  --workout-strength: var(--color-white);
+  --workout-cardio: var(--color-white);
+  --workout-mobility: var(--color-white);
+  --workout-rest: var(--color-steel);
+  --workout-power: var(--color-white);
 
-  /* Legacy shadows - most already defined in tokens.css */
+  /* Legacy Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
   --shadow-float: var(--shadow-lg);
   --shadow-elevated: var(--shadow-xl);
 
-  /* Legacy glow */
+  /* Legacy Glows */
+  --shadow-glow-brand: 0 0 20px rgba(255, 255, 255, 0.1);
+  --shadow-glow-error: 0 0 20px rgba(239, 68, 68, 0.2);
   --glow-primary: var(--shadow-glow-brand);
   --glow-accent: var(--shadow-glow-brand);
   --glow-red: var(--shadow-glow-error);
-  --glow-cyan: 0 4px 20px rgba(56, 189, 248, 0.4);
+  --glow-cyan: var(--shadow-glow-brand);
+
+  /* Font Aliases */
+  --font-sans: var(--font-primary);
+  --font-body: var(--font-primary);
+
+  /* Animations */
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: var(--duration-fast) var(--ease-smooth);
+  --transition-base: var(--duration-normal) var(--ease-smooth);
+  --transition-slow: var(--duration-slow) var(--ease-smooth);
 }
 
 /* Dark mode legacy support */
 [data-theme="dark"] .theme-dark,
 .theme-dark {
   --background: var(--bg-primary);
-  --background-primary: var(--bg-primary);
-  --background-secondary: var(--bg-secondary);
-  --background-tertiary: var(--bg-tertiary);
-  --surface: var(--surface-primary);
-  /* --surface-secondary already defined in tokens.css */
+  --surface: var(--bg-primary);
   --primary: var(--brand-primary);
-  --accent: var(--brand-primary);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -117,7 +154,8 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html,
+body {
   overscroll-behavior: none;
   overflow: hidden;
   height: 100%;
@@ -134,16 +172,75 @@ body {
   line-height: var(--leading-normal);
 }
 
-/* Dark mode body - pure black for OLED */
+/* Dark mode body - pure black for OLED (Enforced) */
 [data-theme="dark"] body,
-.theme-dark body {
-  background: var(--color-black);
+.theme-dark body,
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* Light mode body - subtle warm gradient */
+/* Light mode is deprecated for NOIR aesthetic - mapped to dark */
 [data-theme="light"] body {
-  background: linear-gradient(180deg, var(--color-gray-50) 0%, var(--color-white) 100%);
-  background-attachment: fixed;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   NOIR UTILITIES
+   ───────────────────────────────────────────────────────────── */
+
+/* Frosted Glass (The Keeper) */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur-backdrop);
+  -webkit-backdrop-filter: var(--blur-backdrop);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Brutalist Border */
+.border-noir {
+  border: 1px solid var(--border-subtle);
+}
+
+/* High Contrast Text Utilities */
+.text-hero {
+  font: var(--font-hero);
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.text-h1 {
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.text-h2 {
+  font: var(--font-h2);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.text-data {
+  font: var(--font-data-large);
+  letter-spacing: -0.02em;
+}
+
+/* Inverted Button */
+.btn-noir {
+  background: var(--color-white);
+  color: var(--color-black);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-full);
+}
+
+.btn-noir-outline {
+  background: transparent;
+  border: 1px solid var(--color-white);
+  color: var(--color-white);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-full);
 }
 
 /* Safe areas handled by individual components, not body */
@@ -151,7 +248,12 @@ body {
 /* Typography defaults - Premium iOS Style
    Using Inter for excellent legibility on dark backgrounds
    Bold weights (700) for better contrast */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .font-display {
   font-family: var(--font-sans);
   font-weight: var(--weight-bold);
@@ -172,7 +274,9 @@ button {
   background: none;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -186,30 +290,46 @@ input, select, textarea {
 }
 
 /* Prevent text selection on UI elements */
-button, a, nav, .no-select {
+button,
+a,
+nav,
+.no-select {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
 }
 
 /* Allow text selection on content */
-p, span, h1, h2, h3, h4, h5, h6, .selectable {
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.selectable {
   -webkit-user-select: text;
   user-select: text;
 }
 
 /* Improve touch feedback */
-button, a, [role="button"] {
+button,
+a,
+[role="button"] {
   touch-action: manipulation;
 }
 
 /* Ensure inputs don't zoom on iOS (16px minimum) */
-input, select, textarea {
+input,
+select,
+textarea {
   font-size: max(16px, var(--text-base)) !important;
 }
 
 /* Fix for iOS input styling */
-input, textarea {
+input,
+textarea {
   -webkit-appearance: none;
   appearance: none;
 }
@@ -267,136 +387,309 @@ input, textarea {
 
 /* Entrance animations */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(var(--space-4)); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-4));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in-down {
-  from { opacity: 0; transform: translateY(calc(var(--space-3) * -1)); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-3) * -1));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in-scale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slide-in-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-left {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-in-down {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(var(--space-2)); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Exit animations */
 @keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes scale-out {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.95); opacity: 0; }
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
 }
 
 /* Continuous animations */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.02); opacity: 0.95; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.02);
+    opacity: 0.95;
+  }
 }
 
 @keyframes bounce-subtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(1.5); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
 }
 
 /* Loading animations */
 @keyframes loading-bar {
-  0% { width: 0%; }
-  50% { width: 70%; }
-  100% { width: 100%; }
+  0% {
+    width: 0%;
+  }
+
+  50% {
+    width: 70%;
+  }
+
+  100% {
+    width: 100%;
+  }
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Gradient animations */
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes gradient-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Celebration animations */
 @keyframes confetti {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
 }
 
 @keyframes count-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes radial-burst {
-  0% { opacity: 0; height: 0; }
-  50% { opacity: 1; height: 128px; }
-  100% { opacity: 0; height: 160px; }
+  0% {
+    opacity: 0;
+    height: 0;
+  }
+
+  50% {
+    opacity: 1;
+    height: 128px;
+  }
+
+  100% {
+    opacity: 0;
+    height: 160px;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -457,12 +750,10 @@ input, textarea {
 
 .animate-shimmer {
   animation: shimmer 1.5s linear infinite;
-  background: linear-gradient(
-    90deg,
-    var(--surface-secondary) 0%,
-    var(--surface-tertiary) 50%,
-    var(--surface-secondary) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--surface-secondary) 0%,
+      var(--surface-tertiary) 50%,
+      var(--surface-secondary) 100%);
   background-size: 200% 100%;
 }
 
@@ -475,33 +766,91 @@ input, textarea {
 }
 
 /* Stagger delays */
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
-.stagger-5 { animation-delay: 250ms; }
-.stagger-6 { animation-delay: 300ms; }
-.stagger-7 { animation-delay: 350ms; }
-.stagger-8 { animation-delay: 400ms; }
-.stagger-9 { animation-delay: 450ms; }
-.stagger-10 { animation-delay: 500ms; }
+.stagger-1 {
+  animation-delay: 50ms;
+}
+
+.stagger-2 {
+  animation-delay: 100ms;
+}
+
+.stagger-3 {
+  animation-delay: 150ms;
+}
+
+.stagger-4 {
+  animation-delay: 200ms;
+}
+
+.stagger-5 {
+  animation-delay: 250ms;
+}
+
+.stagger-6 {
+  animation-delay: 300ms;
+}
+
+.stagger-7 {
+  animation-delay: 350ms;
+}
+
+.stagger-8 {
+  animation-delay: 400ms;
+}
+
+.stagger-9 {
+  animation-delay: 450ms;
+}
+
+.stagger-10 {
+  animation-delay: 500ms;
+}
 
 /* Staggered list animation container */
-.animate-stagger > * {
+.animate-stagger>* {
   opacity: 0;
   animation: fade-in-up var(--duration-normal) var(--ease-out) forwards;
 }
 
-.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
-.animate-stagger > *:nth-child(2) { animation-delay: 50ms; }
-.animate-stagger > *:nth-child(3) { animation-delay: 100ms; }
-.animate-stagger > *:nth-child(4) { animation-delay: 150ms; }
-.animate-stagger > *:nth-child(5) { animation-delay: 200ms; }
-.animate-stagger > *:nth-child(6) { animation-delay: 250ms; }
-.animate-stagger > *:nth-child(7) { animation-delay: 300ms; }
-.animate-stagger > *:nth-child(8) { animation-delay: 350ms; }
-.animate-stagger > *:nth-child(9) { animation-delay: 400ms; }
-.animate-stagger > *:nth-child(10) { animation-delay: 450ms; }
+.animate-stagger>*:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.animate-stagger>*:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.animate-stagger>*:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.animate-stagger>*:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.animate-stagger>*:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.animate-stagger>*:nth-child(6) {
+  animation-delay: 250ms;
+}
+
+.animate-stagger>*:nth-child(7) {
+  animation-delay: 300ms;
+}
+
+.animate-stagger>*:nth-child(8) {
+  animation-delay: 350ms;
+}
+
+.animate-stagger>*:nth-child(9) {
+  animation-delay: 400ms;
+}
+
+.animate-stagger>*:nth-child(10) {
+  animation-delay: 450ms;
+}
 
 /* ─────────────────────────────────────────────────────────────
    UTILITY CLASSES
@@ -918,9 +1267,9 @@ input, textarea {
   right: 0;
   height: 3px;
   background: linear-gradient(90deg,
-    var(--brand-primary) 0%,
-    var(--brand-secondary) 50%,
-    var(--brand-primary) 100%);
+      var(--brand-primary) 0%,
+      var(--brand-secondary) 50%,
+      var(--brand-primary) 100%);
   background-size: 200% 100%;
   animation: gradient-shift 3s ease infinite;
 }
@@ -939,8 +1288,8 @@ input, textarea {
   opacity: 0;
   filter: blur(20px);
   background: linear-gradient(135deg,
-    var(--brand-primary) 0%,
-    var(--brand-secondary) 100%);
+      var(--brand-primary) 0%,
+      var(--brand-secondary) 100%);
   transition: opacity var(--duration-slow) var(--ease-default);
 }
 
@@ -962,38 +1311,38 @@ input, textarea {
 
 .gradient-brand {
   background: linear-gradient(135deg,
-    var(--brand-primary) 0%,
-    var(--brand-primary-hover) 100%);
+      var(--brand-primary) 0%,
+      var(--brand-primary-hover) 100%);
 }
 
 .gradient-brand-secondary {
   background: linear-gradient(135deg,
-    var(--brand-primary) 0%,
-    var(--brand-secondary) 100%);
+      var(--brand-primary) 0%,
+      var(--brand-secondary) 100%);
 }
 
 .gradient-strength {
   background: linear-gradient(135deg,
-    var(--workout-strength) 0%,
-    var(--workout-power) 100%);
+      var(--workout-strength) 0%,
+      var(--workout-power) 100%);
 }
 
 .gradient-cardio {
   background: linear-gradient(135deg,
-    var(--workout-cardio) 0%,
-    var(--brand-primary) 100%);
+      var(--workout-cardio) 0%,
+      var(--brand-primary) 100%);
 }
 
 .gradient-mobility {
   background: linear-gradient(135deg,
-    var(--workout-mobility) 0%,
-    var(--brand-primary) 100%);
+      var(--workout-mobility) 0%,
+      var(--brand-primary) 100%);
 }
 
 .gradient-recovery {
   background: linear-gradient(135deg,
-    var(--workout-rest) 0%,
-    var(--status-success-bg) 100%);
+      var(--workout-rest) 0%,
+      var(--status-success-bg) 100%);
 }
 
 /* Mesh gradient for hero sections */
@@ -1008,10 +1357,10 @@ input, textarea {
 /* Animated gradient */
 .gradient-animated {
   background: linear-gradient(-45deg,
-    var(--brand-primary),
-    var(--brand-secondary),
-    var(--workout-cardio),
-    var(--brand-primary));
+      var(--brand-primary),
+      var(--brand-secondary),
+      var(--workout-cardio),
+      var(--brand-primary));
   background-size: 400% 400%;
   animation: gradient-flow 15s ease infinite;
 }

@@ -268,6 +268,16 @@ export default defineSchema({
       language: v.union(v.string(), v.null()), // "en-US", "de-DE"
       lastUpdated: v.string(), // ISO date
     })),
+    // Generation status tracking
+    generationStatus: v.optional(v.object({
+      state: v.union(v.literal("idle"), v.literal("generating"), v.literal("completed"), v.literal("failed")),
+      message: v.optional(v.string()),
+      progress: v.optional(v.number()), // 0-100
+      currentStep: v.optional(v.string()), // step id
+      planId: v.optional(v.id("workoutPlans")),
+      error: v.optional(v.string()),
+      lastUpdated: v.string(), // ISO date
+    })),
   })
     .index("by_userId", ["userId"])
     .index("by_userCode", ["userCode"])

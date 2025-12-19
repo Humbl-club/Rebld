@@ -513,7 +513,9 @@ export const parseWorkoutPlan = action({
                 "target_sets": 3,
                 "target_reps": "8-10",
                 "rest_period_s": 90
-              }
+              },
+              "reasoning": "Coach's note: WHY this exercise?",
+              "progression_logic": "How to progress (e.g. 'Add weight when RPE < 7')"
             }
           ]
         }
@@ -759,6 +761,26 @@ export const generateWorkoutPlan = action({
       _useFlashModel,
       _useSilverPrompt,
     } = args.preferences;
+
+    // Helper to update status (fire and forget)
+    const updateStatus = async (progress: number, message: string, state: "generating" | "completed" | "failed" = "generating") => {
+      if (!args.userId) return;
+      // We use a separate mutation so it commits immediately
+      try {
+        await ctx.runMutation(api.generationMutations.updateGenerationStatus, {
+          userId: args.userId,
+          state,
+          progress,
+          message,
+        });
+      } catch (e) {
+        // Don't fail generation if status update fails
+        console.error("Status update failed:", e);
+      }
+    };
+
+    // 1. Initial Status
+    await updateStatus(5, "Analyzing your profile & goals...");
 
     // ═══════════════════════════════════════════════════════════
     // INPUT VALIDATION: Sanitize extreme values to prevent AI issues
@@ -1290,7 +1312,9 @@ ${examplePlansPrompt}
                 "target_sets": 4,
                 "target_reps": "8-10",
                 "rest_period_s": 90
-              }
+              },
+              "reasoning": "Primary horizontal push for strength development",
+              "progression_logic": "Linear: Add 2.5kg when 3x10 is achieved with RPE < 8"
             }
           ]
         }
@@ -1312,6 +1336,12 @@ Generate a complete 7-day plan. Return ONLY valid JSON.`;
     let finalPrompt = systemPrompt;
 
     // SILVER PROMPT: Expert persona-based structured prompts
+    if (_useSilverPrompt) {
+      await updateStatus(20, "Designing expert-level training structure...");
+    } else {
+      await updateStatus(20, "Designing your training structure...");
+    }
+
     if (_useSilverPrompt && silverPromptOutput) {
       finalPrompt = `${silverPromptOutput.systemPrompt}
 
@@ -1421,6 +1451,7 @@ Return JSON:
     }
 
     try {
+      await updateStatus(40, "Consulting expert knowledge base & models...");
       loggers.ai.info(`Generating plan with ${selectedModel} (with retry logic)...`);
       const startTime = Date.now();
 
@@ -1482,6 +1513,7 @@ Return JSON:
       }
 
       const elapsedMs = Date.now() - startTime;
+      await updateStatus(60, "Optimizing schedule & exercises...");
       loggers.ai.info(`⏱️  Generation completed in ${(elapsedMs / 1000).toFixed(2)}s${usedFallback ? ' (via Gemini fallback)' : ''}`);
       loggers.ai.info('✅ Plan validation passed! All metrics templates are correct.');
 
@@ -1532,6 +1564,8 @@ Return JSON:
       // Post-process: Add duration estimates to all days/sessions AFTER fixing cardio
       addDurationEstimates(fixedPlan);
 
+      await updateStatus(80, "Finalizing plan details & validation...");
+
       // Log duration mismatch warnings
       for (const day of fixedPlan.weeklyPlan) {
         const isRestDay = day.focus?.toLowerCase().includes('rest') ||
@@ -1568,9 +1602,16 @@ Return JSON:
         loggers.ai.warn('Phase 2 enrichment scheduling failed:', enrichError);
       }
 
+      await updateStatus(100, "Plan ready!", "completed");
       return fixedPlan;
     } catch (error: any) {
       loggers.ai.error("Gemini API error:", error);
+
+      try {
+        await updateStatus(0, "Generation failed. Please try again.", "failed");
+      } catch (e) {
+        // Ignore status update error
+      }
 
       // Provide helpful error messages
       if (error.message?.includes('API_KEY')) {

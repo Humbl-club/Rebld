@@ -4578,6 +4578,131 @@ type WorkoutBlock =
 
 ## Recent Changes (December 2025)
 
+### December 18, 2025 - Expert Personas, Progressive Hyrox & AM/PM Sessions
+
+**Major prompt engineering overhaul in `convex/silverPrompt.ts`:**
+
+#### 1. Expert Persona System (Evidence-Based AI Coaching)
+
+Each sport/goal now maps to a comprehensive expert persona with real training methodology sources:
+
+| Goal/Sport | Persona | Key Sources |
+|------------|---------|-------------|
+| **Hyrox** | Elite Hyrox Performance Coach | Tactical Barbell (K. Black), The Hybrid Athlete (Alex Viada), HIIT Science (Laursen & Buchheit) |
+| **Powerlifting** | Elite Powerlifting Coach | Scientific Principles of Strength (Israetel), Sheiko Method, Westside Barbell (Louie Simmons) |
+| **CrossFit** | Elite CrossFit Coach | Becoming a Supple Leopard (Starrett), Olympic Weightlifting (Everett), Unbroken (Bergeron) |
+| **Athletic** | Elite Athletic Performance Coach | Triphasic Training I & II (Cal Dietz), Conjugate System (Louie Simmons), Frans Bosch Transfer Training |
+| **Curves** | Glute & Lower Body Specialist | Glute Lab & Strong Curves (Bret Contreras), EMG-based exercise selection |
+| **Strength** | General Strength Coach | Starting Strength (Rippetoe), Practical Programming, 5/3/1 (Wendler) |
+| **Fat Loss** | Body Recomposition Specialist | Renaissance Diet 2.0 (Israetel), Muscle & Strength Pyramid (Helms) |
+| **Wellness** | Holistic Fitness Coach | Atomic Habits (Clear), sustainable movement patterns |
+
+**Persona structure:**
+```typescript
+interface ExpertPersona {
+  title: string;               // "Elite Hyrox Performance Coach"
+  expertise: string;           // Domain specialization
+  authorityBooks: string[];    // 4-6 evidence-based sources
+  keyPrinciples: string[];     // 5-8 actionable training principles
+  periodizationApproach: string; // Phase-based progression
+  priorityExercises: string[]; // Sport-specific exercise selection
+}
+```
+
+#### 2. Progressive Hyrox Requirements (Experience-Scaled)
+
+**Problem solved:** Previously all users got static "15km weekly running minimum" regardless of experience level.
+
+**New scaling system:**
+
+| Experience | Phase | Weekly Running | Weekly SkiErg | Stations/Week |
+|------------|-------|----------------|---------------|---------------|
+| Beginner | BASE | 4-6 km | 600-1000m | 4 of 8 |
+| Beginner | BUILD | 5-9 km | 900-1500m | 4 of 8 |
+| Intermediate | BASE | 6-9 km | 1000-1600m | 6 of 8 |
+| Intermediate | BUILD | 8-13 km | 1400-2300m | 6 of 8 |
+| Advanced | BASE | 8-13 km | 1300-2100m | 8 of 8 |
+| Advanced | BUILD | 11-18 km | 1800-3000m | 8 of 8 |
+
+**Formula:**
+```typescript
+const experienceMultiplier = { beginner: 0.5, intermediate: 0.75, advanced: 1.0 };
+const phaseMultiplier = { BASE: 0.7, BUILD: 1.0, PEAK: 0.85, TAPER: 0.5 };
+// Volume = advancedTarget × experienceMultiplier × phaseMultiplier
+```
+
+**Progressive overload:** Prompt now instructs AI that this is "Week 1" and each subsequent week should increase volume 5-10% with deload every 4th week.
+
+#### 3. AM/PM Split Sessions (2x Daily Training)
+
+**Problem solved:** Users selecting "2 sessions per day" weren't getting proper AM/PM structure.
+
+**New session structure:**
+```typescript
+// When sessionsPerDay === '2', plan outputs:
+{
+  day_of_week: 1,
+  sessions: [
+    {
+      time_of_day: "morning",
+      focus: "Upper Strength",
+      duration: 75,  // User's strength session length
+      blocks: [...]
+    },
+    {
+      time_of_day: "evening",
+      focus: "Cardio",
+      duration: 30,  // Separate cardio duration
+      blocks: [...]
+    }
+  ]
+}
+```
+
+**New onboarding fields:**
+- `cardioTypes: string[]` - User selects preferred cardio (running, cycling, rowing, swimming, SkiErg)
+- `cardioDuration: number` - Separate duration for PM cardio session (15-60 min)
+
+#### 4. Simplified Competition Sports
+
+**Removed:** Marathon, Triathlon, Bodybuilding (cluttering the UI for edge cases)
+
+**Current sports:**
+- Hyrox 🏃‍♂️
+- CrossFit 🏋️
+- Powerlifting 🦾
+- Other Event 🎯 (custom)
+
+#### 5. Redesigned General Goals (More Engaging)
+
+**Old boring goals:** muscle, strength, athletic_performance, fat_loss, wellness
+
+**New engaging goals:**
+| ID | Title | Description | Mapped Persona |
+|----|-------|-------------|----------------|
+| aesthetic | Look Amazing ✨ | Build the body you've always wanted | muscle |
+| strong | Get Strong 💪 | Raw power, heavy lifts | strength |
+| athletic | Be an Athlete ⚡ | Fast, powerful, explosive | athletic |
+| shredded | Get Shredded 🔥 | Lean, defined, and cut | fat_loss |
+| curves | Build Curves 🍑 | Glutes, legs, and shape | curves |
+| balanced | Feel Great 🌟 | Balanced strength & energy | wellness |
+
+#### 6. User Notes Priority vs Sport Rules
+
+**How it works:**
+- User notes labeled as `USER'S SPECIFIC REQUESTS (HIGHEST PRIORITY)` in prompt
+- Sport rules (e.g., Hyrox stations) use `MUST` language
+- **Result:** Notes that ADD to sport requirements work well; notes that CONFLICT may have unpredictable priority
+
+**Recommendation:** User notes should expand on sport requirements, not contradict them. Example: "Include SSB squats and trap bar deadlifts alongside Hyrox prep" ✅
+
+**Files Changed:**
+- `convex/silverPrompt.ts` - Expert personas, progressive Hyrox, AM/PM sessions schema
+- `convex/ai.ts` - Goal mapping for new personas (athletic, curves)
+- `components/onboarding/PersonalOnboarding.tsx` - Cardio UI, new goals, simplified sports
+
+---
+
 ### December 12, 2025 - iOS-Native Onboarding Overhaul
 
 **Complete onboarding redesign:**
@@ -4628,6 +4753,6 @@ type WorkoutBlock =
 
 ---
 
-**Version:** 3.4
-**Last Updated:** December 12, 2025
+**Version:** 3.5
+**Last Updated:** December 18, 2025
 **Status:** Production-Ready ✅

@@ -77,8 +77,43 @@ export default function App() {
     };
     ariaAnnouncer.announcePage(pageNames[currentPage]);
   }, [currentPage]);
+
+  // Handle Clerk Auth Error (Common on Localhost with Prod keys)
   const { user, isLoaded: clerkLoaded } = useUser();
   const { getToken, isSignedIn } = useAuth();
+
+  // If Clerk fails to load for an extended period, it's likely a key issue
+  const [clerkError, setClerkError] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!clerkLoaded) {
+        console.error("Clerk failed to load. Likely production key on localhost.");
+        setClerkError(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [clerkLoaded]);
+
+  if (clerkError) {
+    return (
+      <div className="h-screen w-full bg-black text-white flex flex-col items-center justify-center p-8 text-center font-sans">
+        <div className="w-16 h-16 rounded-full border-2 border-red-500 flex items-center justify-center mb-6">
+          <span className="text-3xl">!</span>
+        </div>
+        <h1 className="text-2xl font-black uppercase tracking-tighter mb-4">Configuration Error</h1>
+        <p className="text-stone-400 mb-8 max-w-md">
+          The application cannot connect to the authentication server. This usually happens when running <span className="text-white font-mono">localhost</span> with Production keys.
+        </p>
+        <div className="bg-stone-900 p-4 rounded text-xs font-mono text-left mb-8 border border-white/10">
+          <p className="text-stone-500 mb-2">// .env.local</p>
+          <p className="text-red-400">VITE_CLERK_PUBLISHABLE_KEY=pk_live_...</p>
+          <p className="text-green-400 mt-1">VITE_CLERK_PUBLISHABLE_KEY=pk_test_...</p>
+        </div>
+        <p className="text-sm text-stone-500">Please switch to your Development keys to run locally.</p>
+      </div>
+    );
+  }
+
   const { theme, toggleTheme } = useTheme();
 
   // Debug: Test Clerk JWT token retrieval
@@ -401,8 +436,8 @@ export default function App() {
     }
 
     setSessionToSummarize({
-        ...sessionLog,
-        date: new Date().toISOString()
+      ...sessionLog,
+      date: new Date().toISOString()
     });
     setActiveSession(null);
   }, [addLog, user, updateStreakMutation]);
@@ -430,49 +465,49 @@ export default function App() {
       }
     }
   }, [deletePlan, activePlan]);
-  
+
   const handlePlanUpdate = (updatedPlan: WorkoutPlan) => {
     updatePlan(updatedPlan);
   };
-  
+
   const handlePlanGenerated = useCallback(async (plan: Omit<WorkoutPlan, 'id' | 'createdAt'>) => {
-      // Navigate to home immediately - don't wait for save to complete
-      setCurrentPage('home');
+    // Navigate to home immediately - don't wait for save to complete
+    setCurrentPage('home');
 
-      // If plan is empty (error case), we're already navigating home
-      if (!plan || !plan.name || !plan.weeklyPlan) {
-        // Track plan generation failure
-        if (user?.id) {
-          analytics.track(EventTypes.PLAN_GENERATION_FAILED, {
-            reason: 'Empty plan returned',
-          });
-        }
-        return;
+    // If plan is empty (error case), we're already navigating home
+    if (!plan || !plan.name || !plan.weeklyPlan) {
+      // Track plan generation failure
+      if (user?.id) {
+        analytics.track(EventTypes.PLAN_GENERATION_FAILED, {
+          reason: 'Empty plan returned',
+        });
       }
+      return;
+    }
 
-      try {
-        // Save plan in background - Convex will update activePlan query automatically
-        await addPlan(plan);
+    try {
+      // Save plan in background - Convex will update activePlan query automatically
+      await addPlan(plan);
 
-        // Track successful plan generation
-        if (user?.id) {
-          analytics.track(EventTypes.PLAN_ACCEPTED, {
-            planName: plan.name,
-            daysInWeek: plan.weeklyPlan.length,
-            hasDailyRoutine: !!plan.dailyRoutine,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to save plan:", error);
-        notify({ type: 'error', message: 'Failed to save your plan. Please try generating again.' });
-
-        // Track save failure
-        if (user?.id) {
-          analytics.trackError(EventTypes.PLAN_GENERATION_FAILED, error as Error, {
-            reason: 'Save failed',
-          });
-        }
+      // Track successful plan generation
+      if (user?.id) {
+        analytics.track(EventTypes.PLAN_ACCEPTED, {
+          planName: plan.name,
+          daysInWeek: plan.weeklyPlan.length,
+          hasDailyRoutine: !!plan.dailyRoutine,
+        });
       }
+    } catch (error) {
+      console.error("Failed to save plan:", error);
+      notify({ type: 'error', message: 'Failed to save your plan. Please try generating again.' });
+
+      // Track save failure
+      if (user?.id) {
+        analytics.trackError(EventTypes.PLAN_GENERATION_FAILED, error as Error, {
+          reason: 'Save failed',
+        });
+      }
+    }
   }, [addPlan, user?.id]);
 
   const handleCreateNewPlan = useCallback(async () => {
@@ -494,10 +529,10 @@ export default function App() {
     setInitialChatMessage(message);
     setIsChatOpen(true);
   }, []);
-  
+
   const handleChatClose = useCallback(() => {
-      setIsChatOpen(false);
-      setInitialChatMessage('');
+    setIsChatOpen(false);
+    setInitialChatMessage('');
   }, []);
 
   const todayDayOfWeek = new Date().getDay();
@@ -506,11 +541,11 @@ export default function App() {
   const renderPage = () => {
     if (sessionToSummarize) {
       return <SessionSummaryPage
-                sessionLog={sessionToSummarize}
-                onDone={() => setSessionToSummarize(null)}
-                allLogs={logs || []}
-                userProfile={userProfile}
-             />;
+        sessionLog={sessionToSummarize}
+        onDone={() => setSessionToSummarize(null)}
+        allLogs={logs || []}
+        userProfile={userProfile}
+      />;
     }
 
     if (activeSession) {
@@ -540,7 +575,7 @@ export default function App() {
     // Show onboarding only if no active plan exists
     // After plan creation, we navigate immediately, and Convex will update activePlan automatically
     if (!activePlan) {
-        return <PersonalOnboarding onPlanGenerated={handlePlanGenerated} />
+      return <PersonalOnboarding onPlanGenerated={handlePlanGenerated} />
     }
 
     switch (currentPage) {
@@ -720,17 +755,17 @@ export default function App() {
 
   // Not logged in flow: Landing → Auth
   if (!user) {
-      if (!showAuth) {
-        return (
-          <LandingPage
-            onGetStarted={handleGetStarted}
-            onSignIn={handleSignIn}
-            onPrivacy={() => setCurrentPage('privacy')}
-            onTerms={() => setCurrentPage('terms')}
-          />
-        );
-      }
-      return <AuthPage />;
+    if (!showAuth) {
+      return (
+        <LandingPage
+          onGetStarted={handleGetStarted}
+          onSignIn={handleSignIn}
+          onPrivacy={() => setCurrentPage('privacy')}
+          onTerms={() => setCurrentPage('terms')}
+        />
+      );
+    }
+    return <AuthPage />;
   }
 
   return (
@@ -749,16 +784,16 @@ export default function App() {
       {/* Fixed elements - navbar and chat button stay in place during swipe */}
       {!activeSession && !pendingSession && !sessionToSummarize && (
         <>
-            {activePlan && (
-                <>
-                    <Navbar
-                        currentPage={currentPage}
-                        onNavigate={setCurrentPage}
-                    />
-                    {/* Floating Chat Button - semi-transparent, above navbar, toggle expand/retract */}
-                    <button
-                        onClick={() => setIsChatOpen(!isChatOpen)}
-                        className={`
+          {activePlan && (
+            <>
+              <Navbar
+                currentPage={currentPage}
+                onNavigate={setCurrentPage}
+              />
+              {/* Floating Chat Button - semi-transparent, above navbar, toggle expand/retract */}
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`
                             fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4
                             w-11 h-11 rounded-[14px]
                             flex items-center justify-center
@@ -766,31 +801,31 @@ export default function App() {
                             focus:ring-offset-[var(--background-primary)] focus:ring-[var(--accent)]
                             transition-all duration-200 active:scale-95 z-30
                             ${isChatOpen
-                                ? 'bg-[var(--accent)] text-white'
-                                : 'bg-[var(--bg-secondary)]/70 text-[var(--text-primary)] backdrop-blur-xl border border-[var(--border-default)]/50'
-                            }
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--bg-secondary)]/70 text-[var(--text-primary)] backdrop-blur-xl border border-[var(--border-default)]/50'
+                  }
                         `}
-                        style={{
-                            boxShadow: isChatOpen
-                                ? '0 3px 16px rgba(0,0,0,0.2)'
-                                : '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset',
-                            WebkitBackdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
-                            backdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
-                        }}
-                        aria-label={isChatOpen ? "Close AI Assistant" : "Open AI Assistant"}
-                        aria-expanded={isChatOpen}
-                    >
-                        {isChatOpen ? (
-                            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        ) : (
-                            <ZapIcon className="h-[18px] w-[18px]" />
-                        )}
-                    </button>
-                </>
-            )}
+                style={{
+                  boxShadow: isChatOpen
+                    ? '0 3px 16px rgba(0,0,0,0.2)'
+                    : '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset',
+                  WebkitBackdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
+                  backdropFilter: isChatOpen ? 'none' : 'blur(20px) saturate(180%)',
+                }}
+                aria-label={isChatOpen ? "Close AI Assistant" : "Open AI Assistant"}
+                aria-expanded={isChatOpen}
+              >
+                {isChatOpen ? (
+                  <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                ) : (
+                  <ZapIcon className="h-[18px] w-[18px]" />
+                )}
+              </button>
+            </>
+          )}
         </>
       )}
 

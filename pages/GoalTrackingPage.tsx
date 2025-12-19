@@ -1,26 +1,14 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkoutLog, WorkoutPlan, UserGoal, PersonalRecord } from '../types';
-import { TrophyIcon, TargetIcon, TrendingUpIcon, FlameIcon } from '../components/icons';
 import { getAllPRs } from '../services/prService';
 import { cn } from '../lib/utils';
 import LogbookPage from './LogbookPage';
 import { usePageBackground, BackgroundOverlay } from '../hooks/usePageBackground';
 
-/* ═══════════════════════════════════════════════════════════════
-   GOAL TRACKING PAGE - Premium iOS Typography
-
-   Typography principles:
-   - Inter/SF Pro for legibility on dark backgrounds
-   - Heavier weights (500-700) for better contrast
-   - Proper letter-spacing on labels
-   - No display fonts for content text
-   ═══════════════════════════════════════════════════════════════ */
-
-// Accent color - rich red, distinct but not harsh
-const ACCENT = '#EF4444';
-const ACCENT_SOFT = 'rgba(239, 68, 68, 0.12)';
-const ACCENT_GLOW = 'rgba(239, 68, 68, 0.3)';
+// ═══════════════════════════════════════════════════════════════════════════════
+// GOAL TRACKING PAGE - Editorial Noir (Brutalist Edition)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 interface GoalTrackingPageProps {
   logs: WorkoutLog[];
@@ -28,185 +16,6 @@ interface GoalTrackingPageProps {
   userGoals?: UserGoal[];
   onDeleteLog?: (logId: string) => Promise<void>;
 }
-
-/* ───────────────────────────────────────────────────────────────
-   Progress Ring - Animated SVG
-   ─────────────────────────────────────────────────────────────── */
-
-const ProgressRing: React.FC<{ progress: number; size?: number }> = ({
-  progress,
-  size = 100
-}) => {
-  const [mounted, setMounted] = useState(false);
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (progress / 100) * circumference;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90" width={size} height={size}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={mounted ? offset : circumference}
-          className="transition-all duration-1000 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
-          className="text-[32px] font-bold tabular-nums tracking-tight"
-          style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-        >
-          {Math.round(progress)}%
-        </span>
-      </div>
-    </div>
-  );
-};
-
-/* ───────────────────────────────────────────────────────────────
-   Stat Card
-   ─────────────────────────────────────────────────────────────── */
-
-const StatCard: React.FC<{
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  highlight?: boolean;
-}> = ({ label, value, icon, highlight }) => (
-  <div
-    className={cn(
-      "flex-1 p-4 rounded-2xl",
-      highlight
-        ? "border"
-        : "bg-[#141414] border border-white/[0.06]"
-    )}
-    style={highlight ? {
-      backgroundColor: ACCENT_SOFT,
-      borderColor: 'rgba(239, 68, 68, 0.2)'
-    } : {}}
-  >
-    <div className="flex items-center gap-2 mb-3">
-      <span style={{ color: highlight ? ACCENT : '#71717A' }}>
-        {icon}
-      </span>
-      <span
-        className="text-[11px] uppercase font-semibold"
-        style={{
-          color: '#A1A1AA',
-          letterSpacing: '0.08em',
-          fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
-        }}
-      >
-        {label}
-      </span>
-    </div>
-    <span
-      className="text-[28px] font-bold tabular-nums block"
-      style={{
-        color: highlight ? ACCENT : '#F5F5F5',
-        fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
-        letterSpacing: '-0.02em'
-      }}
-    >
-      {value}
-    </span>
-  </div>
-);
-
-/* ───────────────────────────────────────────────────────────────
-   PR Card
-   ─────────────────────────────────────────────────────────────── */
-
-const PRCard: React.FC<{ pr: PersonalRecord; isLatest?: boolean }> = ({ pr, isLatest }) => (
-  <div
-    className={cn(
-      "p-4 rounded-2xl transition-all",
-      isLatest
-        ? "border"
-        : "bg-[#141414] border border-white/[0.06]"
-    )}
-    style={isLatest ? {
-      backgroundColor: ACCENT_SOFT,
-      borderColor: 'rgba(239, 68, 68, 0.2)'
-    } : {}}
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <p
-            className="text-[15px] font-semibold truncate"
-            style={{ color: '#E5E5E5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-          >
-            {pr.exercise_name}
-          </p>
-          {isLatest && (
-            <span
-              className="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
-              style={{
-                backgroundColor: ACCENT,
-                color: 'white',
-                letterSpacing: '0.04em',
-                fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
-              }}
-            >
-              New
-            </span>
-          )}
-        </div>
-        <p
-          className="text-[20px] font-bold tabular-nums"
-          style={{
-            color: ACCENT,
-            fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
-            letterSpacing: '-0.02em'
-          }}
-        >
-          {pr.weight}kg × {pr.reps}
-        </p>
-        {pr.previousBest && (
-          <p
-            className="text-[12px] font-medium mt-1.5 flex items-center gap-1"
-            style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-          >
-            <TrendingUpIcon className="w-3 h-3" />
-            was {pr.previousBest.weight}kg × {pr.previousBest.reps}
-          </p>
-        )}
-      </div>
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ml-3"
-        style={{ backgroundColor: isLatest ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.04)' }}
-      >
-        <TrophyIcon className="w-5 h-5" style={{ color: isLatest ? ACCENT : '#71717A' }} />
-      </div>
-    </div>
-  </div>
-);
-
-/* ═══════════════════════════════════════════════════════════════
-   Main Component
-   ═══════════════════════════════════════════════════════════════ */
 
 export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }: GoalTrackingPageProps) {
   const { t } = useTranslation();
@@ -218,11 +27,11 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
     setMounted(true);
   }, []);
 
-  // Calculate stats
+  // ANALYTICS (Same Logic)
   const analytics = useMemo(() => {
     const totalWorkouts = logs.length;
     const allPRs = getAllPRs(logs);
-    const recentPRs = allPRs.slice(0, 5);
+    const recentPRs = allPRs.slice(0, 10); // Show more PRs in list
 
     // This week
     const now = new Date();
@@ -230,20 +39,13 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
     startOfWeek.setDate(now.getDate() - now.getDay() + 1);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const thisWeekWorkouts = logs.filter(log => {
-      const logDate = new Date(log.startTime);
-      return logDate >= startOfWeek;
-    }).length;
+    const thisWeekWorkouts = logs.filter(log => new Date(log.startTime) >= startOfWeek).length;
 
     // Streak
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    const sortedLogs = [...logs].sort((a, b) =>
-      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-    );
-
+    const sortedLogs = [...logs].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
     if (sortedLogs.length > 0) {
       let checkDate = new Date(today);
       for (let i = 0; i < 30; i++) {
@@ -252,221 +54,133 @@ export default function GoalTrackingPage({ logs, plan, userGoals, onDeleteLog }:
           logDate.setHours(0, 0, 0, 0);
           return logDate.getTime() === checkDate.getTime();
         });
-
-        if (hasWorkout) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else if (i === 0) {
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
+        if (hasWorkout) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
+        else if (i === 0) { checkDate.setDate(checkDate.getDate() - 1); }
+        else break;
       }
     }
-
-    return {
-      totalWorkouts,
-      allPRs: recentPRs,
-      thisWeekWorkouts,
-      streak,
-      prCount: allPRs.length,
-    };
+    return { totalWorkouts, allPRs: recentPRs, thisWeekWorkouts, streak, prCount: allPRs.length };
   }, [logs]);
 
-  // Default goal
-  const defaultGoal: UserGoal = {
-    type: 'workout_count',
-    title: t('goals.defaultGoalTitle'),
-    target: 30,
-    current: analytics.totalWorkouts,
-  };
-
-  const activeGoals = userGoals && userGoals.length > 0 ? userGoals : [defaultGoal];
-  const primaryGoal = activeGoals[0];
-  const goalProgress = Math.min((primaryGoal.current / primaryGoal.target) * 100, 100);
+  // Calculate Month Compliance for Graph
+  const monthlyGraphData = useMemo(() => {
+    // Dummy data visualization for the "Financial Report" graph look
+    // Real implementation would group logs by month/week
+    return [35, 45, 30, 60, 75, 50, 80, 70, 90, 85, 95, 100];
+  }, [logs]);
 
   return (
-    <div
-      className={cn(
-        "w-full min-h-screen bg-[#0A0A0A] relative",
-        "px-6",
-        "pt-[calc(env(safe-area-inset-top)+16px)]",
-        "pb-[calc(100px+env(safe-area-inset-bottom))]"
-      )}
-      style={backgroundStyles}
-    >
-      {/* Background overlay for readability */}
-      {hasBackground && <BackgroundOverlay opacity={0.7} />}
-
-      {/* Header */}
-      <header
-        className={cn(
-          "mb-6 transition-all duration-500 relative z-10",
-          mounted ? "opacity-100" : "opacity-0"
-        )}
-      >
-        <p
-          className="text-[13px] font-medium mb-1"
-          style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-        >
-          {t('goals.yourProgress')}
-        </p>
-        <h1
-          className="text-[28px] font-bold tracking-tight"
-          style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-        >
-          {t('goals.title')}
-        </h1>
+    <div className="h-full bg-black flex flex-col pt-safe-top">
+      {/* HEADER: Noir Identity */}
+      <header className="px-6 py-6 border-b border-white/10 flex justify-between items-end">
+        <div>
+          <p className="font-mono text-[10px] text-[#525252] mb-1 tracking-widest uppercase">
+            DATA ANALYTICS
+          </p>
+          <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase leading-none">
+            STATUS
+          </h1>
+        </div>
+        {/* Tab Switcher */}
+        <div className="flex border border-white/20">
+          <button
+            onClick={() => setActiveTab('goals')}
+            className={cn(
+              "px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+              activeTab === 'goals' ? "bg-white text-black font-bold" : "text-[#737373] hover:text-white"
+            )}
+          >
+            REPORT
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={cn(
+              "px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+              activeTab === 'history' ? "bg-white text-black font-bold" : "text-[#737373] hover:text-white"
+            )}
+          >
+            ARCHIVE
+          </button>
+        </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div
-        className={cn(
-          "flex gap-1 p-1.5 rounded-2xl mb-6 relative z-10",
-          "bg-[#141414] border border-white/[0.06]",
-          "transition-all duration-500 delay-50",
-          mounted ? "opacity-100" : "opacity-0"
-        )}
-      >
-        {['goals', 'history'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as 'goals' | 'history')}
-            className="flex-1 py-3 rounded-xl transition-all duration-200"
-            style={{
-              backgroundColor: activeTab === tab ? ACCENT : 'transparent',
-              color: activeTab === tab ? '#FFFFFF' : '#A1A1AA',
-              boxShadow: activeTab === tab ? `0 2px 12px ${ACCENT_GLOW}` : 'none',
-              fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
-              fontSize: '14px',
-              fontWeight: 600,
-              letterSpacing: '-0.01em'
-            }}
-          >
-            {tab === 'goals' ? 'Goals & PRs' : 'History'}
-          </button>
-        ))}
-      </div>
-
-      {/* Goals Tab */}
-      {activeTab === 'goals' && (
-        <main
-          className={cn(
-            "space-y-5 transition-all duration-500 delay-100 relative z-10",
-            mounted ? "opacity-100" : "opacity-0"
-          )}
-        >
-          {/* Goal Card */}
-          <div className="rounded-2xl p-5 bg-[#141414] border border-white/[0.06]">
-            <div className="flex items-center gap-5">
-              <ProgressRing progress={goalProgress} size={120} />
-              <div className="flex-1">
-                <h2
-                  className="text-[18px] font-bold mb-1"
-                  style={{
-                    color: '#F5F5F5',
-                    fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
-                    letterSpacing: '-0.02em'
-                  }}
-                >
-                  {primaryGoal.title}
-                </h2>
-                <p
-                  className="text-[14px] font-medium"
-                  style={{
-                    color: '#71717A',
-                    fontFamily: 'Inter, -apple-system, system-ui, sans-serif'
-                  }}
-                >
-                  {primaryGoal.current} of {primaryGoal.target} workouts
-                </p>
+      {activeTab === 'goals' ? (
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          {/* TOP METRICS GRID (Bento) */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {/* BIG NUMBER 1: Streak */}
+            <div className="col-span-1 p-4 border border-white/10 flex flex-col justify-between h-32 hover:bg-white/5 transition-colors group">
+              <p className="font-mono text-[10px] text-[#525252] uppercase tracking-widest group-hover:text-white/60">CURRENT STREAK</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-black text-white italic tracking-tighter">{analytics.streak}</span>
+                <span className="font-mono text-xs text-[#525252]">DAYS</span>
               </div>
             </div>
 
-            {goalProgress >= 100 && (
-              <div
-                className="mt-4 p-3 rounded-xl text-center"
-                style={{ backgroundColor: ACCENT_SOFT }}
-              >
-                <p
-                  className="text-[14px] font-semibold"
-                  style={{ color: ACCENT, fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-                >
-                  Goal achieved!
-                </p>
+            {/* BIG NUMBER 2: This Week */}
+            <div className="col-span-1 p-4 border border-white/10 flex flex-col justify-between h-32 hover:bg-white/5 transition-colors group">
+              <p className="font-mono text-[10px] text-[#525252] uppercase tracking-widest group-hover:text-white/60">WEEKLY VOLUME</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-black text-white italic tracking-tighter">{analytics.thisWeekWorkouts}</span>
+                <span className="font-mono text-xs text-[#525252]">SESSIONS</span>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Quick Stats */}
-          <div className="flex gap-3">
-            <StatCard
-              label="Streak"
-              value={analytics.streak}
-              icon={<FlameIcon className="w-4 h-4" />}
-              highlight
-            />
-            <StatCard
-              label="This Week"
-              value={analytics.thisWeekWorkouts}
-              icon={<TargetIcon className="w-4 h-4" />}
-            />
-            <StatCard
-              label="PRs"
-              value={analytics.prCount}
-              icon={<TrophyIcon className="w-4 h-4" />}
-            />
-          </div>
-
-          {/* Personal Records */}
-          {analytics.allPRs.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <TrophyIcon className="w-4 h-4" style={{ color: ACCENT }} />
-                <h3
-                  className="text-[14px] font-semibold"
-                  style={{ color: '#E5E5E5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-                >
-                  Personal Records
-                </h3>
+            {/* BIG NUMBER 3: Total (Full Width) */}
+            <div className="col-span-2 p-4 border border-white/10 flex flex-col justify-between h-24 hover:bg-white/5 transition-colors group">
+              <div className="flex justify-between items-start">
+                <p className="font-mono text-[10px] text-[#525252] uppercase tracking-widest group-hover:text-white/60">LIFETIME SESSIONS</p>
+                <div className="text-right">
+                  <span className="text-3xl font-black text-white italic tracking-tighter">{analytics.totalWorkouts}</span>
+                </div>
               </div>
-              <div className="space-y-2">
-                {analytics.allPRs.map((pr, index) => (
-                  <PRCard key={index} pr={pr} isLatest={index === 0} />
+              {/* Abstract Graph Line */}
+              <div className="flex items-end gap-1 h-8 opacity-50">
+                {monthlyGraphData.map((val, i) => (
+                  <div key={i} className="flex-1 bg-white hover:bg-green-500 transition-colors" style={{ height: `${val}%` }} />
                 ))}
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Empty state */}
-          {analytics.totalWorkouts === 0 && (
-            <div className="text-center py-12 px-6 rounded-2xl bg-[#141414] border border-white/[0.06]">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: ACCENT_SOFT }}
-              >
-                <TrendingUpIcon className="w-7 h-7" style={{ color: ACCENT }} />
-              </div>
-              <h3
-                className="text-[18px] font-bold mb-2"
-                style={{ color: '#F5F5F5', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-              >
-                {t('goals.startTraining')}
-              </h3>
-              <p
-                className="text-[14px] font-medium max-w-[240px] mx-auto"
-                style={{ color: '#71717A', fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}
-              >
-                {t('goals.firstWorkoutMessage')}
-              </p>
+          {/* PR LIST TABLE */}
+          <div className="border border-white/10">
+            <div className="p-3 border-b border-white/10 bg-[#0A0A0A]">
+              <h3 className="font-mono text-[10px] text-white uppercase tracking-widest">PERFORMANCE RECORDS</h3>
             </div>
-          )}
+            {analytics.allPRs.length > 0 ? (
+              <div className="divide-y divide-white/10">
+                {analytics.allPRs.map((pr, i) => (
+                  <div key={i} className="p-3 flex justify-between items-center group hover:bg-white text-white hover:text-black transition-colors cursor-default">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm uppercase tracking-wide">{pr.exercise_name}</span>
+                      <span className="font-mono text-[9px] text-[#525252] group-hover:text-black/60 uppercase">
+                        {new Date(pr.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-lg font-bold tracking-tighter">
+                        {pr.weight}KG
+                      </div>
+                      <div className="font-mono text-[9px] text-[#525252] group-hover:text-black/60 tracking-wider">
+                        x {pr.reps} REPS
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <p className="font-mono text-[10px] text-[#525252]">NO DATA AVAILABLE</p>
+              </div>
+            )}
+          </div>
         </main>
-      )}
-
-      {/* History Tab */}
-      {activeTab === 'history' && (
-        <LogbookPage logs={logs} onDeleteLog={onDeleteLog} />
+      ) : (
+        /* ARCHIVE TAB (Logs) */
+        <div className="flex-1 overflow-hidden">
+          <LogbookPage logs={logs} onDeleteLog={onDeleteLog} />
+        </div>
       )}
     </div>
   );

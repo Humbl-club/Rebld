@@ -865,6 +865,94 @@ function calculatePeriodization(data: OnboardingData): PeriodizationPlan {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// HYROX REQUIREMENTS BY EXPERIENCE (Progressive)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface HyroxVolumes {
+  weeklyRunning: { min: number; target: number };
+  weeklySkiErg: { min: number; target: number };
+  stationsPerWeek: number;
+  notes: string;
+}
+
+function getHyroxVolumesByExperience(
+  experience: 'beginner' | 'intermediate' | 'advanced',
+  phase: string
+): HyroxVolumes {
+  // Base volumes by experience (in km for running, m for SkiErg)
+  const experienceMultiplier = {
+    beginner: 0.5,      // Start at 50% of advanced
+    intermediate: 0.75, // Start at 75% of advanced
+    advanced: 1.0,      // Full volume
+  };
+
+  // Phase adjustments (BASE = building, BUILD = peak volume, PEAK = maintain, TAPER = reduce)
+  const phaseMultiplier: Record<string, number> = {
+    'BASE': 0.7,         // Building up - don't start at max
+    'BUILD': 1.0,        // Peak volume phase
+    'PEAK': 0.85,        // Maintain fitness, add intensity
+    'TAPER': 0.5,        // Reduce volume significantly
+    'ACCUMULATION': 0.8, // General fitness equivalent
+    'INTENSIFICATION': 1.0,
+    'REALIZATION': 0.7,
+    'DELOAD': 0.4,
+  };
+
+  const expMult = experienceMultiplier[experience];
+  const phaseMult = phaseMultiplier[phase] || 0.8;
+
+  // Advanced race-ready volumes (target to build towards)
+  const advancedTargets = {
+    weeklyRunning: 18,   // km
+    weeklySkiErg: 3000,  // m
+  };
+
+  const runningTarget = Math.round(advancedTargets.weeklyRunning * expMult * phaseMult);
+  const skiErgTarget = Math.round(advancedTargets.weeklySkiErg * expMult * phaseMult / 100) * 100;
+
+  // Minimum is 60% of target (allows for bad weeks)
+  const runningMin = Math.round(runningTarget * 0.6);
+  const skiErgMin = Math.round(skiErgTarget * 0.6 / 100) * 100;
+
+  // Stations per week based on experience
+  const stationsPerWeek = experience === 'beginner' ? 4 : experience === 'intermediate' ? 6 : 8;
+
+  const notes = experience === 'beginner'
+    ? 'Focus on learning technique. Not all stations every week - rotate through them.'
+    : experience === 'intermediate'
+    ? 'Build volume progressively. Include most stations weekly.'
+    : 'Race-ready volume. All 8 stations weekly with race-pace sessions.';
+
+  return {
+    weeklyRunning: { min: runningMin, target: runningTarget },
+    weeklySkiErg: { min: skiErgMin, target: skiErgTarget },
+    stationsPerWeek,
+    notes,
+  };
+}
+
+function getHyroxRequirements(
+  experience: 'beginner' | 'intermediate' | 'advanced',
+  phase: string
+): string {
+  const volumes = getHyroxVolumesByExperience(experience, phase);
+
+  return `
+- STATIONS: Include ${volumes.stationsPerWeek} of 8 Hyrox stations this week (SkiErg, Sled Push, Sled Pull, Rowing, Farmers Carry, Sandbag Lunges, Wall Balls, Burpee Broad Jumps)
+- WEEKLY RUNNING: ${volumes.weeklyRunning.min}-${volumes.weeklyRunning.target}km (Zone 2 base + tempo/intervals)
+- WEEKLY SKIERG: ${volumes.weeklySkiErg.min}-${volumes.weeklySkiErg.target}m (varied intensities)
+- Sled work: Include push AND pull patterns at least once
+- ${volumes.notes}
+
+PROGRESSIVE OVERLOAD (CRITICAL):
+- This plan is Week 1 of training. Each subsequent week should INCREASE volume by 5-10% until reaching target.
+- ${experience === 'beginner' ? 'Beginner: Focus on form first. Volume increases slowly over 8-12 weeks to prevent injury.' : ''}
+- ${experience === 'intermediate' ? 'Intermediate: Can progress faster. Target race volumes in 4-6 weeks.' : ''}
+- ${experience === 'advanced' ? 'Advanced: Maintain high volume. Focus on intensity and race simulation.' : ''}
+- Every 4th week: DELOAD (reduce volume 40-50%, maintain intensity)`.trim();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TRAINING SPLIT CALCULATOR
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1158,12 +1246,8 @@ ${isTwoADay ? `
 - DO NOT use "blocks" at day level - use "sessions" array with blocks inside each session
 ` : ''}
 ${data.sport?.toLowerCase() === 'hyrox' ? `
-HYROX-SPECIFIC REQUIREMENTS:
-- ALL 8 STATIONS must be introduced across the week: SkiErg, Sled Push, Sled Pull, Rowing, Farmers Carry, Sandbag Lunges, Wall Balls, Burpee Broad Jumps
-- MINIMUM weekly running: 15km in base phase (broken into Zone 2 runs + tempo work)
-- MINIMUM weekly SkiErg: 2,500m (varied intensities)
-- Sled work: Both push AND pull patterns weekly
-- Race-specific circuits: Include at least one session mimicking station-to-running transitions
+HYROX-SPECIFIC REQUIREMENTS (scaled to ${data.experience} level):
+${getHyroxRequirements(data.experience, periodization.currentPhase)}
 ` : ''}
 ${data.currentStrength ? `
 LOAD CALCULATION (use these as reference):

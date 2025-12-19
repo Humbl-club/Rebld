@@ -18,6 +18,7 @@ import type * as backgroundImages from "../backgroundImages.js";
 import type * as buddyMutations from "../buddyMutations.js";
 import type * as buddyQueries from "../buddyQueries.js";
 import type * as eventTracking from "../eventTracking.js";
+import type * as generationMutations from "../generationMutations.js";
 import type * as healthMetrics from "../healthMetrics.js";
 import type * as hyroxActions from "../hyroxActions.js";
 import type * as hyroxQueries from "../hyroxQueries.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   buddyMutations: typeof buddyMutations;
   buddyQueries: typeof buddyQueries;
   eventTracking: typeof eventTracking;
+  generationMutations: typeof generationMutations;
   healthMetrics: typeof healthMetrics;
   hyroxActions: typeof hyroxActions;
   hyroxQueries: typeof hyroxQueries;

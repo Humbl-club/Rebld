@@ -1,497 +1,121 @@
 /* ═══════════════════════════════════════════════════════════════
-   REBLD DESIGN TOKENS - Atomic Foundation
-   Phase 9.1: Complete Design System
-
-   This file contains ALL design primitives. Components should ONLY
-   use semantic tokens (--bg-*, --text-*, --brand-*, etc.) never
-   raw color primitives (--color-*).
+   REBLD DESIGN TOKENS - Editorial Noir (Brutalist Edition)
+   
+   Aesthetic:
+   - High Contrast (True Black / Pure White)
+   - Tangible Textures (Frosted Glass, Noise)
+   - Precision Typography (Inter Black/Heavy)
+   - Absence of Color (Monochromatic)
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
   /* ─────────────────────────────────────────────────────────────
-     COLOR PRIMITIVES (Raw values - never use directly in components)
+     COLOR PRIMITIVES (Strict Monochromatic Scale)
      ───────────────────────────────────────────────────────────── */
 
-  /* Neutral Scale (True blacks for OLED) */
-  --color-black: #000000;
-  --color-gray-950: #0A0A0A;
-  --color-gray-900: #141414;
-  --color-gray-850: #1C1C1E;
-  --color-gray-800: #2C2C2E;
-  --color-gray-700: #3A3A3C;
-  --color-gray-600: #48484A;
-  --color-gray-500: #636366;
-  --color-gray-400: #8E8E93;
-  --color-gray-300: #AEAEB2;
-  --color-gray-200: #C7C7CC;
-  --color-gray-100: #E5E5EA;
-  --color-gray-50: #F2F2F7;
-  --color-white: #FFFFFF;
+  /* TheVoid (Backgrounds) */
+  --color-black: #000000;          /* True Black (OLED) */
+  --color-obsidian: #050505;       /* Deepest Grey */
+  --color-charcoal: #0F0F0F;       /* Surface Base */
+  --color-graphite: #1A1A1A;       /* Surface Elevated */
+  
+  /* TheLight (Text & Icons) */
+  --color-white: #FFFFFF;          /* Pure White */
+  --color-ash: #E5E5E5;            /* Primary Text */
+  --color-steel: #A3A3A3;          /* Secondary Text */
+  --color-smoke: #525252;          /* Disabled / Subtle */
 
-  /* Brand: Red (Primary accent - premium, energetic) */
-  --color-red-900: #7F1D1D;
-  --color-red-800: #991B1B;
-  --color-red-700: #B91C1C;
-  --color-red-600: #DC2626;
-  --color-red-500: #EF4444;  /* Main brand color */
-  --color-red-400: #F87171;
-  --color-red-300: #FCA5A5;
-  --color-red-200: #FECACA;
-  --color-red-100: #FEE2E2;
-  --color-red-50: #FEF2F2;
-
-  /* Secondary: Amber (Energy, power) */
-  --color-amber-600: #D48806;
-  --color-amber-500: #F4A261;
-  --color-amber-400: #F6B07A;
-  --color-amber-300: #F8C094;
-  --color-amber-200: #FADCBB;
-  --color-amber-100: #FEF3E8;
-
-  /* Semantic: Success (iOS green) */
-  --color-success-600: #28A745;
-  --color-success-500: #34C759;
-  --color-success-400: #4CD964;
-  --color-success-100: #D4F5DD;
-  --color-success-50: #EAFBEF;
-
-  /* Semantic: Error (iOS red) */
-  --color-error-600: #DC2626;
-  --color-error-500: #FF3B30;
-  --color-error-400: #FF6B6B;
-  --color-error-100: #FFE5E3;
-  --color-error-50: #FFF5F5;
-
-  /* Semantic: Warning (iOS orange) */
-  --color-warning-600: #D97706;
-  --color-warning-500: #FF9500;
-  --color-warning-400: #FFB340;
-  --color-warning-100: #FFF3E0;
-  --color-warning-50: #FFFBF5;
-
-  /* Semantic: Info (iOS blue) */
-  --color-info-600: #0066CC;
-  --color-info-500: #007AFF;
-  --color-info-400: #4DA3FF;
-  --color-info-100: #E5F2FF;
+  /* Functional Colors (Minimal Usage) */
+  --color-signal-green: #22C55E;   /* Success / Active / Online */
+  --color-signal-red: #EF4444;     /* Critical Error / Destructive */
+  --color-signal-amber: #F59E0B;   /* Warning */
 
   /* ─────────────────────────────────────────────────────────────
-     TYPOGRAPHY TOKENS - Fluid Adaptive System
-
-     Uses clamp() for seamless scaling between iPhone sizes:
-     - iPhone mini: 375px
-     - iPhone Pro Max: 430px
-
-     Formula: clamp(min, preferred, max)
-     Preferred uses viewport width for fluid scaling
+     SEMANTIC TOKENS
      ───────────────────────────────────────────────────────────── */
 
-  /* Font Families - iOS-Native Premium Stack
-     Inter is the primary font for excellent legibility on dark backgrounds
-     SF Pro fallback ensures native iOS feel */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  --font-mono: 'SF Mono', ui-monospace, monospace;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  /* Backgrounds */
+  --bg-primary: var(--color-black);
+  --bg-secondary: var(--color-obsidian);
+  --bg-tertiary: var(--color-charcoal);
+  --bg-glass: rgba(15, 15, 15, 0.7);  /* For glassmorphism */
+  
+  /* Text */
+  --text-primary: var(--color-white);
+  --text-secondary: var(--color-ash);
+  --text-tertiary: var(--color-steel);
+  --text-dull: var(--color-smoke);
+  
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08); /* Minimal definition */
+  --border-medium: rgba(255, 255, 255, 0.15); /* Interactive boundaries */
+  --border-strong: rgba(255, 255, 255, 0.30); /* Active states */
 
-  /* ═══════════════════════════════════════════════════════════════
-     FLUID FONT SIZES - Adaptive scaling across iPhone sizes
+  /* Accents */
+  --accent-glow: rgba(255, 255, 255, 0.15);    /* White glow */
+  --accent-active: var(--color-white);         /* Active icons */
+  --accent-muted: var(--color-steel);          /* Inactive icons */
 
-     Scale philosophy:
-     - Body text: Optimized for legibility (15-17px range)
-     - UI text: Compact but readable (11-14px range)
-     - Display text: Bold and impactful (32-56px range)
-     - Headlines: Strong hierarchy (20-40px range)
-     ═══════════════════════════════════════════════════════════════ */
+  /* ─────────────────────────────────────────────────────────────
+     TYPOGRAPHY (Brutalist Sans)
+     ───────────────────────────────────────────────────────────── */
 
-  /* Micro - Labels, badges, captions */
-  --text-3xs: clamp(9px, 2.4vw, 10px);
-  --text-2xs: clamp(10px, 2.67vw, 11px);
-
-  /* Small - Secondary info, metadata */
-  --text-xs: clamp(11px, 2.93vw, 12px);
-  --text-sm: clamp(13px, 3.47vw, 14px);
-
-  /* Body - Primary readable content */
-  --text-base: clamp(15px, 4vw, 16px);
-  --text-md: clamp(16px, 4.27vw, 17px);
-
-  /* Large - Emphasized body, subheadings */
-  --text-lg: clamp(18px, 4.8vw, 20px);
-  --text-xl: clamp(20px, 5.33vw, 22px);
-
-  /* Headlines - Section titles */
-  --text-2xl: clamp(24px, 6.4vw, 28px);
-  --text-3xl: clamp(28px, 7.47vw, 32px);
-
-  /* Display - Hero headlines, splash screens */
-  --text-4xl: clamp(36px, 9.6vw, 42px);
-  --text-5xl: clamp(44px, 11.7vw, 52px);
-  --text-hero: clamp(48px, 12.8vw, 56px);
-  --text-giant: clamp(56px, 14.9vw, 68px);
-
-  /* Font Weights - Full range for typographic expression */
+  --font-primary: 'Inter', -apple-system, sans-serif;
+  
+  /* Weights */
   --weight-regular: 400;
   --weight-medium: 500;
-  --weight-semibold: 600;
   --weight-bold: 700;
   --weight-heavy: 800;
   --weight-black: 900;
 
-  /* Line Heights - Optimized for each text size category */
-  --leading-none: 1;
-  --leading-tighter: 1.1;
-  --leading-tight: 1.2;
-  --leading-snug: 1.35;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.625;
-  --leading-loose: 1.75;
-
-  /* Letter Spacing - Tuned for display vs body */
-  --tracking-tighter: -0.04em;
-  --tracking-tight: -0.02em;
-  --tracking-snug: -0.01em;
-  --tracking-normal: 0;
-  --tracking-wide: 0.02em;
-  --tracking-wider: 0.05em;
-  --tracking-widest: 0.1em;
-  --tracking-mega: 0.2em;
+  /* Headings (Brutalist) */
+  --font-hero: var(--weight-black) 48px/0.95 var(--font-primary);
+  --font-h1: var(--weight-heavy) 32px/1.0 var(--font-primary);
+  --font-h2: var(--weight-bold) 24px/1.1 var(--font-primary);
+  
+  /* UI (Functional) */
+  --font-body: var(--weight-regular) 16px/1.5 var(--font-primary);
+  --font-small: var(--weight-medium) 14px/1.4 var(--font-primary);
+  --font-tiny: var(--weight-medium) 12px/1.2 var(--font-primary);
+  
+  /* Data (Technical) */
+  --font-mono: 'SF Mono', 'Menlo', monospace;
+  --font-data-large: var(--weight-medium) 32px/1.0 var(--font-mono);
 
   /* ─────────────────────────────────────────────────────────────
-     SPACING TOKENS (4px base unit)
+     SPACING & LAYOUT
      ───────────────────────────────────────────────────────────── */
+  
+  --space-unit: 4px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
 
-  --space-0: 0;
-  --space-px: 1px;
-  --space-0-5: 2px;
-  --space-1: 4px;
-  --space-1-5: 6px;
-  --space-2: 8px;
-  --space-2-5: 10px;
-  --space-3: 12px;
-  --space-3-5: 14px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 28px;
-  --space-8: 32px;
-  --space-9: 36px;
-  --space-10: 40px;
-  --space-11: 44px;
-  --space-12: 48px;
-  --space-14: 56px;
-  --space-16: 64px;
-  --space-20: 80px;
-  --space-24: 96px;
-  --space-28: 112px;
-  --space-32: 128px;
-
-  /* Component-specific spacing */
-  --space-card-padding: var(--space-4);
-  --space-card-padding-lg: var(--space-6);
-  --space-section-gap: var(--space-6);
-  --space-page-padding: var(--space-4);
-  --space-page-padding-lg: var(--space-6);
-
-  /* ─────────────────────────────────────────────────────────────
-     LAYOUT TOKENS (iPhone-optimized)
-     ───────────────────────────────────────────────────────────── */
-
-  /* iPhone Screen Widths */
-  --screen-mini: 375px;     /* iPhone 13 mini */
-  --screen-standard: 390px; /* iPhone 14/15 */
-  --screen-pro: 393px;      /* iPhone 14/15 Pro */
-  --screen-plus: 428px;     /* iPhone 14/15 Plus */
-  --screen-max: 430px;      /* iPhone 15 Pro Max */
-
-  /* Safe Areas */
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-
-  /* Dynamic Island (iPhone 14 Pro+) */
-  --dynamic-island-height: 59px;
-
-  /* Component Heights (iOS HIG compliant) */
-  --height-touch-min: 44px;   /* Minimum touch target */
-  --height-button: 50px;      /* Standard button */
-  --height-button-sm: 40px;   /* Small button */
-  --height-button-lg: 56px;   /* Large CTA */
-  --height-input: 50px;       /* Input fields */
-  --height-input-sm: 40px;    /* Small input */
-  --height-navbar: 49px;      /* iOS tab bar */
-  --height-tab-bar: 49px;     /* Alias for navbar height */
-  --height-header: 44px;      /* Navigation bar */
-  --height-navbar-total: calc(var(--height-navbar) + var(--safe-bottom));
-
-  /* Border Radius */
-  --radius-none: 0;
-  --radius-xs: 4px;
-  --radius-sm: 8px;
+  /* Radii */
+  --radius-sm: 4px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
 
-  /* Z-Index Scale (clear hierarchy) */
-  --z-base: 0;
-  --z-above: 1;
-  --z-dropdown: 100;
-  --z-sticky: 200;
-  --z-overlay: 300;
-  --z-modal: 400;
-  --z-popover: 500;
-  --z-tooltip: 600;
-  --z-toast: 700;
-  --z-max: 9999;
+  /* Glassmorphism */
+  --blur-layer: blur(20px);
+  --blur-backdrop: saturate(180%) blur(20px);
 
   /* ─────────────────────────────────────────────────────────────
-     MOTION TOKENS
+     ANIMATION
      ───────────────────────────────────────────────────────────── */
-
-  /* Durations */
-  --duration-instant: 50ms;
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 400ms;
-  --duration-slower: 600ms;
-  --duration-slowest: 1000ms;
-
-  /* Easings (iOS-native feel) */
-  --ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-in: cubic-bezier(0.42, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.58, 1);
-  --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.8, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Transition Presets */
-  --transition-colors: color var(--duration-fast) var(--ease-default),
-                       background-color var(--duration-fast) var(--ease-default),
-                       border-color var(--duration-fast) var(--ease-default);
-  --transition-opacity: opacity var(--duration-fast) var(--ease-default);
-  --transition-transform: transform var(--duration-fast) var(--ease-spring);
-  --transition-all: all var(--duration-normal) var(--ease-default);
-  --transition-shadow: box-shadow var(--duration-fast) var(--ease-default);
+  
+  --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-sharp: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DARK MODE (Default - premium fitness aesthetic)
-
-   WCAG 2.1 Contrast Compliance:
-   - AA Normal Text: 4.5:1 minimum
-   - AA Large Text (18px+): 3:1 minimum
-   - AAA Normal Text: 7:1 minimum
-   ═══════════════════════════════════════════════════════════════ */
-
-[data-theme="dark"], :root {
-  /* Backgrounds */
+/* Dark Mode Defaults (Enforced) */
+[data-theme='dark'], body {
+  color-scheme: dark;
   --bg-primary: var(--color-black);
-  --bg-secondary: var(--color-gray-950);
-  --bg-tertiary: var(--color-gray-900);
-  --bg-elevated: var(--color-gray-850);
-  --bg-overlay: rgba(0, 0, 0, 0.8);
-  --bg-overlay-light: rgba(0, 0, 0, 0.5);
-
-  /* Surfaces (cards, inputs, etc.) */
-  --surface-primary: var(--color-gray-900);
-  --surface-secondary: var(--color-gray-850);
-  --surface-tertiary: var(--color-gray-800);
-  --surface-hover: var(--color-gray-800);
-  --surface-active: var(--color-gray-700);
-  --surface-disabled: var(--color-gray-900);
-
-  /* Text - WCAG Contrast Ratios on #000000 background:
-     - primary (#FFFFFF): 21:1 ✓ AAA
-     - secondary (#AEAEB2): 7.7:1 ✓ AAA
-     - tertiary (#8E8E93): 6.3:1 ✓ AA (upgraded from gray-500 for better accessibility)
-     - disabled (#636366): 4.1:1 ✓ AA for large text only
-
-     ⚠️  IMPORTANT: Use these tokens instead of raw opacity values!
-         - text-white/50 or lower → use var(--text-tertiary) or var(--text-secondary)
-         - text-white/60-70 → use var(--text-secondary)
-         - text-white/80-90 → use var(--text-primary)
-
-         Raw opacity classes (text-white/30, /40, etc.) often fail WCAG AA.
-         The semantic tokens above are pre-validated for accessibility. */
   --text-primary: var(--color-white);
-  --text-secondary: var(--color-gray-300);
-  --text-tertiary: var(--color-gray-400);
-  --text-disabled: var(--color-gray-600);
-  --text-inverse: var(--color-black);
-  --text-on-brand: var(--color-white);
-
-  /* Brand - Contrast with --text-on-brand (#FFFFFF):
-     - red-500 (#EF4444): 3.9:1 ✓ AA large text (used for buttons, badges)
-     - red-400 (#F87171): 3.2:1 - hover state
-     - red-600 (#DC2626): 5.3:1 ✓ AA normal text */
-  --brand-primary: var(--color-red-500);
-  --brand-primary-hover: var(--color-red-400);
-  --brand-primary-active: var(--color-red-600);
-  --brand-primary-subtle: rgba(239, 68, 68, 0.15);
-  --brand-secondary: var(--color-amber-500);
-  --brand-secondary-hover: var(--color-amber-400);
-
-  /* Borders - Enhanced for high-contrast brutalist aesthetic */
-  --border-default: rgba(255, 255, 255, 0.12); /* Increased from 0.08 */
-  --border-subtle: rgba(255, 255, 255, 0.06); /* Increased from 0.04 */
-  --border-strong: rgba(255, 255, 255, 0.24); /* Increased from 0.16 */
-  --border-focus: var(--color-red-500);
-  --border-error: var(--color-error-500);
-  --border-success: var(--color-success-500);
-
-  /* Shadows (minimal in dark mode) */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.7);
-  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.8);
-  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.9);
-
-  /* Glow effects */
-  --shadow-glow-brand: 0 0 20px rgba(239, 68, 68, 0.3);
-  --shadow-glow-success: 0 0 20px rgba(52, 199, 89, 0.3);
-  --shadow-glow-error: 0 0 20px rgba(255, 59, 48, 0.3);
-
-  /* Focus ring */
-  --ring-focus: 0 0 0 3px rgba(239, 68, 68, 0.4);
-  --ring-error: 0 0 0 3px rgba(255, 59, 48, 0.4);
-
-  /* Semantic status */
-  --status-success-bg: var(--color-success-500);
-  --status-success-text: var(--color-white);
-  --status-success-subtle: rgba(52, 199, 89, 0.15);
-  --status-error-bg: var(--color-error-500);
-  --status-error-text: var(--color-white);
-  --status-error-subtle: rgba(255, 59, 48, 0.15);
-  --status-warning-bg: var(--color-warning-500);
-  --status-warning-text: var(--color-black);
-  --status-warning-subtle: rgba(255, 149, 0, 0.15);
-  --status-info-bg: var(--color-info-500);
-  --status-info-text: var(--color-white);
-  --status-info-subtle: rgba(0, 122, 255, 0.15);
-
-  /* Workout-specific semantic colors */
-  --workout-strength: #FF6B6B;
-  --workout-strength-subtle: rgba(255, 107, 107, 0.15);
-  --workout-cardio: #4ECDC4;
-  --workout-cardio-subtle: rgba(78, 205, 196, 0.15);
-  --workout-mobility: #A78BFA;
-  --workout-mobility-subtle: rgba(167, 139, 250, 0.15);
-  --workout-rest: var(--color-success-500);
-  --workout-rest-subtle: var(--status-success-subtle);
-  --workout-power: var(--color-amber-500);
-  --workout-power-subtle: rgba(244, 162, 97, 0.15);
-
-  /* Interactive states */
-  --interactive-hover: rgba(255, 255, 255, 0.05);
-  --interactive-active: rgba(255, 255, 255, 0.1);
-  --interactive-selected: var(--brand-primary-subtle);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   LIGHT MODE
-
-   WCAG 2.1 Contrast Compliance:
-   - AA Normal Text: 4.5:1 minimum
-   - AA Large Text (18px+): 3:1 minimum
-   - AAA Normal Text: 7:1 minimum
-   ═══════════════════════════════════════════════════════════════ */
-
-[data-theme="light"] {
-  /* Backgrounds */
-  --bg-primary: var(--color-gray-50);
-  --bg-secondary: var(--color-white);
-  --bg-tertiary: var(--color-gray-100);
-  --bg-elevated: var(--color-white);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
-  --bg-overlay-light: rgba(0, 0, 0, 0.3);
-
-  /* Surfaces */
-  --surface-primary: var(--color-white);
-  --surface-secondary: var(--color-gray-50);
-  --surface-tertiary: var(--color-gray-100);
-  --surface-hover: var(--color-gray-100);
-  --surface-active: var(--color-gray-200);
-  --surface-disabled: var(--color-gray-100);
-
-  /* Text - WCAG Contrast Ratios on #FFFFFF background:
-     - primary (#0A0A0A): 19.2:1 ✓ AAA
-     - secondary (#48484A): 8.5:1 ✓ AAA
-     - tertiary (#636366): 5.1:1 ✓ AA
-     - disabled (#8E8E93): 3.5:1 ✓ AA for large text only */
-  --text-primary: var(--color-gray-950);
-  --text-secondary: var(--color-gray-600);
-  --text-tertiary: var(--color-gray-500);
-  --text-disabled: var(--color-gray-400);
-  --text-inverse: var(--color-white);
-  --text-on-brand: var(--color-white);
-
-  /* Brand */
-  --brand-primary: var(--color-red-600);
-  --brand-primary-hover: var(--color-red-700);
-  --brand-primary-active: var(--color-red-800);
-  --brand-primary-subtle: var(--color-red-50);
-  --brand-secondary: var(--color-amber-600);
-  --brand-secondary-hover: var(--color-amber-500);
-
-  /* Borders */
-  --border-default: var(--color-gray-200);
-  --border-subtle: var(--color-gray-100);
-  --border-strong: var(--color-gray-300);
-  --border-focus: var(--color-red-500);
-  --border-error: var(--color-error-500);
-  --border-success: var(--color-success-500);
-
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.14);
-  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.16);
-
-  /* Glow effects (softer in light mode) */
-  --shadow-glow-brand: 0 0 24px rgba(239, 68, 68, 0.2);
-  --shadow-glow-success: 0 0 24px rgba(52, 199, 89, 0.2);
-  --shadow-glow-error: 0 0 24px rgba(255, 59, 48, 0.2);
-
-  /* Focus ring */
-  --ring-focus: 0 0 0 3px rgba(239, 68, 68, 0.3);
-  --ring-error: 0 0 0 3px rgba(255, 59, 48, 0.3);
-
-  /* Semantic status */
-  --status-success-bg: var(--color-success-500);
-  --status-success-text: var(--color-white);
-  --status-success-subtle: var(--color-success-50);
-  --status-error-bg: var(--color-error-500);
-  --status-error-text: var(--color-white);
-  --status-error-subtle: var(--color-error-50);
-  --status-warning-bg: var(--color-warning-500);
-  --status-warning-text: var(--color-black);
-  --status-warning-subtle: var(--color-warning-50);
-  --status-info-bg: var(--color-info-500);
-  --status-info-text: var(--color-white);
-  --status-info-subtle: var(--color-info-100);
-
-  /* Workout-specific semantic colors */
-  --workout-strength: var(--color-error-500);
-  --workout-strength-subtle: var(--color-error-50);
-  --workout-cardio: #0D9488;
-  --workout-cardio-subtle: #F0FDFA;
-  --workout-mobility: #7C3AED;
-  --workout-mobility-subtle: #F5F3FF;
-  --workout-rest: var(--color-success-500);
-  --workout-rest-subtle: var(--color-success-50);
-  --workout-power: var(--color-amber-600);
-  --workout-power-subtle: var(--color-amber-100);
-
-  /* Interactive states */
-  --interactive-hover: rgba(0, 0, 0, 0.03);
-  --interactive-active: rgba(0, 0, 0, 0.06);
-  --interactive-selected: var(--brand-primary-subtle);
 }
