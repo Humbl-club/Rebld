@@ -9,113 +9,144 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ─────────────────────────────────────────────────────────────
+   /* ─────────────────────────────────────────────────────────────
      COLOR PRIMITIVES (Strict Monochromatic Scale)
      ───────────────────────────────────────────────────────────── */
 
-  /* TheVoid (Backgrounds) */
-  --color-black: #000000;          /* True Black (OLED) */
-  --color-obsidian: #050505;       /* Deepest Grey */
-  --color-charcoal: #0F0F0F;       /* Surface Base */
-  --color-graphite: #1A1A1A;       /* Surface Elevated */
-  
-  /* TheLight (Text & Icons) */
-  --color-white: #FFFFFF;          /* Pure White */
-  --color-ash: #E5E5E5;            /* Primary Text */
-  --color-steel: #A3A3A3;          /* Secondary Text */
-  --color-smoke: #525252;          /* Disabled / Subtle */
+   /* TheVoid (Backgrounds) */
+   --color-black: #000000;
+   /* True Black (OLED) */
+   --color-obsidian: #050505;
+   /* Deepest Grey */
+   --color-charcoal: #0F0F0F;
+   /* Surface Base */
+   --color-graphite: #1A1A1A;
+   /* Surface Elevated */
 
-  /* Functional Colors (Minimal Usage) */
-  --color-signal-green: #22C55E;   /* Success / Active / Online */
-  --color-signal-red: #EF4444;     /* Critical Error / Destructive */
-  --color-signal-amber: #F59E0B;   /* Warning */
+   /* TheLight (Text & Icons) */
+   --color-white: #FFFFFF;
+   /* Pure White */
+   --color-ash: #E5E5E5;
+   /* Primary Text */
+   --color-steel: #A3A3A3;
+   /* Secondary Text */
+   --color-smoke: #525252;
+   /* Disabled / Subtle */
 
-  /* ─────────────────────────────────────────────────────────────
+   /* Functional Colors (Minimal Usage) */
+   --color-signal-green: #22C55E;
+   /* Success / Active / Online */
+   --color-signal-red: #EF4444;
+   /* Critical Error / Destructive */
+   --color-signal-amber: #F59E0B;
+   /* Warning */
+
+   /* ─────────────────────────────────────────────────────────────
      SEMANTIC TOKENS
      ───────────────────────────────────────────────────────────── */
 
-  /* Backgrounds */
-  --bg-primary: var(--color-black);
-  --bg-secondary: var(--color-obsidian);
-  --bg-tertiary: var(--color-charcoal);
-  --bg-glass: rgba(15, 15, 15, 0.7);  /* For glassmorphism */
-  
-  /* Text */
-  --text-primary: var(--color-white);
-  --text-secondary: var(--color-ash);
-  --text-tertiary: var(--color-steel);
-  --text-dull: var(--color-smoke);
-  
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.08); /* Minimal definition */
-  --border-medium: rgba(255, 255, 255, 0.15); /* Interactive boundaries */
-  --border-strong: rgba(255, 255, 255, 0.30); /* Active states */
+   /* Backgrounds */
+   --bg-primary: var(--color-black);
+   --bg-secondary: var(--color-obsidian);
+   --bg-tertiary: var(--color-charcoal);
+   --bg-glass: rgba(15, 15, 15, 0.7);
+   /* For glassmorphism */
 
-  /* Accents */
-  --accent-glow: rgba(255, 255, 255, 0.15);    /* White glow */
-  --accent-active: var(--color-white);         /* Active icons */
-  --accent-muted: var(--color-steel);          /* Inactive icons */
+   /* Text */
+   --text-primary: var(--color-white);
+   --text-secondary: var(--color-ash);
+   --text-tertiary: var(--color-steel);
+   --text-dull: var(--color-smoke);
 
-  /* ─────────────────────────────────────────────────────────────
+   /* Borders */
+   --border-subtle: rgba(255, 255, 255, 0.08);
+   /* Minimal definition */
+   --border-medium: rgba(255, 255, 255, 0.15);
+   /* Interactive boundaries */
+   --border-strong: rgba(255, 255, 255, 0.30);
+   /* Active states */
+
+   /* Accents */
+   --accent-glow: rgba(255, 255, 255, 0.15);
+   /* White glow */
+   --accent-active: var(--color-white);
+   /* Active icons */
+   --accent-muted: var(--color-steel);
+   /* Inactive icons */
+
+   /* ─────────────────────────────────────────────────────────────
      TYPOGRAPHY (Brutalist Sans)
      ───────────────────────────────────────────────────────────── */
 
-  --font-primary: 'Inter', -apple-system, sans-serif;
-  
-  /* Weights */
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-bold: 700;
-  --weight-heavy: 800;
-  --weight-black: 900;
+   --font-primary: 'Inter', -apple-system, sans-serif;
 
-  /* Headings (Brutalist) */
-  --font-hero: var(--weight-black) 48px/0.95 var(--font-primary);
-  --font-h1: var(--weight-heavy) 32px/1.0 var(--font-primary);
-  --font-h2: var(--weight-bold) 24px/1.1 var(--font-primary);
-  
-  /* UI (Functional) */
-  --font-body: var(--weight-regular) 16px/1.5 var(--font-primary);
-  --font-small: var(--weight-medium) 14px/1.4 var(--font-primary);
-  --font-tiny: var(--weight-medium) 12px/1.2 var(--font-primary);
-  
-  /* Data (Technical) */
-  --font-mono: 'SF Mono', 'Menlo', monospace;
-  --font-data-large: var(--weight-medium) 32px/1.0 var(--font-mono);
+   /* Weights */
+   --weight-regular: 400;
+   --weight-medium: 500;
+   --weight-bold: 700;
+   --weight-heavy: 800;
+   --weight-black: 900;
 
-  /* ─────────────────────────────────────────────────────────────
+   /* Headings (Brutalist) */
+   --font-hero: var(--weight-black) 48px/0.95 var(--font-primary);
+   --font-h1: var(--weight-heavy) 32px/1.0 var(--font-primary);
+   --font-h2: var(--weight-bold) 24px/1.1 var(--font-primary);
+
+   /* UI (Functional) */
+   --font-body: var(--weight-regular) 16px/1.5 var(--font-primary);
+   --font-small: var(--weight-medium) 14px/1.4 var(--font-primary);
+   --font-tiny: var(--weight-medium) 12px/1.2 var(--font-primary);
+
+   /* Data (Technical) */
+   --font-mono: 'SF Mono', 'Menlo', monospace;
+   --font-data-large: var(--weight-medium) 32px/1.0 var(--font-mono);
+
+   /* ─────────────────────────────────────────────────────────────
      SPACING & LAYOUT
      ───────────────────────────────────────────────────────────── */
-  
-  --space-unit: 4px;
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
 
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 12px;
-  --radius-lg: 24px;
-  --radius-full: 9999px;
+   --space-unit: 4px;
+   --space-xs: 4px;
+   --space-sm: 8px;
+   --space-md: 16px;
+   --space-lg: 24px;
+   --space-xl: 32px;
+   --space-2xl: 48px;
+   --space-10: 40px;
+   --space-11: 44px;
+   --space-12: 48px;
+   --space-14: 56px;
+   --space-16: 64px;
+   --space-20: 80px;
+   --space-24: 96px;
+   --space-28: 112px;
+   --space-32: 128px;
 
-  /* Glassmorphism */
-  --blur-layer: blur(20px);
-  --blur-backdrop: saturate(180%) blur(20px);
+   --width-screen: 100vw;
+   --height-screen: 100vh;
 
-  /* ─────────────────────────────────────────────────────────────
+   /* Radii */
+   --radius-sm: 4px;
+   --radius-md: 12px;
+   --radius-lg: 24px;
+   --radius-full: 9999px;
+
+   /* Glassmorphism */
+   --blur-layer: blur(20px);
+   --blur-backdrop: saturate(180%) blur(20px);
+
+   /* ─────────────────────────────────────────────────────────────
      ANIMATION
      ───────────────────────────────────────────────────────────── */
-  
-  --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-sharp: cubic-bezier(0.25, 1, 0.5, 1);
+
+   --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+   --ease-sharp: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Dark Mode Defaults (Enforced) */
-[data-theme='dark'], body {
-  color-scheme: dark;
-  --bg-primary: var(--color-black);
-  --text-primary: var(--color-white);
+[data-theme='dark'],
+body {
+   color-scheme: dark;
+   --bg-primary: var(--color-black);
+   --text-primary: var(--color-white);
 }
